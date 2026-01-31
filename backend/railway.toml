@@ -1,0 +1,10 @@
+# Railway deployment config voor ColdMonitor backend
+# Zorg dat Root Directory = "backend" in Railway dashboard
+
+[build]
+# Prisma client genereren + TypeScript compileren
+buildCommand = "npm install && npx prisma generate && npm run build"
+
+[deploy]
+# Migraties + server starten
+startCommand = "npx prisma migrate deploy && npm run start"

@@ -149,13 +149,13 @@ export function generateTokens(payload: Omit<TokenPayload, 'type'>): {
   const accessToken = jwt.sign(
     { ...payload, type: 'access' },
     config.jwtSecret,
-    { expiresIn: config.jwtExpiresIn }
+    { expiresIn: config.jwtExpiresIn } as jwt.SignOptions
   );
 
   const refreshToken = jwt.sign(
     { ...payload, type: 'refresh' },
     config.jwtRefreshSecret,
-    { expiresIn: config.jwtRefreshExpiresIn }
+    { expiresIn: config.jwtRefreshExpiresIn } as jwt.SignOptions
   );
 
   return { accessToken, refreshToken };

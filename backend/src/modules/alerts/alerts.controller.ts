@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole, AuthRequest } from '../../middleware/auth';
 import { prisma } from '../../config/database';
-import { alertService } from '../../services/AlertService';
+import { alertService } from '../../services/alertService';
 import { CustomError } from '../../middleware/errorHandler';
 
 const router = Router();

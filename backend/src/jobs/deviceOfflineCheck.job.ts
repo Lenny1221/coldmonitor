@@ -1,4 +1,4 @@
-import { alertService } from '../services/AlertService';
+import { alertService } from '../services/alertService';
 import { logger } from '../utils/logger';
 
 /**

@@ -1,7 +1,7 @@
 import { prisma } from '../config/database';
 import { AlertType, AlertStatus } from '@prisma/client';
 import { logger } from '../utils/logger';
-import { NotificationService } from './NotificationService';
+import { NotificationService } from './notificationService';
 
 export class AlertService {
   private notificationService: NotificationService;

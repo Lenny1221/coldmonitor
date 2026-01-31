@@ -24,7 +24,7 @@ export const jobs = {
  * import cron from 'node-cron';
  * 
  * // Check for offline devices every 15 minutes
- * cron.schedule('*/15 * * * *', () => {
+ * cron.schedule('0/15 * * * *', () => {
  *   jobs.checkDeviceOffline();
  * });
  * 
