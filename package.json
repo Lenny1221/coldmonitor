@@ -1,0 +1,24 @@
+{
+  "name": "refrigeration-monitoring-platform",
+  "version": "1.0.0",
+  "description": "Remote monitoring platform for refrigeration and freezer cells",
+  "main": "index.js",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+  },
+  "keywords": [
+    "refrigeration",
+    "monitoring",
+    "iot",
+    "temperature"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "all": "^0.0.0"
+  }
+}

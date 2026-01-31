@@ -1,0 +1,235 @@
+// IoT Refrigeration Monitoring Platform - Database Schema
+// Multi-tenant architecture with Technician-Customer-Location-ColdCell hierarchy
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  TECHNICIAN
+  CUSTOMER
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+}
+
+enum AlertType {
+  HIGH_TEMP
+  LOW_TEMP
+  POWER_LOSS
+  SENSOR_ERROR
+}
+
+enum AlertStatus {
+  ACTIVE
+  RESOLVED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+// User accounts for authentication
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      UserRole @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  technician Technician?
+  customer   Customer?
+
+  @@index([email])
+  @@index([role])
+}
+
+// Technician model
+model Technician {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String?
+  companyName String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  customers Customer[]
+  invitations Invitation[]
+
+  @@index([email])
+}
+
+// Customer model
+model Customer {
+  id            String   @id @default(cuid())
+  companyName   String
+  contactName   String
+  email         String   @unique
+  phone         String?
+  address       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  emailVerified Boolean  @default(false)
+
+  // Relations
+  userId           String      @unique
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  linkedTechnicianId String?
+  linkedTechnician   Technician? @relation(fields: [linkedTechnicianId], references: [id], onDelete: SetNull)
+  
+  locations Location[]
+  invitations Invitation[]
+
+  @@index([email])
+  @@index([linkedTechnicianId])
+}
+
+// Location model (customer can have multiple locations)
+model Location {
+  id          String   @id @default(cuid())
+  locationName String
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  coldCells ColdCell[]
+
+  @@index([customerId])
+}
+
+// Cold Cell model (refrigeration/freezer unit)
+model ColdCell {
+  id                    String   @id @default(cuid())
+  name                  String   // e.g., "Freezer 1", "Fridge 2"
+  type                  String   // "fridge" or "freezer"
+  temperatureMinThreshold Float
+  temperatureMaxThreshold Float
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  
+  devices Device[]
+  alerts  Alert[]
+
+  @@index([locationId])
+}
+
+// Device model (IoT logger/sensor)
+model Device {
+  id             String       @id @default(cuid())
+  serialNumber   String       @unique
+  status         DeviceStatus @default(OFFLINE)
+  apiKey         String       @unique // Device authentication token
+  lastSeenAt     DateTime?
+  firmwareVersion String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  coldCellId String
+  coldCell   ColdCell @relation(fields: [coldCellId], references: [id], onDelete: Cascade)
+  
+  sensorReadings SensorReading[]
+
+  @@index([serialNumber])
+  @@index([apiKey])
+  @@index([coldCellId])
+  @@index([status])
+}
+
+// Sensor Reading model (temperature, humidity, etc.)
+model SensorReading {
+  id          String   @id @default(cuid())
+  temperature Float
+  humidity    Float?
+  powerStatus Boolean  @default(true)
+  doorStatus  Boolean? // true = open, false = closed
+  batteryLevel Int?    // Battery percentage (0-100)
+  recordedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  // Relations
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, recordedAt])
+  @@index([recordedAt])
+}
+
+// Alert model
+model Alert {
+  id                String      @id @default(cuid())
+  type              AlertType
+  value             Float?      // The value that triggered the alert
+  threshold         Float?      // The threshold that was exceeded
+  status            AlertStatus @default(ACTIVE)
+  triggeredAt       DateTime    @default(now())
+  lastTriggeredAt   DateTime?   // Updated when duplicate alert occurs
+  resolvedAt        DateTime?
+  resolutionNote   String?     // Optional note when resolving
+  notifiedCustomer  Boolean     @default(false)
+  notifiedTechnician Boolean     @default(false)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  coldCellId String
+  coldCell   ColdCell @relation(fields: [coldCellId], references: [id], onDelete: Cascade)
+
+  @@index([coldCellId, status])
+  @@index([status])
+  @@index([triggeredAt])
+  @@index([type])
+}
+
+// Invitation model (for technician to customer linking)
+model Invitation {
+  id            String           @id @default(cuid())
+  status        InvitationStatus  @default(PENDING)
+  message       String?          // Optional message from technician
+  sentAt        DateTime         @default(now())
+  respondedAt   DateTime?
+  expiresAt     DateTime         @default(dbgenerated("(CURRENT_TIMESTAMP + INTERVAL '30 days')"))
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  // Relations
+  technicianId String
+  technician   Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  
+  customerId   String
+  customer     Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  // Note: We enforce uniqueness for pending invitations in application logic
+  // This allows multiple invitations with different statuses (PENDING, ACCEPTED, REJECTED)
+  @@index([customerId, status])
+  @@index([technicianId, status])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([technicianId, customerId, status])
+}

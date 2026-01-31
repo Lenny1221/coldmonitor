@@ -1,0 +1,287 @@
+# ColdMonitor ESP32 Firmware
+
+Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD temperature sensing, RS485/Modbus communication, and cloud connectivity.
+
+## Features
+
+- ✅ **PT1000 RTD Temperature Sensing** via MAX31865 over SPI
+- ✅ **RS485/Modbus RTU** communication with refrigeration controllers
+- ✅ **Offline Data Buffering** using SPIFFS (up to 100 readings)
+- ✅ **WiFi Connectivity** with automatic reconnection
+- ✅ **Battery Monitoring** with low battery protection
+- ✅ **OTA Updates** for remote firmware updates
+- ✅ **Power Management** with deep sleep support
+- ✅ **Multi-tasking** using FreeRTOS tasks
+- ✅ **Structured Logging** with configurable levels
+- ✅ **Configuration Management** with persistent storage
+
+## Hardware Requirements
+
+### ESP32 Development Board
+- ESP32-WROOM-32 or compatible
+- Minimum 4MB Flash
+- PSRAM recommended
+
+### MAX31865 RTD-to-Digital Converter
+- SPI interface
+- PT1000 RTD sensor (4-wire recommended)
+- Reference resistor: 4.3kΩ
+
+### RS485 Module (Optional)
+- MAX485 or similar RS485 transceiver
+- DE/RE control pins
+
+### Power
+- 3.3V power supply
+- Battery monitoring via voltage divider on ADC pin 34
+
+## Pin Configuration
+
+### SPI (MAX31865)
+- **CS Pin**: GPIO 5 (configurable)
+- **MOSI**: GPIO 23 (SPI default)
+- **MISO**: GPIO 19 (SPI default)
+- **SCK**: GPIO 18 (SPI default)
+
+### RS485 (Optional)
+- **RX**: GPIO 16
+- **TX**: GPIO 17
+- **DE**: GPIO 4
+- **RE**: GPIO 0
+
+### Battery Monitoring
+- **ADC**: GPIO 34 (input only)
+
+## Installation
+
+### Prerequisites
+
+1. **PlatformIO IDE** or **VS Code with PlatformIO extension**
+2. **ESP32 Board Support** installed
+
+### Setup
+
+1. **Clone repository**:
+   ```bash
+   cd firmware
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   pio lib install
+   ```
+
+3. **Configure settings**:
+   - Edit `src/config.h` for default values
+   - Or configure via WiFi Manager portal on first boot
+
+4. **Build and upload**:
+   ```bash
+   pio run -t upload
+   ```
+
+5. **Monitor serial output**:
+   ```bash
+   pio device monitor
+   ```
+
+## Configuration
+
+### First Boot
+
+On first boot, the device creates a WiFi access point:
+- **SSID**: `ColdMonitor-Setup`
+- **Password**: (none, or check serial output)
+
+Connect to this AP and configure:
+- WiFi credentials
+- API URL
+- Device serial number
+- Reading intervals
+- Modbus settings (if enabled)
+
+### Configuration Parameters
+
+- **Device Serial**: Unique identifier for the device
+- **Reading Interval**: Seconds between temperature readings (default: 60s)
+- **Upload Interval**: Seconds between data uploads (default: 300s)
+- **API URL**: Backend API endpoint
+- **API Key**: Device authentication key
+- **Modbus Enabled**: Enable/disable RS485 communication
+- **Deep Sleep**: Enable power-saving deep sleep mode
+
+## Usage
+
+### Temperature Reading
+
+The firmware automatically reads temperature from the PT1000 sensor via MAX31865 at configured intervals. Readings are:
+- Validated for sensor faults
+- Timestamped
+- Buffered locally
+- Uploaded when WiFi is available
+
+### Modbus Communication
+
+If enabled, the firmware can:
+- Read holding registers from refrigeration controller
+- Read setpoints, current temperature, compressor status
+- Optionally write setpoints (if write enabled)
+
+### Data Upload
+
+Readings are automatically uploaded to the backend API when:
+- WiFi is connected
+- Upload interval elapsed
+- Buffer contains data
+
+Format:
+```json
+{
+  "deviceId": "ESP32-XXXXXX",
+  "temperature": 4.5,
+  "timestamp": 1234567890,
+  "sensorId": 0,
+  "batteryLevel": 85,
+  "batteryVoltage": 3.8
+}
+```
+
+### Battery Management
+
+- Monitors battery voltage via ADC
+- Calculates percentage (0-100%)
+- Low battery warning at 20%
+- Critical battery at 10% triggers deep sleep
+- Battery data included in every reading
+
+### Power Management
+
+- **Deep Sleep**: Entered when battery critical or configured
+- **Light Sleep**: Can be used for power saving (keeps WiFi)
+- **CPU Frequency**: Adjustable (80/160/240 MHz)
+- **WiFi Power Save**: Can be enabled for lower power consumption
+
+## OTA Updates
+
+Over-the-air firmware updates are supported:
+
+1. **ArduinoOTA**: Built-in OTA support
+2. **Password Protected**: Configured in settings
+3. **Progress Logging**: Update progress visible in serial monitor
+
+To update:
+- Use Arduino IDE or PlatformIO OTA tools
+- Or implement custom OTA server
+
+## Troubleshooting
+
+### MAX31865 Not Reading
+
+- Check SPI connections
+- Verify CS pin configuration
+- Check RTD sensor wiring (4-wire recommended)
+- Verify reference resistor value
+- Check fault status register
+
+### WiFi Connection Issues
+
+- Check credentials in configuration
+- Verify signal strength
+- Check if AP mode is accessible
+- Review serial logs for errors
+
+### Data Not Uploading
+
+- Verify WiFi connection
+- Check API URL configuration
+- Verify API key is correct
+- Check serial logs for HTTP errors
+- Ensure backend is accessible
+
+### Modbus Communication Issues
+
+- Verify RS485 wiring
+- Check baud rate matches controller
+- Verify slave ID
+- Check DE/RE pin configuration
+- Use serial monitor to debug
+
+## Development
+
+### Project Structure
+
+```
+firmware/
+├── platformio.ini          # PlatformIO configuration
+├── src/
+│   ├── main.cpp            # Main application
+│   ├── config.h/cpp        # Configuration management
+│   ├── logger.h/cpp        # Logging system
+│   ├── max31865_driver.h/cpp  # MAX31865 SPI driver
+│   ├── rs485_modbus.h/cpp  # RS485/Modbus RTU
+│   ├── data_buffer.h/cpp   # Offline data buffering
+│   ├── wifi_manager.h/cpp  # WiFi management
+│   ├── api_client.h/cpp    # API communication
+│   ├── battery_monitor.h/cpp # Battery monitoring
+│   ├── power_manager.h/cpp  # Power management
+│   └── ota_update.h/cpp    # OTA updates
+└── README.md
+```
+
+### Building
+
+```bash
+# Development build
+pio run
+
+# Release build (optimized)
+pio run -e esp32dev-release
+
+# Upload
+pio run -t upload
+
+# Monitor
+pio device monitor
+```
+
+### Debugging
+
+- Serial monitor at 115200 baud
+- Log levels configurable in `logger.h`
+- Use `logger.debug()` for detailed information
+- Check task stack usage if crashes occur
+
+## API Integration
+
+The firmware uploads to:
+```
+POST /api/readings/devices/{serialNumber}/readings
+Headers:
+  Content-Type: application/json
+  x-device-key: {apiKey}
+Body:
+  {
+    "deviceId": "...",
+    "temperature": 4.5,
+    "timestamp": 1234567890,
+    "sensorId": 0,
+    "batteryLevel": 85,
+    "batteryVoltage": 3.8
+  }
+```
+
+## License
+
+ISC
+
+## Support
+
+For issues or questions, check:
+- Serial monitor logs
+- Configuration settings
+- Hardware connections
+- Backend API status
+
+---
+
+**Built for ColdMonitor IoT Refrigeration Monitoring Platform**
