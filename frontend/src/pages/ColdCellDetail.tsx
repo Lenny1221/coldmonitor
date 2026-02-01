@@ -173,7 +173,7 @@ const ColdCellDetail: React.FC = () => {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-3xl font-bold text-gray-900">{coldCell.name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{coldCell.name}</h1>
           <p className="text-sm text-gray-600 capitalize">{coldCell.type}</p>
           {coldCell.location && (
             <div className="flex items-center text-sm text-gray-500 mt-1">

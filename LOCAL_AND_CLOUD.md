@@ -91,10 +91,11 @@ Vercel en Railway deployen automatisch. Dezelfde code draait dan in de cloud.
 
 ---
 
-## Cloud: login/registratie werkt niet (React error #31)
+## Cloud: login/registratie werkt niet
 
-1. **CORS**: Controleer Railway → Variables → `FRONTEND_URL` = exact je Vercel-URL (bv. `https://coldmonitor.vercel.app`, géén slash aan het eind).
+Zie **[CLOUD_SETUP.md](./CLOUD_SETUP.md)** voor een volledige handleiding.
 
-2. **VITE_API_URL**: Controleer Vercel → Settings → Environment Variables → `VITE_API_URL` = `https://jouw-backend.up.railway.app/api`.
-
-3. **Redeploy**: Na wijziging van env vars op Vercel: Deployments → ... → Redeploy.
+**Snel:**
+1. **Vercel** → `VITE_API_URL` = `https://jouw-railway-url/api`
+2. **Railway** → `FRONTEND_URL` = `https://coldmonitor.vercel.app`
+3. **Redeploy** op Vercel na wijziging van env vars

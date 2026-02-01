@@ -88,9 +88,9 @@ const ColdCells: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Cold Cells</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Cold Cells</h1>
           <p className="mt-1 text-sm text-gray-600">
             Manage your refrigeration and freezer units
           </p>
@@ -122,8 +122,8 @@ const ColdCells: React.FC = () => {
       {loading ? (
         <div className="text-center py-12 text-gray-500">Loading cold cells...</div>
       ) : coldCells.length > 0 ? (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 min-w-[640px]">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

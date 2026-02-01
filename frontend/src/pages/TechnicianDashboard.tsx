@@ -115,7 +115,7 @@ const TechnicianDashboard: React.FC = () => {
       {/* Customers List */}
       <div>
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Customers</h2>
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow overflow-x-auto table-scroll">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>

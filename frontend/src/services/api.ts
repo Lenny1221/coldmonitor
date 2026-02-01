@@ -1,12 +1,12 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/+$/, '');
 
 /** Safely extract a displayable string from API error (avoids React error #31) */
 export function getErrorMessage(err: unknown, fallback: string): string {
   if (!err || typeof err !== 'object') return fallback;
-  const ax = err as { response?: { data?: unknown }; message?: string };
+  const ax = err as { response?: { data?: unknown; status?: number }; message?: string; code?: string };
   const data = ax.response?.data;
   if (data && typeof data === 'object') {
     const d = data as Record<string, unknown>;
@@ -17,7 +17,14 @@ export function getErrorMessage(err: unknown, fallback: string): string {
     if (errVal && typeof errVal === 'object' && typeof (errVal as { message?: string }).message === 'string') return (errVal as { message: string }).message;
     if (msgVal && typeof msgVal === 'object' && typeof (msgVal as { message?: string }).message === 'string') return (msgVal as { message: string }).message;
   }
-  if (typeof ax.message === 'string') return ax.message;
+  // Geen response = netwerk- of CORS-fout (bv. VITE_API_URL niet goed geconfigureerd)
+  const msg = ax.message;
+  if (!ax.response && (ax.code === 'ERR_NETWORK' || (typeof msg === 'string' && msg.includes('Network')))) {
+    return 'Kan geen verbinding maken met de server. Controleer of de backend bereikbaar is (VITE_API_URL bij Vercel).';
+  }
+  if (typeof msg === 'string') return msg;
+  if (ax.response?.status === 405) return 'Verkeerde API-URL of serverconfiguratie. Controleer VITE_API_URL.';
+  if (ax.response?.status === 404) return 'API niet gevonden. Controleer of VITE_API_URL correct is (Railway URL + /api).';
   return fallback;
 }
 

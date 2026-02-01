@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -8,6 +8,8 @@ import {
   CubeIcon,
   UserGroupIcon,
   EnvelopeIcon,
+  Bars3Icon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 interface LayoutProps {
@@ -18,122 +20,127 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+    setSidebarOpen(false);
   };
 
   const isActive = (path: string) => location.pathname === path;
+  const isActivePrefix = (path: string) => location.pathname.startsWith(path);
+
+  // Sluit sidebar bij navigatie op mobiel
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  const navLinks =
+    user?.role === 'CUSTOMER'
+      ? [
+          { to: '/dashboard', label: 'Dashboard', icon: HomeIcon },
+          { to: '/locations', label: 'Locations', icon: MapPinIcon },
+          { to: '/coldcells', label: 'Cold Cells', icon: CubeIcon },
+          { to: '/invitations', label: 'Invitations', icon: EnvelopeIcon },
+        ]
+      : user?.role === 'TECHNICIAN' || user?.role === 'ADMIN'
+        ? [
+            { to: '/technician', label: 'Dashboard', icon: HomeIcon },
+            { to: '/technician/customers', label: 'Manage Customers', icon: UserGroupIcon },
+          ]
+        : [];
+
+  const userDisplay = user?.profile?.contactName || user?.profile?.name || user?.email || 'User';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-blue-600">ColdMonitor</h1>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {user?.role === 'CUSTOMER' && (
-                  <>
-                    <Link
-                      to="/dashboard"
-                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive('/dashboard')
-                          ? 'border-blue-500 text-gray-900'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                      }`}
-                    >
-                      <HomeIcon className="h-5 w-5 mr-2" />
-                      Dashboard
-                    </Link>
-                    <Link
-                      to="/locations"
-                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive('/locations')
-                          ? 'border-blue-500 text-gray-900'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                      }`}
-                    >
-                      <MapPinIcon className="h-5 w-5 mr-2" />
-                      Locations
-                    </Link>
-                    <Link
-                      to="/coldcells"
-                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive('/coldcells')
-                          ? 'border-blue-500 text-gray-900'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                      }`}
-                    >
-                      <CubeIcon className="h-5 w-5 mr-2" />
-                      Cold Cells
-                    </Link>
-                    <Link
-                      to="/invitations"
-                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive('/invitations')
-                          ? 'border-blue-500 text-gray-900'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                      }`}
-                    >
-                      <EnvelopeIcon className="h-5 w-5 mr-2" />
-                      Invitations
-                    </Link>
-                  </>
-                )}
-                {(user?.role === 'TECHNICIAN' || user?.role === 'ADMIN') && (
-                  <>
-                    <Link
-                      to="/technician"
-                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive('/technician')
-                          ? 'border-blue-500 text-gray-900'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                      }`}
-                    >
-                      <HomeIcon className="h-5 w-5 mr-2" />
-                      Dashboard
-                    </Link>
-                    <Link
-                      to="/technician/customers"
-                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive('/technician/customers')
-                          ? 'border-blue-500 text-gray-900'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                      }`}
-                    >
-                      <UserGroupIcon className="h-5 w-5 mr-2" />
-                      Manage Customers
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-700">
-                <span className="font-medium">
-                  {user?.profile?.contactName || user?.profile?.name || user?.email}
-                </span>
-                <span className="ml-2 text-gray-500">({user?.role})</span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Overlay op mobiel wanneer sidebar open */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-gray-900/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200
+          transform transition-transform duration-200 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        <div className="flex flex-col h-full">
+          {/* Header sidebar */}
+          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 shrink-0">
+            <h1 className="text-xl font-bold text-blue-600">ColdMonitor</h1>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-2 rounded-md text-gray-500 hover:bg-gray-100"
+              aria-label="Menu sluiten"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Navigatie */}
+          <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            {navLinks.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                  ${isActive(to) || isActivePrefix(to + '/')
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-700 hover:bg-gray-100'}
+                `}
               >
-                <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
-                Logout
-              </button>
+                <Icon className="h-5 w-5 shrink-0" />
+                {label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Gebruiker + Logout */}
+          <div className="border-t border-gray-200 p-4 shrink-0">
+            <div className="text-xs text-gray-500 mb-2 truncate" title={userDisplay}>
+              {userDisplay}
             </div>
+            <div className="text-xs text-gray-400 mb-3">{user?.role}</div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700"
+            >
+              <ArrowRightOnRectangleIcon className="h-5 w-5 shrink-0" />
+              Uitloggen
+            </button>
           </div>
         </div>
-      </nav>
+      </aside>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {children}
-      </main>
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar (mobiel: hamburger + titel) */}
+        <header className="lg:hidden sticky top-0 z-30 flex items-center h-14 px-4 bg-white border-b border-gray-200 shrink-0">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 -ml-2 rounded-md text-gray-600 hover:bg-gray-100"
+            aria-label="Menu openen"
+          >
+            <Bars3Icon className="h-6 w-6" />
+          </button>
+          <span className="ml-3 font-medium text-gray-900 truncate">
+            {navLinks.find((l) => isActive(l.to) || isActivePrefix(l.to + '/'))?.label || 'ColdMonitor'}
+          </span>
+        </header>
+
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

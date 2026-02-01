@@ -11,6 +11,12 @@ import Invitations from './pages/Invitations';
 import CustomerDetail from './pages/CustomerDetail';
 import Layout from './components/Layout';
 
+function NavigateToDashboard() {
+  const { user } = useAuth();
+  const target = user?.role === 'TECHNICIAN' || user?.role === 'ADMIN' ? '/technician' : '/dashboard';
+  return <Navigate to={target} />;
+}
+
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
@@ -120,7 +126,7 @@ function AppRoutes() {
         </>
       )}
 
-      <Route path="/" element={<Navigate to="/dashboard" />} />
+      <Route path="/" element={<NavigateToDashboard />} />
     </Routes>
   );
 }

@@ -39,9 +39,13 @@ app.use(
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
       if (config.frontendUrls.includes(origin)) return cb(null, true);
+      // Log geweigerde origin (zichtbaar in Railway logs) om FRONTEND_URL te controleren
+      logger.warn('CORS geweigerd – zet FRONTEND_URL op Railway op deze exacte waarde', { receivedOrigin: origin, allowed: config.frontendUrls });
       cb(null, false);
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
@@ -52,13 +56,17 @@ app.use(express.urlencoded({ extended: true }));
 // Request logging
 app.use(requestLogger);
 
-// Health check
+// Health check (root + onder /api voor frontend-check)
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     environment: config.nodeEnv,
   });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
 // API rate limiting (applied to all API routes except auth)
