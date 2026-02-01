@@ -1,0 +1,12 @@
+# Railway/Nixpacks config - build backend voor deployment
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm install", "cd backend && npm ci && npx prisma generate && npm run build"]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "cd backend && npx prisma migrate deploy && node dist/index.js"
