@@ -69,8 +69,9 @@ const Login: React.FC = () => {
     try {
       await login(email, password);
       navigate('/dashboard');
-    } catch (err) {
-      setError(getErrorMessage(err, 'Login failed'));
+    } catch (err: unknown) {
+      const msg = (err as { safeMessage?: string })?.safeMessage ?? getErrorMessage(err, 'Login failed');
+      setError(typeof msg === 'string' ? msg : 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -95,8 +96,9 @@ const Login: React.FC = () => {
     try {
       await registerCustomer(data);
       navigate('/dashboard');
-    } catch (err) {
-      setError(getErrorMessage(err, 'Registration failed'));
+    } catch (err: unknown) {
+      const msg = (err as { safeMessage?: string })?.safeMessage ?? getErrorMessage(err, 'Registration failed');
+      setError(typeof msg === 'string' ? msg : 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -119,8 +121,9 @@ const Login: React.FC = () => {
     try {
       await registerTechnician(data);
       navigate('/technician');
-    } catch (err) {
-      setError(getErrorMessage(err, 'Registration failed'));
+    } catch (err: unknown) {
+      const msg = (err as { safeMessage?: string })?.safeMessage ?? getErrorMessage(err, 'Registration failed');
+      setError(typeof msg === 'string' ? msg : 'Registration failed');
     } finally {
       setLoading(false);
     }

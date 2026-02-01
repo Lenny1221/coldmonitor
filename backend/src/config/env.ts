@@ -6,7 +6,12 @@ export const config = {
   // Server
   port: parseInt(process.env.PORT || '3001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  // Comma-separated voor meerdere origins (bv. lokaal + Vercel)
+  frontendUrls: (process.env.FRONTEND_URL || 'http://localhost:5173')
+    .split(',')
+    .map((u) => u.trim())
+    .filter(Boolean),
+  frontendUrl: (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0]?.trim() || 'http://localhost:5173',
 
   // JWT
   jwtSecret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',

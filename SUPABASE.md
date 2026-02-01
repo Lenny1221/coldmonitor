@@ -6,6 +6,8 @@ Handleiding om de webapplicatie en app te draaien op Supabase Postgres (in plaat
 
 ## Overzicht
 
+> Zie **[LOCAL_AND_CLOUD.md](./LOCAL_AND_CLOUD.md)** voor een korte handleiding om lokaal te werken én tegelijk de cloud te gebruiken.
+
 | Component | Lokaal | Cloud |
 |-----------|--------|-------|
 | Database | PostgreSQL lokaal | **Supabase Postgres** |
@@ -177,6 +179,7 @@ De app praat dan met je cloud-backend in plaats van localhost.
 
 ### CORS errors
 - Controleer of `FRONTEND_URL` exact overeenkomt (inclusief https, geen trailing slash)
+- Meerdere origins: `FRONTEND_URL="https://coldmonitor.vercel.app,http://localhost:5173"` (comma-separated)
 
 ### Migraties falen
 - Gebruik de **directe** connection string (poort 5432) voor `prisma migrate`

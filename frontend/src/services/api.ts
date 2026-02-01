@@ -6,15 +6,18 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 /** Safely extract a displayable string from API error (avoids React error #31) */
 export function getErrorMessage(err: unknown, fallback: string): string {
   if (!err || typeof err !== 'object') return fallback;
-  const data = (err as { response?: { data?: unknown } }).response?.data;
-  if (!data || typeof data !== 'object') return fallback;
-  const d = data as Record<string, unknown>;
-  const errVal = d.error;
-  const msgVal = d.message;
-  if (typeof errVal === 'string') return errVal;
-  if (typeof msgVal === 'string') return msgVal;
-  if (errVal && typeof errVal === 'object' && typeof (errVal as { message?: string }).message === 'string') return (errVal as { message: string }).message;
-  if (msgVal && typeof msgVal === 'object' && typeof (msgVal as { message?: string }).message === 'string') return (msgVal as { message: string }).message;
+  const ax = err as { response?: { data?: unknown }; message?: string };
+  const data = ax.response?.data;
+  if (data && typeof data === 'object') {
+    const d = data as Record<string, unknown>;
+    const errVal = d.error;
+    const msgVal = d.message;
+    if (typeof errVal === 'string') return errVal;
+    if (typeof msgVal === 'string') return msgVal;
+    if (errVal && typeof errVal === 'object' && typeof (errVal as { message?: string }).message === 'string') return (errVal as { message: string }).message;
+    if (msgVal && typeof msgVal === 'object' && typeof (msgVal as { message?: string }).message === 'string') return (msgVal as { message: string }).message;
+  }
+  if (typeof ax.message === 'string') return ax.message;
   return fallback;
 }
 
@@ -111,6 +114,9 @@ api.interceptors.response.use(
         }
       }
     }
+
+    // Altijd een veilige string voor UI (voorkomt React error #31 in cloud)
+    (error as { safeMessage?: string }).safeMessage = getErrorMessage(error, 'Er is iets misgegaan');
 
     return Promise.reject(error);
   }

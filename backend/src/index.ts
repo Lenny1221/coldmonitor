@@ -33,10 +33,14 @@ const PORT = config.port;
 // Trust proxy for rate limiting
 app.set('trust proxy', 1);
 
-// CORS
+// CORS - ondersteunt meerdere origins (lokaal + cloud)
 app.use(
   cors({
-    origin: config.frontendUrl,
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (config.frontendUrls.includes(origin)) return cb(null, true);
+      cb(null, false);
+    },
     credentials: true,
   })
 );
