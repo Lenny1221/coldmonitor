@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { techniciansApi } from '../services/api';
+import { techniciansApi, getErrorMessage } from '../services/api';
 import { MagnifyingGlassIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 
 type RegisterType = 'customer' | 'technician';
@@ -69,9 +69,8 @@ const Login: React.FC = () => {
     try {
       await login(email, password);
       navigate('/dashboard');
-    } catch (err: any) {
-      const msg = err.response?.data?.error ?? err.response?.data?.message;
-      setError(typeof msg === 'string' ? msg : 'Login failed');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Login failed'));
     } finally {
       setLoading(false);
     }
@@ -96,9 +95,8 @@ const Login: React.FC = () => {
     try {
       await registerCustomer(data);
       navigate('/dashboard');
-    } catch (err: any) {
-      const msg = err.response?.data?.error ?? err.response?.data?.message;
-      setError(typeof msg === 'string' ? msg : 'Registration failed');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Registration failed'));
     } finally {
       setLoading(false);
     }
@@ -121,9 +119,8 @@ const Login: React.FC = () => {
     try {
       await registerTechnician(data);
       navigate('/technician');
-    } catch (err: any) {
-      const msg = err.response?.data?.error ?? err.response?.data?.message;
-      setError(typeof msg === 'string' ? msg : 'Registration failed');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Registration failed'));
     } finally {
       setLoading(false);
     }
@@ -145,7 +142,7 @@ const Login: React.FC = () => {
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
             {error && (
               <div className="rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-800">{error}</div>
+                <div className="text-sm text-red-800">{typeof error === 'string' ? error : 'Er is iets misgegaan'}</div>
               </div>
             )}
             <div className="rounded-md shadow-sm -space-y-px">
@@ -241,7 +238,7 @@ const Login: React.FC = () => {
 
             {error && (
               <div className="rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-800">{error}</div>
+                <div className="text-sm text-red-800">{typeof error === 'string' ? error : 'Er is iets misgegaan'}</div>
               </div>
             )}
 

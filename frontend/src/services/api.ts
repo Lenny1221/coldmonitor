@@ -3,6 +3,21 @@ import Cookies from 'js-cookie';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+/** Safely extract a displayable string from API error (avoids React error #31) */
+export function getErrorMessage(err: unknown, fallback: string): string {
+  if (!err || typeof err !== 'object') return fallback;
+  const data = (err as { response?: { data?: unknown } }).response?.data;
+  if (!data || typeof data !== 'object') return fallback;
+  const d = data as Record<string, unknown>;
+  const errVal = d.error;
+  const msgVal = d.message;
+  if (typeof errVal === 'string') return errVal;
+  if (typeof msgVal === 'string') return msgVal;
+  if (errVal && typeof errVal === 'object' && typeof (errVal as { message?: string }).message === 'string') return (errVal as { message: string }).message;
+  if (msgVal && typeof msgVal === 'object' && typeof (msgVal as { message?: string }).message === 'string') return (msgVal as { message: string }).message;
+  return fallback;
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

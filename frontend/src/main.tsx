@@ -20,7 +20,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
       return (
         <div style={{ padding: '2rem', fontFamily: 'system-ui', maxWidth: '600px', margin: '2rem auto' }}>
           <h1 style={{ color: '#b91c1c', marginBottom: '1rem' }}>Er is iets misgegaan</h1>
-          <p style={{ color: '#374151', marginBottom: '1rem' }}>{this.state.error}</p>
+          <p style={{ color: '#374151', marginBottom: '1rem' }}>{typeof this.state.error === 'string' ? this.state.error : 'Onbekende fout'}</p>
           <button
             type="button"
             onClick={() => window.location.reload()}
