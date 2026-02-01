@@ -5,6 +5,7 @@
 #include <Preferences.h>
 #include "config.h"
 #include "logger.h"
+#include "sensors.h"
 #include "max31865_driver.h"
 #include "rs485_modbus.h"
 #include "data_buffer.h"
@@ -17,6 +18,7 @@
 // Global objects
 ConfigManager config;
 Logger logger;
+Sensors sensors;
 MAX31865Driver tempSensor;
 RS485Modbus modbus;
 DataBuffer dataBuffer;
@@ -82,9 +84,16 @@ void setup() {
   // Initialize components
   logger.info("Initializing hardware...");
   
-  // Initialize MAX31865 temperature sensor
+  // BMP180 (I²C) + DHT11 + deurstatus
+  if (sensors.init()) {
+    logger.info("Sensors (BMP180, DHT11, door) initialized");
+  } else {
+    logger.warn("Sensors init failed, falling back to MAX31865");
+  }
+  
+  // MAX31865 (SPI) - optioneel, alleen als geen nieuwe sensoren
   if (!tempSensor.init(config.getSPIConfig())) {
-    logger.error("MAX31865 initialization failed!");
+    logger.debug("MAX31865 not used (optional)");
   } else {
     logger.info("MAX31865 initialized");
   }
@@ -202,40 +211,43 @@ void loop() {
 void sensorTask(void *parameter) {
   logger.info("Sensor task started");
   
-  SensorReading reading;
   unsigned long lastReading = 0;
-  unsigned long interval = config.getReadingInterval() * 1000; // Convert to ms
+  unsigned long interval = config.getReadingInterval() * 1000; // ms
   
   while (true) {
     unsigned long now = millis();
     
     if (now - lastReading >= interval) {
-      // Read temperature from MAX31865
-      reading.temperature = tempSensor.readTemperature();
-      reading.timestamp = now;
-      reading.sensorId = 0;
-      reading.valid = tempSensor.isValid();
+      SensorData data = sensors.read();
       
-      if (reading.valid) {
-        logger.debug("Temperature: " + String(reading.temperature, 2) + "°C");
+      // Fallback naar MAX31865 als nieuwe sensoren falen
+      if (!data.valid && tempSensor.isValid()) {
+        data.temperature = tempSensor.readTemperature();
+        data.valid = true;
+      }
+      
+      if (data.valid) {
+        logger.debug("Temp: " + String(data.temperature, 2) + "°C, Hum: " + 
+                     String(data.humidity, 1) + "%, Door: " + (data.doorOpen ? "open" : "closed"));
         
-        // Create data packet
         JsonDocument doc;
         doc["deviceId"] = config.getDeviceSerial();
-        doc["temperature"] = reading.temperature;
-        doc["timestamp"] = reading.timestamp;
-        doc["sensorId"] = reading.sensorId;
+        doc["temperature"] = round(data.temperature * 10) / 10.0;  // 1 decimaal
+        doc["humidity"] = round(data.humidity * 10) / 10.0;
+        doc["doorStatus"] = data.doorOpen;
+        doc["powerStatus"] = true;  // Stroom OK (geen detectie nu)
         doc["batteryLevel"] = batteryMonitor.getPercentage();
         doc["batteryVoltage"] = batteryMonitor.getVoltage();
+        doc["timestamp"] = now;
+        if (data.pressure > 0) doc["pressure"] = round(data.pressure * 10) / 10.0;
         
-        // Add to buffer
         String jsonData;
         serializeJson(doc, jsonData);
         dataBuffer.add(jsonData);
         
-        logger.debug("Reading buffered: " + jsonData);
+        logger.debug("Reading buffered");
       } else {
-        logger.warn("Invalid temperature reading!");
+        logger.warn("No valid sensor reading!");
       }
       
       lastReading = now;

@@ -26,7 +26,9 @@ import {
   UserGroupIcon,
   CpuChipIcon,
   LinkIcon,
+  PlusCircleIcon,
 } from '@heroicons/react/24/outline';
+import { AddLoggerModal } from '../components/AddLoggerModal';
 
 type TimeRange = '24h' | '7d' | '30d';
 
@@ -41,6 +43,7 @@ const ColdCellDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [showAddLogger, setShowAddLogger] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -233,14 +236,23 @@ const ColdCellDetail: React.FC = () => {
         </div>
       )}
 
-      {/* Technicus: toestellen in deze cel */}
-      {isTechnician && devices.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+      {/* Loggers in deze cel */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
             <CpuChipIcon className="h-6 w-6 mr-2 text-gray-600" />
-            Toestellen in deze cel
+            Loggers in deze cel
           </h2>
-          <div className="overflow-x-auto">
+          <button
+            onClick={() => setShowAddLogger(true)}
+            className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <PlusCircleIcon className="h-5 w-5 mr-2" />
+            Logger toevoegen
+          </button>
+        </div>
+        {devices.length > 0 ? (
+          <div className="overflow-x-auto table-scroll">
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr>
@@ -276,49 +288,60 @@ const ColdCellDetail: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-lg border-2 border-dashed border-gray-200 p-8 text-center">
+            <CpuChipIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <p className="mt-2 text-sm text-gray-600">Nog geen loggers gekoppeld.</p>
+            <p className="text-xs text-gray-500 mt-1">Klik op &quot;Logger toevoegen&quot; om je eerste logger te koppelen.</p>
+          </div>
+        )}
+      </div>
+
+      {showAddLogger && (
+        <AddLoggerModal
+          coldCellId={id!}
+          coldCellName={coldCell.name}
+          onClose={() => setShowAddLogger(false)}
+          onSuccess={() => {
+            fetchColdCell();
+          }}
+        />
       )}
 
-      {isTechnician && devices.length === 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="text-amber-800 text-sm">Geen toestellen gekoppeld aan deze cel.</p>
-        </div>
-      )}
-
-      {/* Huidige status: temperatuur, humidity, deur, stroom */}
+      {/* Huidige status: alleen sensoren die data hebben, stroom altijd Actief */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Huidige status</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center text-gray-600 mb-1">
-              <FireIcon className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium">Temperatuur</span>
+          {latestReading?.temperature != null && (
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center text-gray-600 mb-1">
+                <FireIcon className="h-5 w-5 mr-2" />
+                <span className="text-sm font-medium">Temperatuur</span>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {Number(latestReading.temperature).toFixed(1)} °C
+              </div>
             </div>
-            <div className="text-2xl font-bold text-gray-900">
-              {latestReading?.temperature != null
-                ? `${Number(latestReading.temperature).toFixed(1)} °C`
-                : '—'}
+          )}
+          {latestReading?.humidity != null && (
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center text-gray-600 mb-1">
+                <CloudIcon className="h-5 w-5 mr-2" />
+                <span className="text-sm font-medium">Luchtvochtigheid</span>
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {Number(latestReading.humidity).toFixed(0)} %
+              </div>
             </div>
-          </div>
-          <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center text-gray-600 mb-1">
-              <CloudIcon className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium">Luchtvochtigheid</span>
-            </div>
-            <div className="text-2xl font-bold text-gray-900">
-              {latestReading?.humidity != null
-                ? `${Number(latestReading.humidity).toFixed(0)} %`
-                : '—'}
-            </div>
-          </div>
-          <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center text-gray-600 mb-1">
-              <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium">Deur</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {latestReading?.doorStatus != null ? (
-                latestReading.doorStatus ? (
+          )}
+          {latestReading?.doorStatus != null && (
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center text-gray-600 mb-1">
+                <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
+                <span className="text-sm font-medium">Deur</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {latestReading.doorStatus ? (
                   <>
                     <span className="text-amber-600 font-semibold">Open</span>
                     <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
@@ -328,33 +351,18 @@ const ColdCellDetail: React.FC = () => {
                     <span className="text-green-600 font-semibold">Gesloten</span>
                     <CheckCircleIcon className="h-5 w-5 text-green-500" />
                   </>
-                )
-              ) : (
-                <span className="text-gray-400">—</span>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center text-gray-600 mb-1">
               <BoltIcon className="h-5 w-5 mr-2" />
               <span className="text-sm font-medium">Stroom</span>
             </div>
             <div className="flex items-center gap-2">
-              {latestReading?.powerStatus != null ? (
-                latestReading.powerStatus ? (
-                  <>
-                    <span className="text-green-600 font-semibold">Aangesloten</span>
-                    <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                  </>
-                ) : (
-                  <>
-                    <span className="text-red-600 font-semibold">Uit</span>
-                    <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />
-                  </>
-                )
-              ) : (
-                <span className="text-gray-400">—</span>
-              )}
+              <span className="text-green-600 font-semibold">Actief</span>
+              <CheckCircleIcon className="h-5 w-5 text-green-500" />
             </div>
           </div>
         </div>

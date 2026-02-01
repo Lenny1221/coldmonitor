@@ -17,24 +17,30 @@ const deviceSchema = z.object({
  * POST /devices
  * Create a new device with API key
  */
-router.post('/', requireAuth, requireRole('CUSTOMER'), async (req: AuthRequest, res, next) => {
+router.post('/', requireAuth, requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'), async (req: AuthRequest, res, next) => {
   try {
     const data = deviceSchema.parse(req.body);
 
-    // Verify cold cell ownership
     const coldCell = await prisma.coldCell.findUnique({
       where: { id: data.coldCellId },
-      include: {
-        location: true,
-      },
+      include: { location: true },
     });
 
     if (!coldCell) {
       throw new CustomError('Cold cell not found', 404, 'COLD_CELL_NOT_FOUND');
     }
 
-    if (coldCell.location.customerId !== req.customerId) {
+    // Klant: eigen cold cells | Technicus: gekoppelde klanten | Admin: alle
+    if (req.userRole === 'CUSTOMER' && coldCell.location.customerId !== req.customerId) {
       throw new CustomError('Access denied', 403, 'ACCESS_DENIED');
+    }
+    if (req.userRole === 'TECHNICIAN') {
+      const linked = await prisma.customer.findFirst({
+        where: { id: coldCell.location.customerId, linkedTechnicianId: req.technicianId },
+      });
+      if (!linked) {
+        throw new CustomError('Access denied – alleen cold cells van gekoppelde klanten', 403, 'ACCESS_DENIED');
+      }
     }
 
     // Check if serial number already exists

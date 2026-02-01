@@ -4,7 +4,10 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 
 ## Features
 
-- ✅ **PT1000 RTD Temperature Sensing** via MAX31865 over SPI
+- ✅ **BMP180** (I²C) temperatuur + luchtdruk
+- ✅ **DHT11** temperatuur + luchtvochtigheid
+- ✅ **Deurstatus** (droog contact, GPIO 25)
+- ✅ **PT1000 RTD** (optioneel) via MAX31865 over SPI
 - ✅ **RS485/Modbus RTU** communication with refrigeration controllers
 - ✅ **Offline Data Buffering** using SPIFFS (up to 100 readings)
 - ✅ **WiFi Connectivity** with automatic reconnection
@@ -37,7 +40,27 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 
 ## Pin Configuration
 
-### SPI (MAX31865)
+### Sensoren (BMP180 + DHT11 + deurstatus)
+
+| Sensor | Verbinding | ESP32 GPIO |
+|--------|------------|------------|
+| **BMP180** (I²C) | VCC → 3V3 | - |
+| | GND → GND | - |
+| | SCL → **GPIO 22** | SCL |
+| | SDA → **GPIO 21** | SDA |
+| **DHT11** (digital) | VCC → 3V3 | - |
+| | GND → GND | - |
+| | DATA → **GPIO 27** | DATA (10kΩ pull-up naar 3V3 indien niet onboard) |
+| **Deurstatus** (droog contact) | COM → GND | - |
+| | NO (normally open) → **GPIO 25** | INPUT_PULLUP |
+
+**Deurstatus:**
+- `pinMode(25, INPUT_PULLUP)`
+- Contact gesloten (deur dicht) → GPIO leest **LOW**
+- Contact open (deur open) → GPIO leest **HIGH**
+- Tip: NC (normally closed) is fail-safe: kabelbreuk = “deur open” alarm
+
+### SPI (MAX31865) – optioneel
 - **CS Pin**: GPIO 5 (configurable)
 - **MOSI**: GPIO 23 (SPI default)
 - **MISO**: GPIO 19 (SPI default)
@@ -139,10 +162,12 @@ Format:
 {
   "deviceId": "ESP32-XXXXXX",
   "temperature": 4.5,
-  "timestamp": 1234567890,
-  "sensorId": 0,
+  "humidity": 65.2,
+  "doorStatus": false,
+  "powerStatus": true,
   "batteryLevel": 85,
-  "batteryVoltage": 3.8
+  "batteryVoltage": 3.8,
+  "timestamp": 1234567890
 }
 ```
 
