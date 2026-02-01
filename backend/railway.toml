@@ -3,8 +3,8 @@
 
 [build]
 # Prisma client genereren + TypeScript compileren
-buildCommand = "npm ci && npx prisma generate && npm run build"
+buildCommand = "npm ci && npx prisma@5.22.0 generate && npm run build"
 
 [deploy]
 # Migraties + server starten
-startCommand = "npx prisma migrate deploy && npm run start"
+startCommand = "npx prisma@5.22.0 migrate deploy && npm run start"

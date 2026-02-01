@@ -88,7 +88,7 @@ De tabellen worden aangemaakt in Supabase. Controleer in Supabase → **Table Ed
    - `PORT` = 3001 (of laat Railway de eigen PORT gebruiken)
 4. Railway stelt automatisch `NODE_ENV=production` in
 5. **Root Directory:** `backend`
-6. **Build Command:** `npm install && npx prisma generate`
+6. **Build Command:** `npm install && npx prisma generate && npm run build`
 7. **Start Command:** `npx prisma migrate deploy && npm run start`
 8. Na deploy: kopieer de public URL (bv. `https://jouw-backend.up.railway.app`)
 
@@ -98,7 +98,7 @@ De tabellen worden aangemaakt in Supabase. Controleer in Supabase → **Table Ed
 2. **New** → **Web Service**
 3. Verbind je GitHub repo
 4. **Root Directory:** `backend`
-5. **Build Command:** `npm install && npx prisma generate`
+5. **Build Command:** `npm install && npx prisma generate && npm run build`
 6. **Start Command:** `npx prisma migrate deploy && npm run start`
 7. **Environment:** voeg `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL` toe
 8. Na deploy: kopieer de URL (bv. `https://jouw-backend.onrender.com`)
@@ -181,3 +181,10 @@ De app praat dan met je cloud-backend in plaats van localhost.
 ### Migraties falen
 - Gebruik de **directe** connection string (poort 5432) voor `prisma migrate`
 - De pooled string (6543) kan problemen geven bij migraties
+
+### Railway crasht direct na deploy
+1. **Build Command moet `npm run build` bevatten** – TypeScript moet gecompileerd worden
+2. **Root Directory** moet op `backend` staan (niet de repo-root)
+3. **Variables** controleren: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL` moeten gezet zijn
+4. Logs bekijken: Railway Dashboard → je service → **Deployments** → klik op deployment → **View Logs**
+5. Er staat een `railway.toml` in de backend-map; bij Root Directory `backend` wordt die automatisch gebruikt

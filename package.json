@@ -4,7 +4,7 @@
   "description": "Remote monitoring platform for refrigeration and freezer cells",
   "main": "index.js",
   "scripts": {
-    "start": "cd backend && npx prisma migrate deploy && node dist/index.js",
+    "start": "cd backend && npx prisma@5.22.0 migrate deploy && node dist/index.js",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "build:backend": "cd backend && npm run build",
