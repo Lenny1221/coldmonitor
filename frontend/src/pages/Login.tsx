@@ -70,7 +70,8 @@ const Login: React.FC = () => {
       await login(email, password);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed');
+      const msg = err.response?.data?.error ?? err.response?.data?.message;
+      setError(typeof msg === 'string' ? msg : 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -96,7 +97,8 @@ const Login: React.FC = () => {
       await registerCustomer(data);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed');
+      const msg = err.response?.data?.error ?? err.response?.data?.message;
+      setError(typeof msg === 'string' ? msg : 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -120,7 +122,8 @@ const Login: React.FC = () => {
       await registerTechnician(data);
       navigate('/technician');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed');
+      const msg = err.response?.data?.error ?? err.response?.data?.message;
+      setError(typeof msg === 'string' ? msg : 'Registration failed');
     } finally {
       setLoading(false);
     }

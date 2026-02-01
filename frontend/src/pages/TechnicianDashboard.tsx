@@ -24,7 +24,8 @@ const TechnicianDashboard: React.FC = () => {
       const response = await dashboardApi.getTechnicianDashboard();
       setData(response);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load dashboard');
+      const msg = err.response?.data?.error ?? err.response?.data?.message;
+      setError(typeof msg === 'string' ? msg : 'Failed to load dashboard');
     } finally {
       setLoading(false);
     }

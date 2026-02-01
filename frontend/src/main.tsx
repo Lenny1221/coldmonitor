@@ -7,7 +7,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   state = { hasError: false, error: null as string | null }
 
   static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error: error.message }
+    const msg = error?.message
+    return { hasError: true, error: typeof msg === 'string' ? msg : String(error) }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {

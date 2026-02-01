@@ -89,7 +89,8 @@ const Dashboard: React.FC = () => {
       }
       setData(response);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load dashboard');
+      const msg = err.response?.data?.error ?? err.response?.data?.message;
+        setError(typeof msg === 'string' ? msg : 'Failed to load dashboard');
     } finally {
       setLoading(false);
     }
