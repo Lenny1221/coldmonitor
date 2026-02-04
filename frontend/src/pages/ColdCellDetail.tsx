@@ -62,6 +62,17 @@ const ColdCellDetail: React.FC = () => {
     }
   }, [id, timeRange]);
 
+  // Automatisch vernieuwen elke 20 seconden
+  useEffect(() => {
+    if (!id) return;
+    const intervalId = setInterval(() => {
+      fetchColdCell();
+      fetchReadings();
+      fetchAlerts();
+    }, 20000);
+    return () => clearInterval(intervalId);
+  }, [id]);
+
   const fetchColdCell = async () => {
     setErrorStatus(null);
     try {
