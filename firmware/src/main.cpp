@@ -1,5 +1,11 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
+
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
 #include <SPIFFS.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
@@ -60,6 +66,8 @@ void setupOTA();
 void deepSleepIfNeeded();
 
 void setup() {
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);  // Brownout detector uit (voorkomt reset bij WiFi/AP stroompiek)
+  
   Serial.begin(115200);
   delay(1000);
   
@@ -80,6 +88,9 @@ void setup() {
     config.save();
   }
   logger.info("Configuration loaded");
+  
+  // WiFi EERST – AP "ColdMonitor-Setup" verschijnt direct (sensors kunnen I²C blokkeren)
+  setupWiFi();
   
   // Initialize components
   logger.info("Initializing hardware...");
@@ -118,9 +129,6 @@ void setup() {
   // Initialize power manager
   powerManager.init();
   logger.info("Power manager initialized");
-  
-  // Setup WiFi
-  setupWiFi();
   
   // Setup OTA
   setupOTA();
@@ -183,15 +191,17 @@ void loop() {
     
     logger.info("Battery: " + String(voltage, 2) + "V (" + String(percentage) + "%)");
     
-    // Low battery warning
-    if (percentage < 20) {
-      logger.warn("Low battery warning!");
-    }
-    
-    // Critical battery - enter deep sleep
-    if (percentage < 10) {
-      logger.error("Critical battery! Entering deep sleep...");
-      powerManager.enterDeepSleep(3600); // Sleep for 1 hour
+    // Laag voltage negeren als er geen batterij is aangesloten (USB-voeding)
+    if (voltage < 0.5f) {
+      // ~0V = geen batterijcircuit, skip deep sleep
+    } else {
+      if (percentage < 20) {
+        logger.warn("Low battery warning!");
+      }
+      if (percentage < 10) {
+        logger.error("Critical battery! Entering deep sleep...");
+        powerManager.enterDeepSleep(3600);
+      }
     }
     
     lastBatteryCheck = now;
@@ -230,7 +240,7 @@ void sensorTask(void *parameter) {
         logger.debug("Temp: " + String(data.temperature, 2) + "°C, Hum: " + 
                      String(data.humidity, 1) + "%, Door: " + (data.doorOpen ? "open" : "closed"));
         
-        JsonDocument doc;
+        DynamicJsonDocument doc(512);
         doc["deviceId"] = config.getDeviceSerial();
         doc["temperature"] = round(data.temperature * 10) / 10.0;  // 1 decimaal
         doc["humidity"] = round(data.humidity * 10) / 10.0;
@@ -307,17 +317,18 @@ void uploadTask(void *parameter) {
     
     // Check if WiFi is connected
     if (WiFi.status() == WL_CONNECTED) {
-      if (now - lastUpload >= interval) {
-        // Upload buffered data
-        int count = dataBuffer.getCount();
-        
+      int count = dataBuffer.getCount();
+      // Eerste upload direct zodra er data is (lastUpload==0); daarna volgens interval
+      bool shouldUpload = (lastUpload == 0 && count > 0) || (lastUpload != 0 && (now - lastUpload >= interval));
+
+      if (shouldUpload) {
         if (count > 0) {
           logger.info("Uploading " + String(count) + " readings...");
-          
+
           int uploaded = 0;
           for (int i = 0; i < count; i++) {
             String data = dataBuffer.get(i);
-            
+
             if (apiClient.uploadReading(data)) {
               uploaded++;
               logger.debug("Uploaded: " + data);
@@ -325,17 +336,15 @@ void uploadTask(void *parameter) {
               logger.warn("Upload failed for: " + data);
               break; // Stop on first failure
             }
-            
+
             delay(100); // Small delay between uploads
           }
-          
-          // Remove uploaded items
+
           if (uploaded > 0) {
             dataBuffer.remove(uploaded);
             logger.info("Successfully uploaded " + String(uploaded) + " readings");
           }
         }
-        
         lastUpload = now;
       }
     } else {
@@ -346,15 +355,48 @@ void uploadTask(void *parameter) {
   }
 }
 
+static void onWifiParamsSaved(const char* apiUrl, const char* apiKey, const char* deviceSerial) {
+  config.setAPIUrl(apiUrl);
+  config.setAPIKey(apiKey);
+  config.setDeviceSerial(deviceSerial);
+  config.save();
+  apiClient.setAPIUrl(apiUrl);
+  apiClient.setAPIKey(apiKey);
+  logger.info("API URL, key en serienummer opgeslagen");
+}
+
 void setupWiFi() {
   wifiManager.setConfigPortalTimeout(180); // 3 minutes
   
-  if (!wifiManager.autoConnect("ColdMonitor-Setup")) {
-    logger.error("WiFi connection failed!");
-    logger.info("Entering AP mode for configuration");
+  // API URL + API key + serienummer in config portal
+  wifiManager.setupColdMonitorParams(
+    config.getAPIUrl().c_str(),
+    config.getAPIKey().c_str(),
+    config.getDeviceSerial().c_str()
+  );
+  wifiManager.setOnSaveParamsCallback(onWifiParamsSaved);
+  
+  bool needConfigPortal = (config.getAPIKey().length() == 0 || config.getDeviceSerial() == "ESP32-XXXXXX");
+  bool connected = false;
+  
+  if (needConfigPortal) {
+    logger.info("Geen API key - open config portal (ColdMonitor-Setup)");
+    connected = wifiManager.startConfigPortal("ColdMonitor-Setup");
   } else {
+    connected = wifiManager.autoConnect("ColdMonitor-Setup");
+    if (!connected) {
+      logger.info("WiFi timeout - open config portal");
+      connected = wifiManager.startConfigPortal("ColdMonitor-Setup");
+    }
+  }
+  
+  if (connected) {
     logger.info("WiFi connected: " + WiFi.SSID());
-    logger.info("IP address: " + WiFi.localIP().toString());
+    logger.info("IP: " + WiFi.localIP().toString());
+    apiClient.setAPIUrl(config.getAPIUrl());
+    apiClient.setAPIKey(config.getAPIKey());
+  } else {
+    logger.error("WiFi setup mislukt");
   }
 }
 

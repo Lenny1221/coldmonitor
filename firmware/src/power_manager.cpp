@@ -1,5 +1,6 @@
 #include "power_manager.h"
 #include "logger.h"
+#include <WiFi.h>
 #include <esp_sleep.h>
 
 extern Logger logger;

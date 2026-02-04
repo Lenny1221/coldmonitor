@@ -129,15 +129,16 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
                   </h3>
                   <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
                     <li>Sluit de stroom aan op de logger.</li>
-                    <li>Wacht tot de logger een WiFi-netwerk aanmaakt (bijv. <strong>ColdMonitor-Setup</strong>).</li>
+                    <li>Wacht tot het WiFi-netwerk <strong>ColdMonitor-Setup</strong> verschijnt.</li>
                     <li>Verbind je telefoon/laptop met dat netwerk.</li>
-                    <li>Open de configuratiepagina en voer in:
+                    <li>De configuratiepagina opent automatisch. Voer in:
                       <ul className="mt-2 ml-4 space-y-1">
-                        <li><strong>API URL:</strong> <code className="text-xs bg-blue-100 px-1 rounded">{API_BASE_URL}</code></li>
+                        <li><strong>Serienummer:</strong> <code className="text-xs bg-blue-100 px-1 rounded">{serialNumber}</code></li>
+                        <li><strong>API URL:</strong> <code className="text-xs bg-blue-100 px-1 rounded break-all">{API_BASE_URL}</code></li>
                         <li><strong>API key:</strong> <code className="text-xs bg-blue-100 px-1 rounded break-all">{apiKey}</code></li>
                       </ul>
                     </li>
-                    <li>Voer ook je WiFi-credentials in zodat de logger met het internet verbindt.</li>
+                    <li>Voer je WiFi-netwerk (SSID) en wachtwoord in en klik op Opslaan.</li>
                   </ol>
                 </div>
                 <p className="text-sm text-gray-600">
@@ -152,6 +153,9 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
                 <p className="text-center font-medium text-gray-900">Wachten op verbinding met logger</p>
                 <p className="mt-2 text-center text-sm text-gray-500">
                   Zorg dat de logger stroom heeft en WiFi correct is geconfigureerd.
+                </p>
+                <p className="mt-2 text-center text-sm text-gray-500">
+                  Dit kan 1–2 minuten duren (eerste meting wordt daarna direct verstuurd).
                 </p>
                 <p className="mt-4 text-xs text-gray-400">
                   Wacht tot je een groene melding ziet. Sluit dit venster niet.

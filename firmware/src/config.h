@@ -40,18 +40,19 @@ struct ModbusConfig {
   bool writeEnabled;
 };
 
+#define CONFIG_JSON_SIZE 2048
+
 class ConfigManager {
 private:
   Preferences preferences;
-  JsonDocument configDoc;
+  DynamicJsonDocument configDoc{CONFIG_JSON_SIZE};
   bool loaded;
-  
-  void setDefaults();
   
 public:
   ConfigManager();
   ~ConfigManager();
   
+  void setDefaults();
   bool load();
   bool save();
   void reset();

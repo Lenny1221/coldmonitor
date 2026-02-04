@@ -102,6 +102,13 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
    ```bash
    pio run -t upload
    ```
+   
+   **Upload faalt met "Failed to connect"?** PlatformIO kan Bluetooth kiezen i.p.v. USB:
+   - Sluit de ESP32 aan via een **USB-data kabel** (geen oplaad-only)
+   - Run `pio device list` en zoek de poort (bijv. `/dev/cu.usbserial-0001` of `/dev/cu.wchusbserial*`)
+   - Voeg in `platformio.ini` toe: `upload_port = /dev/cu.usbserial-0001` (pas aan)
+   - Of upload via `pio run -t upload --upload-port /dev/cu.usbserial-0001`
+   - Hou de **BOOT**-knop ingedrukt tijdens "Connecting..." indien nodig
 
 5. **Monitor serial output**:
    ```bash

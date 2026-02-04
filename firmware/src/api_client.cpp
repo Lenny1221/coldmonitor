@@ -32,7 +32,7 @@ bool APIClient::uploadReading(String jsonData) {
   }
   
   // Parse JSON to get serial number
-  JsonDocument doc;
+  DynamicJsonDocument doc(512);
   DeserializationError error = deserializeJson(doc, jsonData);
   
   if (error) {
