@@ -49,6 +49,10 @@ const ColdCellDetail: React.FC = () => {
     if (id) {
       fetchColdCell();
       fetchAlerts();
+    } else {
+      setLoading(false);
+      setColdCell(null);
+      setErrorStatus(null);
     }
   }, [id]);
 
@@ -129,22 +133,48 @@ const ColdCellDetail: React.FC = () => {
 
   if (!coldCell) {
     const isForbidden = errorStatus === 403;
+    const isUnauthorized = errorStatus === 401;
+    const isNotFound = errorStatus === 404;
+    let message = 'Cold cell niet gevonden. Controleer de link of ga terug.';
+    if (isForbidden) {
+      message = 'Geen toegang tot deze cold cell. Alleen de gekoppelde klant of technicus kan deze cel bekijken.';
+    } else if (isUnauthorized) {
+      message = 'Sessie verlopen. Log opnieuw in om door te gaan.';
+    } else if (isNotFound) {
+      message = 'Cold cell niet gevonden. De cel bestaat niet (meer) of de link is onjuist.';
+    } else if (errorStatus != null) {
+      message = 'Kon cold cell niet laden. Probeer later opnieuw of ga naar het overzicht.';
+    }
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-          <p className="text-red-800 font-medium">
-            {isForbidden
-              ? 'Geen toegang tot deze cold cell. Alleen de gekoppelde klant of technicus kan deze cel bekijken.'
-              : 'Cold cell niet gevonden. Controleer de link of ga terug.'}
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="mt-4 inline-flex items-center px-4 py-2 bg-gray-700 text-white text-sm font-medium rounded-md hover:bg-gray-800"
-          >
-            <ArrowLeftIcon className="h-5 w-5 mr-2" />
-            Terug
-          </button>
+          <p className="text-red-800 font-medium">{message}</p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center px-4 py-2 bg-gray-700 text-white text-sm font-medium rounded-md hover:bg-gray-800"
+            >
+              <ArrowLeftIcon className="h-5 w-5 mr-2" />
+              Terug
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/coldcells')}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+            >
+              Naar overzicht cold cells
+            </button>
+            {isUnauthorized && (
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50"
+              >
+                Naar inloggen
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );

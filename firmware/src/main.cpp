@@ -191,9 +191,10 @@ void loop() {
     
     logger.info("Battery: " + String(voltage, 2) + "V (" + String(percentage) + "%)");
     
-    // Laag voltage negeren als er geen batterij is aangesloten (USB-voeding)
-    if (voltage < 0.5f) {
-      // ~0V = geen batterijcircuit, skip deep sleep
+    // Geen deep sleep bij (vrijwel) geen spanning = USB-voeding, geen batterij aangesloten
+    // Drempel 1.0V: ADC-ruis zonder batterij kan ~0.5V zijn, echte lege batterij is ~3.0V
+    if (voltage < 1.0f) {
+      // USB / geen batterij: nooit deep sleep vanwege "batterij leeg"
     } else {
       if (percentage < 20) {
         logger.warn("Low battery warning!");
