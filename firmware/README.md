@@ -142,8 +142,8 @@ In de ColdMonitor-app (bij “Logger toevoegen”) kun je ook twee QR-codes tone
 ### Configuration Parameters
 
 - **Device Serial**: Unique identifier for the device
-- **Reading Interval**: Seconds between temperature readings (default: 60s)
-- **Upload Interval**: Seconds between data uploads (default: 300s)
+- **Reading Interval**: Seconds between temperature readings (default: 20s)
+- **Upload Interval**: Seconds between data uploads (default: 20s, elke lezing naar Supabase)
 - **API URL**: Backend API endpoint
 - **API Key**: Device authentication key
 - **Modbus Enabled**: Enable/disable RS485 communication
@@ -238,6 +238,13 @@ To update:
 - Verify API key is correct
 - Check serial logs for HTTP errors
 - Ensure backend is accessible
+
+**Upload failed: -2 (send header failed)**  
+De verbinding met de backend faalt vóór of tijdens het sturen van de request. Controleer:
+- **API URL** in de config: moet exact overeenkomen met je backend (bijv. `https://xxx.railway.app/api`), inclusief `https://` en `/api`.
+- **Backend online**: open in de browser `https://JOUW-RAILWAY-URL/health` – moet `{"status":"ok"}` geven.
+- **WiFi**: signaalsterkte en of het netwerk internet toestaat.
+- **HTTPS**: als de backend alleen HTTPS accepteert, gebruik dan een URL die met `https://` begint.
 
 ### Modbus Communication Issues
 

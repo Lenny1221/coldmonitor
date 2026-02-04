@@ -48,15 +48,27 @@ const Dashboard: React.FC = () => {
     }
   }, [user]);
 
-  // Automatisch vernieuwen elke 20 seconden (zelfde ritme als ESP32) zodat temperatuur/status actueel blijft
+  // Automatisch vernieuwen elke 20 seconden (zelfde ritme als ESP32)
   useEffect(() => {
-    if (user?.role !== 'CUSTOMER' || !data) return;
+    if (user?.role !== 'CUSTOMER') return;
     const intervalId = setInterval(() => {
-      fetchDashboard(true); // silent: geen loading-spinner
+      fetchDashboard(true);
       fetchPendingInvitations();
     }, 20000);
     return () => clearInterval(intervalId);
-  }, [user?.role, data]);
+  }, [user?.role]);
+
+  // Bij terugkeer naar tab direct verversen (browsers vertragen timers in achtergrond tot ~10 min)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && user?.role === 'CUSTOMER') {
+        fetchDashboard(true);
+        fetchPendingInvitations();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [user?.role]);
 
   const fetchPendingInvitations = async () => {
     try {

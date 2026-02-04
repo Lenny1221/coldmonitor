@@ -11,8 +11,8 @@
 
 // Default configuration values
 #define DEFAULT_DEVICE_SERIAL "ESP32-XXXXXX"
-#define DEFAULT_READING_INTERVAL 60        // seconds
-#define DEFAULT_UPLOAD_INTERVAL 300        // seconds (5 minutes)
+#define DEFAULT_READING_INTERVAL 20        // seconds (zelfde ritme als ColdMonitor dashboard)
+#define DEFAULT_UPLOAD_INTERVAL 20         // seconds (elke lezing direct naar Supabase)
 #define DEFAULT_API_URL "http://localhost:3001/api"
 #define DEFAULT_API_KEY ""
 #define DEFAULT_MODBUS_ENABLED false

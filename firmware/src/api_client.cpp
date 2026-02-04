@@ -48,6 +48,8 @@ bool APIClient::uploadReading(String jsonData) {
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("x-device-key", apiKey);
+  http.setConnectTimeout(15000);  // 15 s verbinding
+  http.setTimeout(10000);        // 10 s antwoord
   
   int httpCode = http.POST(jsonData);
   
@@ -56,9 +58,22 @@ bool APIClient::uploadReading(String jsonData) {
   if (success) {
     logger.debug("Upload successful: " + String(httpCode));
   } else {
-    logger.warn("Upload failed: " + String(httpCode));
+    const char* errMsg = nullptr;
+    if (httpCode == -1) errMsg = "connection refused / DNS failed";
+    else if (httpCode == -2) errMsg = "send header failed (check URL, WiFi, backend online)";
+    else if (httpCode == -3) errMsg = "send payload failed";
+    else if (httpCode == -4) errMsg = "not connected";
+    else if (httpCode == -5) errMsg = "connection lost";
+    else if (httpCode == -11) errMsg = "timeout";
+    if (errMsg) {
+      logger.warn("Upload failed: " + String(httpCode) + " " + String(errMsg));
+    } else {
+      logger.warn("Upload failed: " + String(httpCode));
+    }
     String response = http.getString();
-    logger.debug("Response: " + response);
+    if (response.length() > 0) {
+      logger.debug("Response: " + response);
+    }
   }
   
   http.end();

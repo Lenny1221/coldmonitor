@@ -73,6 +73,19 @@ const ColdCellDetail: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [id]);
 
+  // Bij terugkeer naar tab direct verversen (browsers vertragen timers in achtergrond tot ~10 min)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && id) {
+        fetchColdCell();
+        fetchReadings();
+        fetchAlerts();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [id]);
+
   const fetchColdCell = async () => {
     setErrorStatus(null);
     try {
