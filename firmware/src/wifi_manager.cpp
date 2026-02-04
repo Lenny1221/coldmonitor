@@ -1,7 +1,48 @@
 #include "wifi_manager.h"
 #include "logger.h"
+#include <qrcode.h>
 
 extern Logger logger;
+
+// Bouwt HTML voor QR-code (WIFI-connectie) + pre-fill script voor API-velden uit URL-params
+static String buildConfigPortalCustomHtml(const String& apName) {
+  String wifiPayload = "WIFI:T:nopass;S:" + apName + ";;";
+  const char* payload = wifiPayload.c_str();
+
+  // QRCode-buffer (version 3 = 29x29 modules)
+  #define QR_VERSION 3
+  uint8_t qrcodeData[qrcode_getBufferSize(QR_VERSION)];
+  QRCode qrcode;
+  qrcode_initText(&qrcode, qrcodeData, QR_VERSION, ECC_LOW, payload);
+
+  const int size = qrcode.size;
+  const int cellPx = 3;
+
+  String html;
+  html.reserve(3200);
+  html += "<div style='margin:12px 0;text-align:center'>";
+  html += "<p style='margin:4px 0;font-weight:bold'>Scan met je telefoon</p>";
+  html += "<p style='margin:0 0 8px 0;font-size:12px'>Verbinden met " + apName + " en config openen</p>";
+  html += "<table style='border-collapse:collapse;margin:0 auto;display:inline-block' cellspacing='0' cellpadding='0'><tbody>";
+  for (int y = 0; y < size; y++) {
+    html += "<tr>";
+    for (int x = 0; x < size; x++) {
+      bool black = qrcode_getModule(&qrcode, x, y);
+      html += "<td style='width:" + String(cellPx) + "px;height:" + String(cellPx) + "px;background:";
+      html += black ? "#000" : "#fff";
+      html += "'></td>";
+    }
+    html += "</tr>";
+  }
+  html += "</tbody></table></div>";
+  // Pre-fill API URL, API key en serial uit query string (voor link/QR uit app)
+  html += "<script>(function(){var s=window.location.search;if(!s)return;var p=new URLSearchParams(s);"
+          "var u=p.get('apiurl');if(u){var e=document.querySelector('[name=\"apiurl\"]');if(e)e.value=decodeURIComponent(u);}"
+          "var k=p.get('apikey');if(k){var e=document.querySelector('[name=\"apikey\"]');if(e)e.value=decodeURIComponent(k);}"
+          "var r=p.get('serial');if(r){var e=document.querySelector('[name=\"serial\"]');if(e)e.value=decodeURIComponent(r);}"
+          "})();</script>";
+  return html;
+}
 
 static WiFiManagerWrapper* s_wifiWrapper = nullptr;
 
@@ -106,6 +147,10 @@ void WiFiManagerWrapper::setOnSaveParamsCallback(void (*cb)(const char* apiUrl, 
 
 bool WiFiManagerWrapper::startConfigPortal(String apName) {
   logger.info("Starting config portal: " + apName);
+  // QR-code (WIFI-connectie) + pre-fill script voor API-velden uit URL
+  static String customHtml;
+  customHtml = buildConfigPortalCustomHtml(apName);
+  wifiManager.setCustomBodyFooter(customHtml.c_str());
   WiFi.mode(WIFI_AP_STA);  // Zorg dat AP kan worden aangemaakt
   if (!wifiManager.startConfigPortal(apName.c_str())) {
     logger.error("Config portal failed");

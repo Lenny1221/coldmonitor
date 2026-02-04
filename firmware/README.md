@@ -129,6 +129,16 @@ Connect to this AP and configure:
 - Reading intervals
 - Modbus settings (if enabled)
 
+### Configuratie met QR-code (telefoon)
+
+Op de configuratiepagina (wanneer je verbonden bent met **ColdMonitor-Setup**) staat een **QR-code**. Scan die met je telefoon om:
+1. Automatisch te verbinden met het netwerk **ColdMonitor-Setup**
+2. De configuratiepagina te openen (API URL en API key staan al ingevuld)
+
+Je hoeft dan alleen nog je **WiFi-netwerk** te kiezen en het **wachtwoord** in te voeren.
+
+In de ColdMonitor-app (bij “Logger toevoegen”) kun je ook twee QR-codes tonen: de eerste om te verbinden met ColdMonitor-Setup, de tweede om de configpagina te openen met API-gegevens al ingevuld.
+
 ### Configuration Parameters
 
 - **Device Serial**: Unique identifier for the device

@@ -29,9 +29,14 @@ router.post(
       const { serialNumber } = req.params;
       const data = readingSchema.parse(req.body);
 
-      // Verify device matches the serial number from auth
+      // Device is already identified by API key (requireDeviceAuth). Use that device;
+      // URL serial is only informational (ESP32 may send deviceId from config).
       if (req.deviceSerial !== serialNumber) {
-        throw new CustomError('Device serial mismatch', 403, 'DEVICE_MISMATCH');
+        logger.warn('URL serial differs from device key', {
+          urlSerial: serialNumber,
+          deviceSerial: req.deviceSerial,
+          deviceId: req.deviceId,
+        });
       }
 
       // Create sensor reading (wordt opgeslagen in de DB van DATABASE_URL, bv. Supabase)

@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { XMarkIcon, SignalIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { QRCodeSVG } from 'qrcode.react';
 import { devicesApi, getErrorMessage } from '../services/api';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/+$/, '');
@@ -127,19 +128,41 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
                     <SignalIcon className="h-5 w-5 mr-2" />
                     WiFi-configuratie
                   </h3>
-                  <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
-                    <li>Sluit de stroom aan op de logger.</li>
-                    <li>Wacht tot het WiFi-netwerk <strong>ColdMonitor-Setup</strong> verschijnt.</li>
-                    <li>Verbind je telefoon/laptop met dat netwerk.</li>
-                    <li>De configuratiepagina opent automatisch. Voer in:
-                      <ul className="mt-2 ml-4 space-y-1">
-                        <li><strong>Serienummer:</strong> <code className="text-xs bg-blue-100 px-1 rounded">{serialNumber}</code></li>
-                        <li><strong>API URL:</strong> <code className="text-xs bg-blue-100 px-1 rounded break-all">{API_BASE_URL}</code></li>
-                        <li><strong>API key:</strong> <code className="text-xs bg-blue-100 px-1 rounded break-all">{apiKey}</code></li>
-                      </ul>
-                    </li>
-                    <li>Voer je WiFi-netwerk (SSID) en wachtwoord in en klik op Opslaan.</li>
-                  </ol>
+                  <p className="text-sm text-blue-800 mb-3">
+                    Scan met je telefoon: eerst QR 1 om te verbinden met de logger, daarna QR 2 om de configuratie te openen met API-gegevens al ingevuld. Kies daarna je WiFi en voer je wachtwoord in.
+                  </p>
+                  <div className="flex flex-wrap gap-6 justify-center items-start">
+                    <div className="text-center">
+                      <p className="text-xs font-medium text-blue-900 mb-1">1. Verbinden met ColdMonitor-Setup</p>
+                      <div className="inline-block p-2 bg-white rounded-lg border border-blue-200">
+                        <QRCodeSVG
+                          value={`WIFI:T:nopass;S:ColdMonitor-Setup;;`}
+                          size={128}
+                          level="M"
+                          includeMargin={false}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-medium text-blue-900 mb-1">2. Config openen (na verbinding)</p>
+                      <div className="inline-block p-2 bg-white rounded-lg border border-blue-200">
+                        <QRCodeSVG
+                          value={`http://192.168.4.1/?apiurl=${encodeURIComponent(API_BASE_URL)}&apikey=${encodeURIComponent(apiKey)}&serial=${encodeURIComponent(serialNumber)}`}
+                          size={128}
+                          level="M"
+                          includeMargin={false}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-blue-700 mt-3">
+                    Geen QR? Verbind handmatig met <strong>ColdMonitor-Setup</strong> en voer API URL, API key en serienummer in zoals hieronder.
+                  </p>
+                  <ul className="mt-2 ml-4 space-y-1 text-sm text-blue-800 list-disc">
+                    <li><strong>Serienummer:</strong> <code className="text-xs bg-blue-100 px-1 rounded">{serialNumber}</code></li>
+                    <li><strong>API URL:</strong> <code className="text-xs bg-blue-100 px-1 rounded break-all">{API_BASE_URL}</code></li>
+                    <li><strong>API key:</strong> <code className="text-xs bg-blue-100 px-1 rounded break-all">{apiKey}</code></li>
+                  </ul>
                 </div>
                 <p className="text-sm text-gray-600">
                   Klik hieronder als je de configuratie hebt voltooid. We wachten op de eerste verbinding.
