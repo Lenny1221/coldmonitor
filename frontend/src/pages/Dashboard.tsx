@@ -48,6 +48,16 @@ const Dashboard: React.FC = () => {
     }
   }, [user]);
 
+  // Automatisch vernieuwen elke 20 seconden (zelfde ritme als ESP32) zodat temperatuur/status actueel blijft
+  useEffect(() => {
+    if (user?.role !== 'CUSTOMER' || !data) return;
+    const intervalId = setInterval(() => {
+      fetchDashboard(true); // silent: geen loading-spinner
+      fetchPendingInvitations();
+    }, 20000);
+    return () => clearInterval(intervalId);
+  }, [user?.role, data]);
+
   const fetchPendingInvitations = async () => {
     try {
       const invitations = await invitationsApi.getAll();
@@ -73,9 +83,9 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       let response;
       if (user?.role === 'CUSTOMER') {
         response = await dashboardApi.getCustomerDashboard();
@@ -89,10 +99,12 @@ const Dashboard: React.FC = () => {
       }
       setData(response);
     } catch (err: any) {
-      const msg = err.response?.data?.error ?? err.response?.data?.message;
+      if (!silent) {
+        const msg = err.response?.data?.error ?? err.response?.data?.message;
         setError(typeof msg === 'string' ? msg : 'Failed to load dashboard');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
