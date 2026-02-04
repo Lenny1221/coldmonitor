@@ -1,0 +1,10 @@
+links2004/WebSockets@^2.4.1
+bblanchon/ArduinoJson@^6.21.3
+adafruit/Adafruit Unified Sensor@^1.1.14
+knolleary/PubSubClient@^2.8
+https://github.com/me-no-dev/AsyncTCP.git
+adafruit/DHT sensor library@^1.4.6
+https://github.com/tzapu/WiFiManager.git
+https://github.com/me-no-dev/ESPAsyncWebServer.git
+emelianov/modbus-esp8266@^4.0.0
+https://github.com/adafruit/Adafruit_BMP085_Unified.git
