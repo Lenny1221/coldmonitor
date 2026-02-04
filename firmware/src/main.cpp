@@ -189,7 +189,11 @@ void loop() {
     float voltage = batteryMonitor.getVoltage();
     int percentage = batteryMonitor.getPercentage();
     
-    logger.info("Battery: " + String(voltage, 2) + "V (" + String(percentage) + "%)");
+    if (voltage < 1.0f) {
+      logger.info("Batterij-meetpin: " + String(voltage, 2) + "V (geen batterij aangesloten; voeding via USB/PSU is OK)");
+    } else {
+      logger.info("Battery: " + String(voltage, 2) + "V (" + String(percentage) + "%)");
+    }
     
     // Geen deep sleep bij (vrijwel) geen spanning = USB-voeding, geen batterij aangesloten
     // Drempel 1.0V: ADC-ruis zonder batterij kan ~0.5V zijn, echte lege batterij is ~3.0V

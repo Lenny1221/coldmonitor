@@ -26,11 +26,11 @@ void ConfigManager::setDefaults() {
   configDoc["spi"]["refResistor"] = 4300;
   configDoc["spi"]["wires"] = 4;
   
-  // Modbus defaults
-  configDoc["modbus"]["rxPin"] = 16;
-  configDoc["modbus"]["txPin"] = 17;
-  configDoc["modbus"]["dePin"] = 4;
-  configDoc["modbus"]["rePin"] = 0;
+  // Modbus/RS485 defaults: DI=GPIO17, RO=GPIO16, DE&RE=GPIO4
+  configDoc["modbus"]["rxPin"] = 16;   // RO (Receiver Output)
+  configDoc["modbus"]["txPin"] = 17;  // DI (Driver Input)
+  configDoc["modbus"]["dePin"] = 4;   // DE & RE (same pin)
+  configDoc["modbus"]["rePin"] = 4;
   configDoc["modbus"]["baudRate"] = 9600;
   configDoc["modbus"]["slaveId"] = 1;
   configDoc["modbus"]["writeEnabled"] = false;
@@ -126,7 +126,7 @@ ModbusConfig ConfigManager::getModbusConfig() {
   config.rxPin = configDoc["modbus"]["rxPin"] | 16;
   config.txPin = configDoc["modbus"]["txPin"] | 17;
   config.dePin = configDoc["modbus"]["dePin"] | 4;
-  config.rePin = configDoc["modbus"]["rePin"] | 0;
+  config.rePin = configDoc["modbus"]["rePin"] | 4;
   config.baudRate = configDoc["modbus"]["baudRate"] | 9600;
   config.slaveId = configDoc["modbus"]["slaveId"] | 1;
   config.writeEnabled = configDoc["modbus"]["writeEnabled"] | false;

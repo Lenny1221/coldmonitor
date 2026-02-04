@@ -67,10 +67,9 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 - **SCK**: GPIO 18 (SPI default)
 
 ### RS485 (Optional)
-- **RX**: GPIO 16
-- **TX**: GPIO 17
-- **DE**: GPIO 4
-- **RE**: GPIO 0
+- **RO** (Receiver Output → ESP32 RX): GPIO 16
+- **DI** (Driver Input ← ESP32 TX): GPIO 17
+- **DE & RE** (same pin): GPIO 4
 
 ### Battery Monitoring
 - **ADC**: GPIO 34 (input only)
