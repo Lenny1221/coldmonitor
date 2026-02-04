@@ -110,6 +110,7 @@ const ColdCellDetail: React.FC = () => {
     }
   };
 
+  // latestReading wordt elke 20s bijgewerkt via fetchColdCell() (zelfde refresh als grafiek)
   const latestReading = coldCell?.latestReading;
   const readingsData = readingsResult?.data || [];
   const minTh = coldCell?.temperatureMinThreshold ?? 0;

@@ -34,7 +34,7 @@ bool Sensors::init() {
 }
 
 SensorData Sensors::read() {
-  SensorData data = {0, 0, false, 0, false};
+  SensorData data = {0, 0, false, false, 0, false};
 
   // Temperatuur + luchtvochtigheid (DHT11 primair)
   if (dhtReady) {
@@ -64,8 +64,9 @@ SensorData Sensors::read() {
     }
   }
 
-  // Deurstatus: HIGH = contact open = deur open
-  data.doorOpen = (digitalRead(PIN_DOOR) == HIGH);
+  // Deurstatus: raw pin; dan al dan niet inverteren
+  data.doorPinHigh = (digitalRead(PIN_DOOR) == HIGH);
+  data.doorOpen = PIN_DOOR_INVERTED ? !data.doorPinHigh : data.doorPinHigh;
 
   return data;
 }

@@ -242,9 +242,11 @@ void sensorTask(void *parameter) {
       }
       
       if (data.valid) {
-        logger.debug("Temp: " + String(data.temperature, 2) + "°C, Hum: " + 
-                     String(data.humidity, 1) + "%, Door: " + (data.doorOpen ? "open" : "closed"));
-        
+        // Altijd op monitor tonen (INFO); pin=0/1 om deurcontact te debuggen
+        logger.info("Data | Temp: " + String(data.temperature, 2) + "°C | Hum: " +
+                    String(data.humidity, 1) + "% | Deur: " + (data.doorOpen ? "OPEN" : "dicht") +
+                    " (pin=" + String(data.doorPinHigh ? 1 : 0) + ")");
+
         DynamicJsonDocument doc(512);
         doc["deviceId"] = config.getDeviceSerial();
         doc["temperature"] = round(data.temperature * 10) / 10.0;  // 1 decimaal
