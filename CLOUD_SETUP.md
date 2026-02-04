@@ -113,17 +113,6 @@ Als alles klopt, zou de Network Error weg moeten zijn. Blijft die bestaan, contr
 
 ---
 
-## Veelvoorkomende problemen
-
-| Fout | Oorzaak | Oplossing |
-|------|---------|-----------|
-| **Network Error** | Frontend bereikt backend niet | Zie sectie "Network Error – checklist" hierboven |
-| **CORS error (xhr)** | Backend weigert de origin van je frontend | Zie sectie "CORS error – oplossing" hieronder |
-| "Kan geen verbinding maken met de server" | `VITE_API_URL` fout of niet gezet | Vercel → `VITE_API_URL` = Railway URL + `/api`, daarna Redeploy |
-| CORS-fout in de console | `FRONTEND_URL` klopt niet | Railway → `FRONTEND_URL` = exact je Vercel URL |
-
----
-
 ## CORS error (xhr) – oplossing
 
 Bij een **CORS error** of **Network Error, type: xhr** blokkeert de backend je frontend omdat de **origin** niet in `FRONTEND_URL` staat.
@@ -160,6 +149,45 @@ In **Railway** → je service → **Deployments** → **View Logs**: na een misl
 `CORS geweigerd – zet FRONTEND_URL op Railway op deze exacte waarde` met `receivedOrigin: "https://..."`.
 
 Kopieer die `receivedOrigin` en zet die **exact** als `FRONTEND_URL` op Railway.
+
+---
+
+## Data komt niet in SensorReading (Supabase)
+
+Als de ESP32 wel data stuurt maar er **geen rijen** in de tabel **SensorReading** in Supabase verschijnen:
+
+### 1. DATABASE_URL op Railway = Supabase
+
+De backend moet tegen **Supabase** praten, niet tegen een andere database.
+
+1. **Supabase** → jouw project → **Project Settings** (tandwiel) → **Database**.
+2. Kopieer de **Connection string** (URI). Vervang `[YOUR-PASSWORD]` door je databasewachtwoord.
+3. **Railway** → je backend service → **Variables**.
+4. Controleer **`DATABASE_URL`**: de waarde moet **exact** die Supabase connection string zijn, bv.  
+   `postgresql://postgres:JOUWWACHTWOORD@db.xxxxx.supabase.co:5432/postgres`
+5. Als je eerder een andere database (bv. Railway Postgres) had ingesteld, vervang die door de Supabase-URL en **redeploy** de backend.
+
+### 2. Tabel en migraties
+
+- In **Supabase** → **Table Editor**: controleer of de tabel **SensorReading** bestaat.
+- Als die ontbreekt: lokaal in de repo `npx prisma migrate deploy` draaien met `DATABASE_URL` die naar Supabase wijst, of de migraties uit `backend/prisma/migrations` handmatig in Supabase SQL Editor uitvoeren.
+
+### 3. Backend-logs
+
+- **Railway** → je service → **Deployments** → **View Logs**.
+- Bij elke ontvangen batch van de logger hoort een regel: **"Sensor reading opgeslagen in DB"** (met readingId). Zie je die niet, dan faalt het schrijven (bv. door verkeerde `DATABASE_URL` of ontbrekende tabel). Zoek ook naar rode foutmeldingen rond `prisma` of `SensorReading`.
+
+---
+
+## Veelvoorkomende problemen
+
+| Fout | Oorzaak | Oplossing |
+|------|---------|-----------|
+| **Network Error** | Frontend bereikt backend niet | Zie sectie "Network Error – checklist" hierboven |
+| **CORS error (xhr)** | Backend weigert de origin van je frontend | Zie sectie "CORS error – oplossing" hierboven |
+| "Kan geen verbinding maken met de server" | `VITE_API_URL` fout of niet gezet | Vercel → `VITE_API_URL` = Railway URL + `/api`, daarna Redeploy |
+| CORS-fout in de console | `FRONTEND_URL` klopt niet | Railway → `FRONTEND_URL` = exact je Vercel URL |
 | 405 Method Not Allowed | API-requests gaan naar Vercel i.p.v. Railway | `VITE_API_URL` controleren, moet naar Railway wijzen |
 | Login werkt lokaal maar niet in de cloud | Configuratie verschil lokaal vs. cloud | Bovenstaande stappen voor Vercel en Railway nalopen |
 | Database connection failed | `DATABASE_URL` fout of niet gezet op Railway | Supabase → Connection string kopiëren → Railway Variables |
+| **Data niet in SensorReading** | Backend schrijft naar verkeerde DB of tabel ontbreekt | Zie sectie "Data komt niet in SensorReading (Supabase)" hierboven |

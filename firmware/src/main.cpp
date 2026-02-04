@@ -373,7 +373,7 @@ static void onWifiParamsSaved(const char* apiUrl, const char* apiKey, const char
 }
 
 void setupWiFi() {
-  wifiManager.setConfigPortalTimeout(180); // 3 minutes
+  wifiManager.setConfigPortalTimeout(180); // 3 minuten voor config portal
   
   // API URL + API key + serienummer in config portal
   wifiManager.setupColdMonitorParams(
@@ -383,18 +383,22 @@ void setupWiFi() {
   );
   wifiManager.setOnSaveParamsCallback(onWifiParamsSaved);
   
-  bool needConfigPortal = (config.getAPIKey().length() == 0 || config.getDeviceSerial() == "ESP32-XXXXXX");
   bool connected = false;
+  bool alreadyConfigured = (config.getAPIKey().length() > 0 && config.getDeviceSerial() != "ESP32-XXXXXX");
   
-  if (needConfigPortal) {
-    logger.info("Geen API key - open config portal (ColdMonitor-Setup)");
-    connected = wifiManager.startConfigPortal("ColdMonitor-Setup");
-  } else {
+  if (alreadyConfigured) {
+    // Al eens geconfigureerd: eerst zoeken naar opgeslagen WiFi (na stroomonderbreking terug naar dat netwerk)
+    // WiFiManager bewaart SSID/wachtwoord in flash na eerste configuratie
+    logger.info("Opgeslagen WiFi zoeken en verbinden...");
     connected = wifiManager.autoConnect("ColdMonitor-Setup");
     if (!connected) {
-      logger.info("WiFi timeout - open config portal");
+      logger.info("Geen verbinding met opgeslagen WiFi - open config portal");
       connected = wifiManager.startConfigPortal("ColdMonitor-Setup");
     }
+  } else {
+    // Nieuw apparaat: meteen config portal (ColdMonitor-Setup) voor eerste WiFi-configuratie
+    logger.info("Eerste installatie - open config portal (ColdMonitor-Setup)");
+    connected = wifiManager.startConfigPortal("ColdMonitor-Setup");
   }
   
   if (connected) {

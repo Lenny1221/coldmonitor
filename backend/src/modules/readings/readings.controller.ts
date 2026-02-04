@@ -34,15 +34,15 @@ router.post(
         throw new CustomError('Device serial mismatch', 403, 'DEVICE_MISMATCH');
       }
 
-      // Create sensor reading
+      // Create sensor reading (wordt opgeslagen in de DB van DATABASE_URL, bv. Supabase)
       const reading = await prisma.sensorReading.create({
         data: {
           deviceId: req.deviceId!,
           temperature: data.temperature,
-          humidity: data.humidity,
+          humidity: data.humidity ?? null,
           powerStatus: data.powerStatus ?? true,
-          doorStatus: data.doorStatus,
-          batteryLevel: data.batteryLevel,
+          doorStatus: data.doorStatus ?? null,
+          batteryLevel: data.batteryLevel ?? null,
           recordedAt: new Date(),
         },
         include: {
@@ -52,6 +52,13 @@ router.post(
             },
           },
         },
+      });
+
+      logger.info('Sensor reading opgeslagen in DB', {
+        readingId: reading.id,
+        deviceId: req.deviceId,
+        serialNumber,
+        temperature: data.temperature,
       });
 
       // Immediately check for alerts

@@ -237,6 +237,14 @@ To update:
 - Check DE/RE pin configuration
 - Use serial monitor to debug
 
+### Upload: "device disconnected or multiple access on port"
+
+1. **Serial Monitor / andere poortgebruik:** Sluit alle vensters waar de Serial Monitor open staat (`pio device monitor` of PlatformIO Serial Monitor). Er mag maar één programma de USB-poort gebruiken tijdens upload.
+2. **USB los en opnieuw:** Trek de ESP32 uit, wacht 5 seconden, steek weer in. Probeer daarna opnieuw te uploaden.
+3. **BOOT-knop:** Start de upload. Zodra je **"Connecting...."** ziet: houd de **BOOT**-knop op de ESP32 ingedrukt tot de verbinding tot stand komt (of 2–3 seconden), laat dan los.
+4. **Andere USB-poort:** Gebruik een poort direct op de Mac (geen hub) en een korte, data-capable kabel.
+5. **Snelheid staat al op 115200** in `platformio.ini` voor stabielere verbinding.
+
 ## Development
 
 ### Project Structure
