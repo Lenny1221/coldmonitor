@@ -89,6 +89,36 @@ void setup() {
   }
   logger.info("Configuration loaded");
   
+  // Knop om WiFi te resetten: houd BOOT (GPIO0) 3 s ingedrukt vóór/ tijdens opstarten
+  #define PIN_WIFI_RESET 0   // BOOT-knop op de meeste ESP32-devboards
+  pinMode(PIN_WIFI_RESET, INPUT_PULLUP);
+  delay(100);
+  logger.info(">>> Houd BOOT-knop 3 s ingedrukt om WiFi te resetten (Device Monitor) <<<");
+  {
+    const unsigned long holdMs = 3000;
+    const unsigned long stepMs = 100;
+    unsigned long t = 0;
+    bool wasPressed = (digitalRead(PIN_WIFI_RESET) == LOW);
+    while (t < holdMs && digitalRead(PIN_WIFI_RESET) == LOW) {
+      if (t > 0 && t % 1000 < stepMs) {
+        unsigned int secLeft = (holdMs - t) / 1000;
+        logger.info("WiFi-reset: nog " + String(secLeft) + " s vasthouden...");
+      }
+      delay(stepMs);
+      t += stepMs;
+    }
+    if (t >= holdMs) {
+      logger.info("========================================");
+      logger.info("BOOT 3 s ingedrukt - WiFi-gegevens WISSEN");
+      logger.info("========================================");
+      wifiManager.resetSettings();
+      logger.info("WiFi gewist. Herstart over 2 seconden.");
+      logger.info(">>> Na herstart: config-portal ColdMonitor-Setup opent <<<");
+      delay(2000);
+      ESP.restart();
+    }
+  }
+  
   // WiFi EERST – AP "ColdMonitor-Setup" verschijnt direct (sensors kunnen I²C blokkeren)
   setupWiFi();
   
@@ -317,6 +347,8 @@ void uploadTask(void *parameter) {
   logger.info("Upload task started");
   
   unsigned long lastUpload = 0;
+  unsigned long lastReconnectAttempt = 0;
+  const unsigned long reconnectInterval = 60000;  // Elke 60 s reconnect proberen bij offline
   unsigned long interval = config.getUploadInterval() * 1000;
   
   while (true) {
@@ -355,7 +387,12 @@ void uploadTask(void *parameter) {
         lastUpload = now;
       }
     } else {
-      logger.debug("WiFi not connected, skipping upload");
+      // WiFi offline: periodiek opnieuw verbinden proberen
+      if (lastReconnectAttempt == 0 || (now - lastReconnectAttempt >= reconnectInterval)) {
+        logger.info("WiFi offline - opnieuw verbinden...");
+        WiFi.reconnect();
+        lastReconnectAttempt = now;
+      }
     }
     
     vTaskDelay(pdMS_TO_TICKS(1000));
@@ -373,7 +410,8 @@ static void onWifiParamsSaved(const char* apiUrl, const char* apiKey, const char
 }
 
 void setupWiFi() {
-  wifiManager.setConfigPortalTimeout(180); // 3 minuten voor config portal
+  wifiManager.setConfigPortalTimeout(180);   // 3 minuten voor config portal
+  wifiManager.setConnectTimeout(30);         // Tot 30 s wachten op router (na stroomonderbreking)
   
   // API URL + API key + serienummer in config portal
   wifiManager.setupColdMonitorParams(
@@ -383,29 +421,16 @@ void setupWiFi() {
   );
   wifiManager.setOnSaveParamsCallback(onWifiParamsSaved);
   
-  bool connected = false;
-  bool alreadyConfigured = (config.getAPIKey().length() > 0 && config.getDeviceSerial() != "ESP32-XXXXXX");
-  
-  if (alreadyConfigured) {
-    // Al eens geconfigureerd: eerst zoeken naar opgeslagen WiFi (na stroomonderbreking terug naar dat netwerk)
-    // WiFiManager bewaart SSID/wachtwoord in flash na eerste configuratie
-    logger.info("Opgeslagen WiFi zoeken en verbinden...");
-    connected = wifiManager.autoConnect("ColdMonitor-Setup");
-    if (!connected) {
-      logger.info("Geen verbinding met opgeslagen WiFi - open config portal");
-      connected = wifiManager.startConfigPortal("ColdMonitor-Setup");
-    }
-  } else {
-    // Nieuw apparaat: meteen config portal (ColdMonitor-Setup) voor eerste WiFi-configuratie
-    logger.info("Eerste installatie - open config portal (ColdMonitor-Setup)");
-    connected = wifiManager.startConfigPortal("ColdMonitor-Setup");
-  }
+  // Altijd eerst opgeslagen WiFi proberen (na USB uit/in of herstart). Alleen bij falen opent het portal.
+  logger.info("Verbinden met opgeslagen WiFi...");
+  bool connected = wifiManager.autoConnect("ColdMonitor-Setup");
   
   if (connected) {
     logger.info("WiFi connected: " + WiFi.SSID());
     logger.info("IP: " + WiFi.localIP().toString());
     apiClient.setAPIUrl(config.getAPIUrl());
     apiClient.setAPIKey(config.getAPIKey());
+    WiFi.setAutoReconnect(true);  // Bij verlies van WiFi automatisch opnieuw verbinden
   } else {
     logger.error("WiFi setup mislukt");
   }

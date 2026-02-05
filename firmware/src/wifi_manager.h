@@ -29,6 +29,7 @@ public:
   IPAddress getIP();
   int getRSSI();
   void setConfigPortalTimeout(unsigned long seconds);
+  void setConnectTimeout(unsigned long seconds);
   
   // Setup API URL + API key + serienummer voor config portal
   void setupColdMonitorParams(const char* apiUrlDefault, const char* apiKeyDefault, const char* deviceSerialDefault);
@@ -41,6 +42,8 @@ public:
   // Forceer config portal (voor eerste setup of reconfiguratie)
   bool startConfigPortal(String apName);
   bool autoConnect(String apName);
+  // Wis opgeslagen WiFi-credentials (voor reset-knop)
+  void resetSettings();
 };
 
 #endif

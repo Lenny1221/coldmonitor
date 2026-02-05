@@ -105,6 +105,10 @@ void WiFiManagerWrapper::setConfigPortalTimeout(unsigned long seconds) {
   wifiManager.setConfigPortalTimeout(seconds);
 }
 
+void WiFiManagerWrapper::setConnectTimeout(unsigned long seconds) {
+  wifiManager.setConnectTimeout(seconds);
+}
+
 void WiFiManagerWrapper::setupColdMonitorParams(const char* apiUrlDefault, const char* apiKeyDefault, const char* deviceSerialDefault) {
   if (paramApiUrl) { delete paramApiUrl; }
   if (paramApiKey) { delete paramApiKey; }
@@ -170,4 +174,8 @@ bool WiFiManagerWrapper::autoConnect(String apName) {
   connected = true;
   logger.info("WiFi connected via portal");
   return true;
+}
+
+void WiFiManagerWrapper::resetSettings() {
+  wifiManager.resetSettings();
 }

@@ -129,6 +129,17 @@ Connect to this AP and configure:
 - Reading intervals
 - Modbus settings (if enabled)
 
+### WiFi resetten (opgeslagen netwerk wissen)
+
+Om opnieuw een WiFi-netwerk te kiezen (bijv. ander netwerk of nieuw wachtwoord):
+
+1. **BOOT-knop** op de ESP32 (meestal naast de USB-poort, op **GPIO 0**).
+2. **Houd de knop 3 seconden ingedrukt** – direct na het inschakelen of tijdens het opstarten.
+3. In de Serial Monitor zie je: `WiFi-resetknop 3 s ingedrukt - WiFi-gegevens wissen...` en daarna `WiFi gewist. Herstart over 2 s.`
+4. De ESP32 herstart en opent het config-portal (**ColdMonitor-Setup**). Verbind met dat netwerk en kies opnieuw je WiFi + wachtwoord.
+
+**Let op:** Alleen de **WiFi-gegevens** (SSID/wachtwoord) worden gewist. API URL, API key en serienummer blijven bewaard (in de ColdMonitor-config).
+
 ### Configuratie met QR-code (telefoon)
 
 Op de configuratiepagina (wanneer je verbonden bent met **ColdMonitor-Setup**) staat een **QR-code**. Scan die met je telefoon om:
@@ -261,6 +272,46 @@ De verbinding met de backend faalt vóór of tijdens het sturen van de request. 
 3. **BOOT-knop:** Start de upload. Zodra je **"Connecting...."** ziet: houd de **BOOT**-knop op de ESP32 ingedrukt tot de verbinding tot stand komt (of 2–3 seconden), laat dan los.
 4. **Andere USB-poort:** Gebruik een poort direct op de Mac (geen hub) en een korte, data-capable kabel.
 5. **Snelheid staat al op 115200** in `platformio.ini` voor stabielere verbinding.
+
+### Upload: "Failed to connect to ESP32: No serial data received"
+
+De ESP32 reageert niet tijdens de upload. Probeer in deze volgorde:
+
+1. **BOOT-knop tijdens upload:**
+   - Houd de **BOOT**-knop ingedrukt.
+   - Start de upload (`pio run -t upload`).
+   - Laat de BOOT-knop los zodra je **"Connecting..."** ziet (of na 2–3 seconden).
+
+2. **RESET-knop (als aanwezig):**
+   - Druk kort op **RESET** (of koppel USB los en weer aan).
+   - Start direct daarna de upload.
+
+3. **USB-kabel en poort:**
+   - Gebruik een **data-capable USB-kabel** (niet alleen stroom).
+   - Probeer een **andere USB-poort** (direct op de Mac, geen hub).
+   - Test met een **korte kabel** (< 1 m).
+
+4. **Poort controleren:**
+   ```bash
+   pio device list
+   ```
+   - Controleer of de ESP32 zichtbaar is (bijv. `/dev/cu.usbserial-0001`).
+   - Als je meerdere poorten ziet, uncomment `upload_port` in `platformio.ini` met de juiste poort.
+
+5. **Upload-snelheid verlagen:**
+   - In `platformio.ini` staat `upload_speed = 115200`.
+   - Probeer tijdelijk `921600` → `460800` → `230400` → `115200` als het blijft falen.
+
+6. **ESP32 in downloadmodus:**
+   - Houd **BOOT** ingedrukt.
+   - Druk kort op **RESET** (of koppel USB los/aan) terwijl BOOT ingedrukt blijft.
+   - Laat BOOT los.
+   - Start direct daarna de upload.
+
+7. **Herstart ESP32:**
+   - Koppel USB los, wacht 10 seconden.
+   - Steek weer in, wacht tot de ESP32 volledig opgestart is (LED knippert).
+   - Probeer dan opnieuw te uploaden.
 
 ## Development
 

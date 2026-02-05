@@ -177,6 +177,87 @@ De backend moet tegen **Supabase** praten, niet tegen een andere database.
 - **Railway** → je service → **Deployments** → **View Logs**.
 - Bij elke ontvangen batch van de logger hoort een regel: **"Sensor reading opgeslagen in DB"** (met readingId). Zie je die niet, dan faalt het schrijven (bv. door verkeerde `DATABASE_URL` of ontbrekende tabel). Zoek ook naar rode foutmeldingen rond `prisma` of `SensorReading`.
 
+### 4. RLS (Row Level Security) inschakelen op SensorReading
+
+Supabase geeft een waarschuwing: **"Table public.SensorReading is public, but RLS has not been enabled."**
+
+**Oplossing:** Voer de RLS-migratie uit:
+
+1. **Lokaal** (met `DATABASE_URL` naar Supabase):
+   ```bash
+   cd backend
+   npx prisma migrate deploy
+   ```
+   Dit voert de nieuwe migratie `20260205101614_enable_rls_sensorreading` uit die RLS inschakelt.
+
+2. **Of handmatig in Supabase:**
+   - **Supabase** → **SQL Editor** → voer uit:
+   ```sql
+   ALTER TABLE "SensorReading" ENABLE ROW LEVEL SECURITY;
+   CREATE POLICY "Enable all operations for authenticated users" ON "SensorReading"
+     FOR ALL USING (true) WITH CHECK (true);
+   ```
+
+Na deze migratie verdwijnt de Supabase RLS-waarschuwing.
+
+---
+
+## Upload failed: -1 (connection refused / DNS failed)
+
+Als de ESP32 **"Upload failed: -1 connection refused / DNS failed"** logt:
+
+### 1. API URL controleren
+
+- **ESP32 config-portal** (ColdMonitor-Setup) → controleer **API URL**.
+- Moet exact zijn: `https://JOUW-RAILWAY-URL/api` (met `https://` en `/api`).
+- Geen typfouten, geen extra slashes, geen spatie.
+
+### 2. Backend bereikbaar?
+
+- Open in browser: `https://JOUW-RAILWAY-URL/health`
+- Moet `{"status":"ok"}` geven.
+- Zie je een fout/timeout? → Backend staat uit of URL klopt niet. Controleer Railway: service draait, **Variables** zijn ingevuld.
+
+### 3. DNS-resolutie
+
+- Als de API URL een **domein** is (bijv. `xxx.railway.app`), controleer of het ESP32-netwerk **DNS** heeft (internet werkt).
+- Test: verbind een laptop met hetzelfde WiFi-netwerk en open de API URL in de browser.
+- Werkt dat niet? → WiFi-netwerk heeft mogelijk geen internet of blokkeert bepaalde domeinen.
+
+### 4. HTTPS vs HTTP
+
+- Railway-backends gebruiken **HTTPS**. Zorg dat de API URL begint met `https://` (niet `http://`).
+- Als je lokaal test met `http://localhost:3001`, gebruik dan `http://` (maar in productie altijd `https://`).
+
+---
+
+## Upload failed: -1 (connection refused / DNS failed)
+
+Als de ESP32 **"Upload failed: -1 connection refused / DNS failed"** logt:
+
+### 1. API URL controleren
+
+- **ESP32 config-portal** (ColdMonitor-Setup) → controleer **API URL**.
+- Moet exact zijn: `https://JOUW-RAILWAY-URL/api` (met `https://` en `/api`).
+- Geen typfouten, geen extra slashes, geen spatie.
+
+### 2. Backend bereikbaar?
+
+- Open in browser: `https://JOUW-RAILWAY-URL/health`
+- Moet `{"status":"ok"}` geven.
+- Zie je een fout/timeout? → Backend staat uit of URL klopt niet. Controleer Railway: service draait, **Variables** zijn ingevuld.
+
+### 3. DNS-resolutie
+
+- Als de API URL een **domein** is (bijv. `xxx.railway.app`), controleer of het ESP32-netwerk **DNS** heeft (internet werkt).
+- Test: verbind een laptop met hetzelfde WiFi-netwerk en open de API URL in de browser.
+- Werkt dat niet? → WiFi-netwerk heeft mogelijk geen internet of blokkeert bepaalde domeinen.
+
+### 4. HTTPS vs HTTP
+
+- Railway-backends gebruiken **HTTPS**. Zorg dat de API URL begint met `https://` (niet `http://`).
+- Als je lokaal test met `http://localhost:3001`, gebruik dan `http://` (maar in productie altijd `https://`).
+
 ---
 
 ## Veelvoorkomende problemen
@@ -191,3 +272,5 @@ De backend moet tegen **Supabase** praten, niet tegen een andere database.
 | Login werkt lokaal maar niet in de cloud | Configuratie verschil lokaal vs. cloud | Bovenstaande stappen voor Vercel en Railway nalopen |
 | Database connection failed | `DATABASE_URL` fout of niet gezet op Railway | Supabase → Connection string kopiëren → Railway Variables |
 | **Data niet in SensorReading** | Backend schrijft naar verkeerde DB of tabel ontbreekt | Zie sectie "Data komt niet in SensorReading (Supabase)" hierboven |
+| **RLS waarschuwing** | "Table SensorReading is public, but RLS has not been enabled" | Zie sectie "RLS inschakelen" hierboven - voer migratie uit |
+| **Upload failed: -1** | Connection refused / DNS failed (ESP32 → backend) | Zie sectie "Upload failed: -1" hieronder |
