@@ -39,6 +39,10 @@ TaskHandle_t sensorTaskHandle = NULL;
 TaskHandle_t modbusTaskHandle = NULL;
 TaskHandle_t uploadTaskHandle = NULL;
 
+// WiFi status tracking
+String lastWiFiSSID = "";
+bool lastWiFiConnected = false;
+
 // Sensor reading structure
 struct SensorReading {
   float temperature;
@@ -74,6 +78,10 @@ void setup() {
   logger.info("=== ColdMonitor ESP32 Firmware Starting ===");
   logger.info("Version: " + String(FIRMWARE_VERSION));
   
+  // Initialize LED (voor feedback bij WiFi-reset)
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);  // Start uit
+  
   // Initialize SPIFFS
   if (!SPIFFS.begin(true)) {
     logger.error("SPIFFS initialization failed!");
@@ -93,20 +101,34 @@ void setup() {
   #define PIN_WIFI_RESET 0   // BOOT-knop op de meeste ESP32-devboards
   pinMode(PIN_WIFI_RESET, INPUT_PULLUP);
   delay(100);
-  logger.info(">>> Houd BOOT-knop 3 s ingedrukt om WiFi te resetten (Device Monitor) <<<");
+  logger.info(">>> Houd BOOT-knop 3 s ingedrukt om WiFi te resetten (LED knippert tijdens indrukken) <<<");
   {
     const unsigned long holdMs = 3000;
     const unsigned long stepMs = 100;
+    const unsigned long ledBlinkMs = 200;  // LED knippert elke 200ms
     unsigned long t = 0;
-    bool wasPressed = (digitalRead(PIN_WIFI_RESET) == LOW);
+    unsigned long lastLedToggle = 0;
+    bool ledState = false;
+    
     while (t < holdMs && digitalRead(PIN_WIFI_RESET) == LOW) {
+      // LED knipperen tijdens indrukken
+      if (t - lastLedToggle >= ledBlinkMs) {
+        ledState = !ledState;
+        digitalWrite(LED_BUILTIN, ledState ? HIGH : LOW);
+        lastLedToggle = t;
+      }
+      
       if (t > 0 && t % 1000 < stepMs) {
         unsigned int secLeft = (holdMs - t) / 1000;
-        logger.info("WiFi-reset: nog " + String(secLeft) + " s vasthouden...");
+        logger.info("WiFi-reset: nog " + String(secLeft) + " s vasthouden... (LED knippert)");
       }
       delay(stepMs);
       t += stepMs;
     }
+    
+    // LED uit als knop losgelaten
+    digitalWrite(LED_BUILTIN, LOW);
+    
     if (t >= holdMs) {
       logger.info("========================================");
       logger.info("BOOT 3 s ingedrukt - WiFi-gegevens WISSEN");
@@ -114,7 +136,14 @@ void setup() {
       wifiManager.resetSettings();
       logger.info("WiFi gewist. Herstart over 2 seconden.");
       logger.info(">>> Na herstart: config-portal ColdMonitor-Setup opent <<<");
-      delay(2000);
+      // LED snel knipperen als bevestiging
+      for (int i = 0; i < 5; i++) {
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(100);
+        digitalWrite(LED_BUILTIN, LOW);
+        delay(100);
+      }
+      delay(1000);
       ESP.restart();
     }
   }
@@ -354,8 +383,41 @@ void uploadTask(void *parameter) {
   while (true) {
     unsigned long now = millis();
     
+    // Check WiFi status en log wijzigingen
+    bool currentlyConnected = (WiFi.status() == WL_CONNECTED);
+    
+    if (currentlyConnected && !lastWiFiConnected) {
+      // WiFi terug online
+      String currentSSID = WiFi.SSID();
+      logger.info("========================================");
+      logger.info("WiFi TERUG ONLINE");
+      logger.info("SSID: " + currentSSID);
+      logger.info("IP: " + WiFi.localIP().toString());
+      logger.info("RSSI: " + String(WiFi.RSSI()) + " dBm");
+      logger.info("========================================");
+      
+      if (lastWiFiSSID.length() > 0 && lastWiFiSSID != currentSSID) {
+        logger.info(">>> NETWERK VERANDERD: " + currentSSID + " (was: " + lastWiFiSSID + ") <<<");
+      }
+      
+      lastWiFiSSID = currentSSID;
+      lastWiFiConnected = true;
+    } else if (!currentlyConnected && lastWiFiConnected) {
+      // WiFi offline gegaan
+      logger.warn("========================================");
+      logger.warn("WiFi OFFLINE - verbinding verloren");
+      logger.warn("Laatste SSID: " + lastWiFiSSID);
+      logger.warn("========================================");
+      lastWiFiConnected = false;
+    } else if (currentlyConnected && lastWiFiSSID != WiFi.SSID()) {
+      // Netwerk veranderd terwijl verbonden
+      String newSSID = WiFi.SSID();
+      logger.info(">>> NETWERK VERANDERD: " + newSSID + " (was: " + lastWiFiSSID + ") <<<");
+      lastWiFiSSID = newSSID;
+    }
+    
     // Check if WiFi is connected
-    if (WiFi.status() == WL_CONNECTED) {
+    if (currentlyConnected) {
       int count = dataBuffer.getCount();
       // Eerste upload direct zodra er data is (lastUpload==0); daarna volgens interval
       bool shouldUpload = (lastUpload == 0 && count > 0) || (lastUpload != 0 && (now - lastUpload >= interval));
@@ -389,7 +451,7 @@ void uploadTask(void *parameter) {
     } else {
       // WiFi offline: periodiek opnieuw verbinden proberen
       if (lastReconnectAttempt == 0 || (now - lastReconnectAttempt >= reconnectInterval)) {
-        logger.info("WiFi offline - opnieuw verbinden...");
+        logger.warn("WiFi offline - poging tot opnieuw verbinden...");
         WiFi.reconnect();
         lastReconnectAttempt = now;
       }
@@ -426,13 +488,30 @@ void setupWiFi() {
   bool connected = wifiManager.autoConnect("ColdMonitor-Setup");
   
   if (connected) {
-    logger.info("WiFi connected: " + WiFi.SSID());
-    logger.info("IP: " + WiFi.localIP().toString());
+    String currentSSID = WiFi.SSID();
+    String currentIP = WiFi.localIP().toString();
+    
+    logger.info("========================================");
+    logger.info("WiFi NETWERK ONLINE");
+    logger.info("SSID: " + currentSSID);
+    logger.info("IP: " + currentIP);
+    logger.info("RSSI: " + String(WiFi.RSSI()) + " dBm");
+    logger.info("========================================");
+    
+    // Detecteer nieuw netwerk
+    if (lastWiFiSSID.length() > 0 && lastWiFiSSID != currentSSID) {
+      logger.info(">>> NIEUW NETWERK GEDETECTEERD: " + currentSSID + " (was: " + lastWiFiSSID + ") <<<");
+    }
+    
+    lastWiFiSSID = currentSSID;
+    lastWiFiConnected = true;
+    
     apiClient.setAPIUrl(config.getAPIUrl());
     apiClient.setAPIKey(config.getAPIKey());
     WiFi.setAutoReconnect(true);  // Bij verlies van WiFi automatisch opnieuw verbinden
   } else {
-    logger.error("WiFi setup mislukt");
+    logger.error("WiFi setup mislukt - geen verbinding");
+    lastWiFiConnected = false;
   }
 }
 

@@ -129,30 +129,22 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
                     WiFi-configuratie
                   </h3>
                   <p className="text-sm text-blue-800 mb-3">
-                    Scan met je telefoon: eerst QR 1 om te verbinden met de logger, daarna QR 2 om de configuratie te openen met API-gegevens al ingevuld. Kies daarna je WiFi en voer je wachtwoord in.
+                    Scan deze QR-code met je telefoon om de configuratie te openen met API-gegevens al ingevuld. Verbind eerst handmatig met <strong>ColdMonitor-Setup</strong> (of gebruik de QR-code op de configpagina zelf).
                   </p>
-                  <div className="flex flex-wrap gap-6 justify-center items-start">
+                  <div className="flex justify-center">
                     <div className="text-center">
-                      <p className="text-xs font-medium text-blue-900 mb-1">1. Verbinden met ColdMonitor-Setup</p>
-                      <div className="inline-block p-2 bg-white rounded-lg border border-blue-200">
-                        <QRCodeSVG
-                          value={`WIFI:T:nopass;S:ColdMonitor-Setup;;`}
-                          size={128}
-                          level="M"
-                          includeMargin={false}
-                        />
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs font-medium text-blue-900 mb-1">2. Config openen (na verbinding)</p>
-                      <div className="inline-block p-2 bg-white rounded-lg border border-blue-200">
+                      <p className="text-xs font-medium text-blue-900 mb-2">Config openen met API-gegevens</p>
+                      <div className="inline-block p-3 bg-white rounded-lg border-2 border-blue-300 shadow-sm">
                         <QRCodeSVG
                           value={`http://192.168.4.1/?apiurl=${encodeURIComponent(API_BASE_URL)}&apikey=${encodeURIComponent(apiKey)}&serial=${encodeURIComponent(serialNumber)}`}
-                          size={128}
+                          size={180}
                           level="M"
-                          includeMargin={false}
+                          includeMargin={true}
                         />
                       </div>
+                      <p className="text-xs text-blue-700 mt-2">
+                        Na verbinding met ColdMonitor-Setup: scan deze QR → config opent met API-gegevens ingevuld
+                      </p>
                     </div>
                   </div>
                   <p className="text-xs text-blue-700 mt-3">
