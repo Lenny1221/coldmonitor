@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { coldCellsApi, readingsApi, alertsApi } from '../services/api';
+import { coldCellsApi, readingsApi, alertsApi, devicesApi } from '../services/api';
 import {
   Line,
   XAxis,
@@ -45,6 +45,8 @@ const ColdCellDetail: React.FC = () => {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [showAddLogger, setShowAddLogger] = useState(false);
   const [doorEvents, setDoorEvents] = useState<{ eventsPerDay: Array<{ date: string; opens: number; closes: number; total: number }>; totalEvents: number } | null>(null);
+  const [rs485Status, setRs485Status] = useState<{ rs485Temperature: number | null; deviceOnline: boolean; lastUpdate: string | null } | null>(null);
+  const [defrostLoading, setDefrostLoading] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -61,6 +63,7 @@ const ColdCellDetail: React.FC = () => {
     if (id) {
       fetchReadings();
       fetchDoorEvents();
+      fetchRS485Status();
     }
   }, [id, timeRange]);
 
@@ -74,6 +77,38 @@ const ColdCellDetail: React.FC = () => {
     }
   };
 
+  const fetchRS485Status = async () => {
+    if (!id) return;
+    try {
+      const result = await devicesApi.getRS485Status(id);
+      setRs485Status(result);
+    } catch (error) {
+      console.error('Failed to fetch RS485 status:', error);
+    }
+  };
+
+  const handleStartDefrost = async () => {
+    if (!id || !coldCell?.devices || coldCell.devices.length === 0) {
+      alert('Geen online device gevonden voor deze cold cell');
+      return;
+    }
+
+    const device = coldCell.devices[0]; // Use first device
+    setDefrostLoading(true);
+    try {
+      await devicesApi.sendCommand(device.id, 'DEFROST_START');
+      alert('Ontdooiing gestart! De ESP32 zal het commando binnenkort uitvoeren.');
+      // Refresh RS485 status after a delay
+      setTimeout(() => {
+        fetchRS485Status();
+      }, 2000);
+    } catch (error: any) {
+      alert('Fout bij starten ontdooiing: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setDefrostLoading(false);
+    }
+  };
+
   // Automatisch vernieuwen elke 20 seconden
   useEffect(() => {
     if (!id) return;
@@ -82,6 +117,7 @@ const ColdCellDetail: React.FC = () => {
       fetchReadings();
       fetchAlerts();
       fetchDoorEvents();
+      fetchRS485Status();
     }, 20000);
     return () => clearInterval(intervalId);
   }, [id]);
@@ -94,6 +130,7 @@ const ColdCellDetail: React.FC = () => {
         fetchReadings();
         fetchAlerts();
         fetchDoorEvents();
+        fetchRS485Status();
       }
     };
     document.addEventListener('visibilitychange', onVisible);
@@ -454,6 +491,48 @@ const ColdCellDetail: React.FC = () => {
         )}
       </div>
 
+      {/* Actieve alarmen - bovenaan */}
+      {alerts.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <ExclamationTriangleIcon className="h-6 w-6 mr-2 text-red-600" />
+            Actieve alarmen
+          </h2>
+          <div className="space-y-2">
+            {alerts.map((alert: any) => (
+              <div
+                key={alert.id}
+                className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between flex-wrap gap-2"
+              >
+                <div>
+                  <div className="font-semibold text-red-900">
+                    {alert.type?.replace('_', ' ') ?? 'Alarm'}
+                  </div>
+                  {alert.value != null && (
+                    <div className="text-sm text-red-700">
+                      Waarde: {alert.value} °C
+                      {alert.threshold != null && ` (drempel: ${alert.threshold} °C)`}
+                    </div>
+                  )}
+                  <div className="text-xs text-red-600 mt-1">
+                    {new Date(alert.triggeredAt).toLocaleString()}
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    await alertsApi.resolve(alert.id);
+                    fetchAlerts();
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+                >
+                  Oplossen
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Temperatuurgrafiek */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
@@ -647,44 +726,71 @@ const ColdCellDetail: React.FC = () => {
         )}
       </div>
 
-      {/* Actieve alarmen */}
-      {alerts.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Actieve alarmen</h2>
-          <div className="space-y-2">
-            {alerts.map((alert: any) => (
-              <div
-                key={alert.id}
-                className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between flex-wrap gap-2"
-              >
-                <div>
-                  <div className="font-semibold text-red-900">
-                    {alert.type?.replace('_', ' ') ?? 'Alarm'}
-                  </div>
-                  {alert.value != null && (
-                    <div className="text-sm text-red-700">
-                      Waarde: {alert.value} °C
-                      {alert.threshold != null && ` (drempel: ${alert.threshold} °C)`}
-                    </div>
+      {/* RS485 Control Tabel */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">RS485 Besturing</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Functie
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actie
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">RS485 Temperatuur</div>
+                  <div className="text-sm text-gray-500">Carel PZD2S0P001</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {rs485Status ? (
+                    <>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {rs485Status.rs485Temperature != null
+                          ? `${rs485Status.rs485Temperature.toFixed(1)} °C`
+                          : 'Geen data'}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {rs485Status.deviceOnline ? (
+                          <span className="text-green-600">Device online</span>
+                        ) : (
+                          <span className="text-red-600">Device offline</span>
+                        )}
+                        {rs485Status.lastUpdate && (
+                          <> · {format(parseISO(rs485Status.lastUpdate), 'dd/MM HH:mm')}</>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-gray-500">Laden...</div>
                   )}
-                  <div className="text-xs text-red-600 mt-1">
-                    {new Date(alert.triggeredAt).toLocaleString()}
-                  </div>
-                </div>
-                <button
-                  onClick={async () => {
-                    await alertsApi.resolve(alert.id);
-                    fetchAlerts();
-                  }}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
-                >
-                  Oplossen
-                </button>
-              </div>
-            ))}
-          </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={handleStartDefrost}
+                    disabled={defrostLoading || !rs485Status?.deviceOnline}
+                    className={`px-4 py-2 rounded-md text-sm font-medium ${
+                      defrostLoading || !rs485Status?.deviceOnline
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {defrostLoading ? 'Bezig...' : 'Start Ontdooiing'}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 };

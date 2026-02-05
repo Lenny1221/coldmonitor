@@ -41,6 +41,14 @@ enum InvitationStatus {
   EXPIRED
 }
 
+enum CommandStatus {
+  PENDING
+  EXECUTING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 // User accounts for authentication
 model User {
   id        String   @id @default(cuid())
@@ -156,11 +164,31 @@ model Device {
   coldCell   ColdCell @relation(fields: [coldCellId], references: [id], onDelete: Cascade)
   
   sensorReadings SensorReading[]
+  commands DeviceCommand[]
 
   @@index([serialNumber])
   @@index([apiKey])
   @@index([coldCellId])
   @@index([status])
+}
+
+// Device Command model (for RS485 commands like defrost)
+model DeviceCommand {
+  id          String            @id @default(cuid())
+  deviceId    String
+  device      Device            @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  commandType String            // "DEFROST_START", "DEFROST_STOP", "READ_TEMPERATURE", etc.
+  status      CommandStatus     @default(PENDING)
+  parameters  Json?             // Optional command parameters
+  result      Json?             // Command execution result
+  error       String?           // Error message if failed
+  createdAt   DateTime          @default(now())
+  executedAt  DateTime?
+  createdBy   String?           // User ID who created the command
+
+  @@index([deviceId, status])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // Sensor Reading model (temperature, humidity, etc.)

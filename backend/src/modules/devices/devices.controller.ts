@@ -218,4 +218,194 @@ router.patch(
   }
 );
 
+/**
+ * POST /devices/:id/commands
+ * Create a command for a device (e.g., start defrost)
+ */
+router.post(
+  '/:id/commands',
+  requireAuth,
+  requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const { commandType, parameters } = req.body;
+
+      if (!commandType) {
+        throw new CustomError('commandType is required', 400, 'INVALID_INPUT');
+      }
+
+      const device = await prisma.device.findUnique({
+        where: { id },
+        include: {
+          coldCell: {
+            include: {
+              location: true,
+            },
+          },
+        },
+      });
+
+      if (!device) {
+        throw new CustomError('Device not found', 404, 'DEVICE_NOT_FOUND');
+      }
+
+      // Check access
+      if (req.userRole === 'CUSTOMER' && device.coldCell.location.customerId !== req.customerId) {
+        throw new CustomError('Access denied', 403, 'ACCESS_DENIED');
+      }
+
+      const command = await prisma.deviceCommand.create({
+        data: {
+          deviceId: id,
+          commandType,
+          parameters: parameters || {},
+          status: 'PENDING',
+          createdBy: req.userId,
+        },
+      });
+
+      res.status(201).json(command);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /devices/commands/pending
+ * Get pending commands for a device (called by ESP32 using device auth)
+ */
+router.get(
+  '/commands/pending',
+  requireDeviceAuth,
+  async (req: DeviceRequest, res, next) => {
+    try {
+      if (!req.deviceId) {
+        throw new CustomError('Device ID not found', 400, 'DEVICE_ID_MISSING');
+      }
+
+      const commands = await prisma.deviceCommand.findMany({
+        where: {
+          deviceId: req.deviceId,
+          status: 'PENDING',
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+        take: 1, // Only get the oldest pending command
+      });
+
+      res.json({ commands });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * PATCH /devices/commands/:commandId/complete
+ * Mark a command as completed (called by ESP32 using device auth)
+ */
+router.patch(
+  '/commands/:commandId/complete',
+  requireDeviceAuth,
+  async (req: DeviceRequest, res, next) => {
+    try {
+      const { commandId } = req.params;
+      const { result, error } = req.body;
+
+      if (!req.deviceId) {
+        throw new CustomError('Device ID not found', 400, 'DEVICE_ID_MISSING');
+      }
+
+      const command = await prisma.deviceCommand.findUnique({
+        where: { id: commandId },
+      });
+
+      if (!command || command.deviceId !== req.deviceId) {
+        throw new CustomError('Command not found', 404, 'COMMAND_NOT_FOUND');
+      }
+
+      const updated = await prisma.deviceCommand.update({
+        where: { id: commandId },
+        data: {
+          status: error ? 'FAILED' : 'COMPLETED',
+          result: result || null,
+          error: error || null,
+          executedAt: new Date(),
+        },
+      });
+
+      res.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /coldcells/:coldCellId/rs485-status
+ * Get RS485 status (temperature, defrost status) for a cold cell
+ */
+router.get(
+  '/coldcells/:coldCellId/rs485-status',
+  requireAuth,
+  requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { coldCellId } = req.params;
+
+      const coldCell = await prisma.coldCell.findUnique({
+        where: { id: coldCellId },
+        include: {
+          location: true,
+          devices: {
+            where: {
+              status: 'ONLINE',
+            },
+            take: 1,
+            orderBy: {
+              lastSeenAt: 'desc',
+            },
+          },
+        },
+      });
+
+      if (!coldCell) {
+        throw new CustomError('Cold cell not found', 404, 'COLD_CELL_NOT_FOUND');
+      }
+
+      // Check access
+      if (req.userRole === 'CUSTOMER' && coldCell.location.customerId !== req.customerId) {
+        throw new CustomError('Access denied', 403, 'ACCESS_DENIED');
+      }
+
+      // Get latest command result for RS485 temperature
+      const latestTempCommand = await prisma.deviceCommand.findFirst({
+        where: {
+          device: {
+            coldCellId,
+          },
+          commandType: 'READ_TEMPERATURE',
+          status: 'COMPLETED',
+        },
+        orderBy: {
+          executedAt: 'desc',
+        },
+      });
+
+      const rs485Temperature = latestTempCommand?.result?.temperature || null;
+
+      res.json({
+        rs485Temperature,
+        deviceOnline: coldCell.devices.length > 0,
+        lastUpdate: latestTempCommand?.executedAt || null,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;

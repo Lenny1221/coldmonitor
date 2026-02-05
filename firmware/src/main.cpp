@@ -38,6 +38,7 @@ PowerManager powerManager;
 TaskHandle_t sensorTaskHandle = NULL;
 TaskHandle_t modbusTaskHandle = NULL;
 TaskHandle_t uploadTaskHandle = NULL;
+TaskHandle_t commandTaskHandle = NULL;
 
 // WiFi status tracking
 String lastWiFiSSID = "";
@@ -65,6 +66,7 @@ struct ModbusData {
 void sensorTask(void *parameter);
 void modbusTask(void *parameter);
 void uploadTask(void *parameter);
+void commandTask(void *parameter);
 void setupWiFi();
 void setupOTA();
 void deepSleepIfNeeded();
@@ -99,6 +101,16 @@ void setup() {
     config.save();
   }
   logger.info("Configuration loaded");
+  
+  // Log API configuration status (for debugging)
+  String apiUrl = config.getAPIUrl();
+  String apiKey = config.getAPIKey();
+  logger.info("API URL: " + (apiUrl.length() > 0 ? apiUrl : "(leeg - moet worden ingesteld)"));
+  logger.info("API Key: " + (apiKey.length() > 0 ? String(apiKey.substring(0, 8)) + "..." : "(leeg - moet worden ingesteld)"));
+  
+  // Set API client configuration immediately after loading config
+  apiClient.setAPIUrl(apiUrl);
+  apiClient.setAPIKey(apiKey);
   
   // WiFi-reset: houd BOOT-knop (GPIO 0) 3 seconden ingedrukt tijdens opstarten
   // BELANGRIJK: Gebruik de BOOT-knop (niet RESET). RESET reset alleen de chip.
@@ -261,6 +273,20 @@ void setup() {
     &uploadTaskHandle,
     0
   );
+  
+  // Command task for handling RS485 commands
+  xTaskCreatePinnedToCore(
+    commandTask,
+    "CommandTask",
+    4096,
+    NULL,
+    1,
+    &commandTaskHandle,
+    0
+  );
+  
+  // Set serial number for API client
+  apiClient.setSerialNumber(config.getDeviceSerial());
   
   logger.info("All tasks started");
   logger.info("=== System Ready ===");
@@ -498,6 +524,75 @@ void uploadTask(void *parameter) {
   }
 }
 
+void commandTask(void *parameter) {
+  logger.info("Command task started");
+  
+  unsigned long lastCheck = 0;
+  const unsigned long checkInterval = 5000; // Check every 5 seconds
+  
+  while (true) {
+    unsigned long now = millis();
+    
+    if (WiFi.isConnected() && config.getModbusEnabled() && config.getModbusWriteEnabled()) {
+      if (now - lastCheck >= checkInterval) {
+        // Check for pending commands
+        String commandType, commandId;
+        DynamicJsonDocument parametersDoc(256);
+        
+        if (apiClient.getPendingCommand(commandType, commandId, parametersDoc)) {
+          logger.info("Received command: " + commandType + " (ID: " + commandId + ")");
+          
+          bool success = false;
+          DynamicJsonDocument result(256);
+          
+          if (commandType == "DEFROST_START") {
+            // Start defrost via RS485
+            // Carel PZD2S0P001: Usually register 0x0006 or coil 0x0006 for defrost command
+            // Value 1 = start defrost, 0 = stop
+            if (modbus.writeSingleRegister(0x0006, 1)) {
+              logger.info("Defrost command sent via RS485");
+              success = true;
+              result["status"] = "defrost_started";
+            } else {
+              logger.error("Failed to send defrost command via RS485");
+              result["error"] = "RS485 write failed";
+            }
+          } else if (commandType == "READ_TEMPERATURE") {
+            // Read temperature via RS485
+            if (modbus.readInputRegisters(0x0000, 2)) {
+              float temp = modbus.getFloat(0);
+              logger.info("RS485 temperature read: " + String(temp) + " °C");
+              success = true;
+              result["temperature"] = temp;
+            } else {
+              logger.error("Failed to read temperature via RS485");
+              result["error"] = "RS485 read failed";
+            }
+          } else {
+            logger.warn("Unknown command type: " + commandType);
+            result["error"] = "Unknown command type";
+          }
+          
+          // Report command completion
+          DynamicJsonDocument resultDoc(256);
+          resultDoc["status"] = result["status"].as<String>();
+          if (result.containsKey("temperature")) {
+            resultDoc["temperature"] = result["temperature"].as<float>();
+          }
+          if (result.containsKey("error")) {
+            resultDoc["error"] = result["error"].as<String>();
+          }
+          apiClient.completeCommand(commandId, success, resultDoc);
+        }
+        
+        lastCheck = now;
+      }
+    }
+    
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
+
 static void onWifiParamsSaved(const char* apiUrl, const char* apiKey, const char* deviceSerial) {
   config.setAPIUrl(apiUrl);
   config.setAPIKey(apiKey);
@@ -512,17 +607,38 @@ void setupWiFi() {
   wifiManager.setConfigPortalTimeout(180);   // 3 minuten voor config portal
   wifiManager.setConnectTimeout(30);         // Tot 30 s wachten op router (na stroomonderbreking)
   
+  // Check if API configuration is missing - if so, warn user
+  String apiUrl = config.getAPIUrl();
+  String apiKey = config.getAPIKey();
+  bool needsConfig = (apiUrl.length() == 0 || apiUrl == DEFAULT_API_URL || apiKey.length() == 0);
+  
+  if (needsConfig) {
+    logger.warn("========================================");
+    logger.warn("API CONFIGURATIE ONTBREEKT!");
+    logger.warn("API URL: " + (apiUrl.length() > 0 ? apiUrl : String("(leeg)")));
+    logger.warn("API Key: " + (apiKey.length() > 0 ? String("ingesteld") : String("(leeg)")));
+    logger.warn("Config-portal wordt geopend om API in te stellen");
+    logger.warn("========================================");
+  }
+  
   // API URL + API key + serienummer in config portal
   wifiManager.setupColdMonitorParams(
-    config.getAPIUrl().c_str(),
-    config.getAPIKey().c_str(),
+    apiUrl.length() > 0 ? apiUrl.c_str() : "",
+    apiKey.length() > 0 ? apiKey.c_str() : "",
     config.getDeviceSerial().c_str()
   );
   wifiManager.setOnSaveParamsCallback(onWifiParamsSaved);
   
   // Altijd eerst opgeslagen WiFi proberen (na USB uit/in of herstart). Alleen bij falen opent het portal.
-  logger.info("Verbinden met opgeslagen WiFi...");
-  bool connected = wifiManager.autoConnect("ColdMonitor-Setup");
+  // Als API config ontbreekt, open config portal direct
+  bool connected = false;
+  if (needsConfig) {
+    logger.info("API configuratie ontbreekt - config-portal wordt geopend...");
+    connected = wifiManager.startConfigPortal("ColdMonitor-Setup");
+  } else {
+    logger.info("Verbinden met opgeslagen WiFi...");
+    connected = wifiManager.autoConnect("ColdMonitor-Setup");
+  }
   
   if (connected) {
     String currentSSID = WiFi.SSID();
@@ -543,8 +659,23 @@ void setupWiFi() {
     lastWiFiSSID = currentSSID;
     lastWiFiConnected = true;
     
-    apiClient.setAPIUrl(config.getAPIUrl());
-    apiClient.setAPIKey(config.getAPIKey());
+    // Always reload API config from NVS after WiFi connection (in case it was updated)
+    String apiUrl = config.getAPIUrl();
+    String apiKey = config.getAPIKey();
+    apiClient.setAPIUrl(apiUrl);
+    apiClient.setAPIKey(apiKey);
+    
+    // Verify API config is set
+    if (apiUrl.length() == 0 || apiUrl == DEFAULT_API_URL || apiKey.length() == 0) {
+      logger.error("========================================");
+      logger.error("WAARSCHUWING: API configuratie ontbreekt!");
+      logger.error("Upload zal falen totdat API URL en Key zijn ingesteld");
+      logger.error("Open config-portal door WiFi-reset (BOOT-knop 3s)");
+      logger.error("========================================");
+    } else {
+      logger.info("API configuratie geladen: URL=" + apiUrl + ", Key=" + String(apiKey.substring(0, 8)) + "...");
+    }
+    
     WiFi.setAutoReconnect(true);  // Bij verlies van WiFi automatisch opnieuw verbinden
   } else {
     logger.error("WiFi setup mislukt - geen verbinding");

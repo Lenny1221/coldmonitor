@@ -363,6 +363,17 @@ export const devicesApi = {
     const response = await api.patch(`/devices/${id}/status`, { status });
     return response.data;
   },
+  sendCommand: async (deviceId: string, commandType: string, parameters?: any) => {
+    const response = await api.post(`/devices/${deviceId}/commands`, {
+      commandType,
+      parameters,
+    });
+    return response.data;
+  },
+  getRS485Status: async (coldCellId: string) => {
+    const response = await api.get(`/devices/coldcells/${coldCellId}/rs485-status`);
+    return response.data;
+  },
 };
 
 // Measurements API (readings per device)

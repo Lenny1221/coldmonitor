@@ -5,7 +5,7 @@
 extern Logger logger;
 extern ConfigManager config;
 
-APIClient::APIClient() {
+APIClient::APIClient() : serialNumber("") {
 }
 
 APIClient::~APIClient() {
@@ -27,8 +27,27 @@ bool APIClient::uploadReading(String jsonData) {
   }
   
   if (apiUrl.length() == 0) {
-    logger.error("API URL not configured");
-    return false;
+    logger.error("API URL not configured - check config in NVS");
+    logger.error("Current API URL from config: " + config.getAPIUrl());
+    logger.error("Current API Key from config: " + (config.getAPIKey().length() > 0 ? String(config.getAPIKey().substring(0, 8)) + "..." : "(leeg)"));
+    // Try to reload from config
+    apiUrl = config.getAPIUrl();
+    apiKey = config.getAPIKey();
+    if (apiUrl.length() == 0) {
+      logger.error("API URL still empty after reload - device needs reconfiguration");
+      return false;
+    }
+    logger.info("Reloaded API URL from config: " + apiUrl);
+  }
+  
+  if (apiKey.length() == 0) {
+    logger.error("API Key not configured - check config in NVS");
+    apiKey = config.getAPIKey();
+    if (apiKey.length() == 0) {
+      logger.error("API Key still empty after reload - device needs reconfiguration");
+      return false;
+    }
+    logger.info("Reloaded API Key from config");
   }
   
   // Parse JSON to get serial number
@@ -106,4 +125,90 @@ bool APIClient::checkConnection() {
 String APIClient::getDeviceInfo() {
   // Get device information from API
   return "";
+}
+
+bool APIClient::getPendingCommand(String& commandType, String& commandId, DynamicJsonDocument& parameters) {
+  if (!WiFi.isConnected()) {
+    return false;
+  }
+  
+  if (apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) {
+    return false;
+  }
+  
+  String url = apiUrl + "/devices/commands/pending";
+  
+  http.begin(url);
+  http.addHeader("x-device-key", apiKey);
+  http.setConnectTimeout(10000);
+  http.setTimeout(5000);
+  
+  int httpCode = http.GET();
+  
+  if (httpCode == 200) {
+    String response = http.getString();
+    DynamicJsonDocument doc(1024);
+    DeserializationError error = deserializeJson(doc, response);
+    
+    if (!error && doc.containsKey("commands") && doc["commands"].size() > 0) {
+      JsonObject cmd = doc["commands"][0];
+      commandId = cmd["id"].as<String>();
+      commandType = cmd["commandType"].as<String>();
+      if (cmd.containsKey("parameters")) {
+        // Copy parameters object
+        JsonObject params = cmd["parameters"];
+        for (JsonPair pair : params) {
+          if (pair.value().is<float>()) {
+            parameters[pair.key()] = pair.value().as<float>();
+          } else if (pair.value().is<int>()) {
+            parameters[pair.key()] = pair.value().as<int>();
+          } else if (pair.value().is<bool>()) {
+            parameters[pair.key()] = pair.value().as<bool>();
+          } else if (pair.value().is<const char*>()) {
+            parameters[pair.key()] = pair.value().as<const char*>();
+          } else if (pair.value().is<String>()) {
+            parameters[pair.key()] = pair.value().as<String>();
+          }
+        }
+      }
+      http.end();
+      return true;
+    }
+  }
+  
+  http.end();
+  return false;
+}
+
+bool APIClient::completeCommand(const String& commandId, bool success, const DynamicJsonDocument& result) {
+  if (!WiFi.isConnected()) {
+    return false;
+  }
+  
+  if (apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) {
+    return false;
+  }
+  
+  String url = apiUrl + "/devices/commands/" + commandId + "/complete";
+  
+  DynamicJsonDocument doc(512);
+  doc["result"] = result;
+  if (!success) {
+    doc["error"] = "Command execution failed";
+  }
+  
+  String jsonData;
+  serializeJson(doc, jsonData);
+  
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("x-device-key", apiKey);
+  http.setConnectTimeout(10000);
+  http.setTimeout(5000);
+  
+  int httpCode = http.PATCH(jsonData);
+  bool ok = (httpCode == 200);
+  
+  http.end();
+  return ok;
 }

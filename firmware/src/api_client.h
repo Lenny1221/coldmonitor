@@ -23,6 +23,15 @@ public:
   bool uploadReadings(String jsonArray);
   bool checkConnection();
   String getDeviceInfo();
+  
+  // Command handling
+  bool getPendingCommand(String& commandType, String& commandId, DynamicJsonDocument& parameters);
+  bool completeCommand(const String& commandId, bool success, const DynamicJsonDocument& result);
+  
+  void setSerialNumber(String serial) { serialNumber = serial; }
+  
+private:
+  String serialNumber;
 };
 
 #endif
