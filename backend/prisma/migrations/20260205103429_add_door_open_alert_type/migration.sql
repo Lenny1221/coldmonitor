@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "AlertType" ADD VALUE 'DOOR_OPEN';
+
+-- AlterTable
+ALTER TABLE "Invitation" ALTER COLUMN "expiresAt" SET DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days');

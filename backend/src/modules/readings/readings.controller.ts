@@ -81,6 +81,14 @@ router.post(
         );
       }
 
+      if (data.doorStatus !== undefined && data.doorStatus !== null) {
+        await alertService.checkDoorStatus(
+          reading.device.coldCellId,
+          data.doorStatus,
+          req.deviceId!
+        );
+      }
+
       logger.debug('Sensor reading received', {
         deviceId: req.deviceId,
         serialNumber,
@@ -152,6 +160,124 @@ router.get(
       );
 
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /coldcells/:id/door-events
+ * Get door open/close events count per day
+ */
+router.get(
+  '/coldcells/:id/door-events',
+  requireAuth,
+  requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const { days = '1' } = req.query;
+      const daysCount = parseInt(days as string, 10) || 1;
+
+      // Verify access to cold cell
+      const coldCell = await prisma.coldCell.findUnique({
+        where: { id },
+        include: {
+          location: true,
+        },
+      });
+
+      if (!coldCell) {
+        throw new CustomError('Cold cell not found', 404, 'COLD_CELL_NOT_FOUND');
+      }
+
+      // Check access permissions
+      if (req.userRole === 'CUSTOMER' && coldCell.location.customerId !== req.customerId) {
+        throw new CustomError('Access denied', 403, 'ACCESS_DENIED');
+      }
+
+      if (req.userRole === 'TECHNICIAN' && req.technicianId) {
+        const customer = await prisma.customer.findUnique({
+          where: { id: coldCell.location.customerId },
+        });
+        if (customer?.linkedTechnicianId !== req.technicianId) {
+          throw new CustomError('Access denied', 403, 'ACCESS_DENIED');
+        }
+      }
+
+      // Get all devices for this cold cell
+      const devices = await prisma.device.findMany({
+        where: { coldCellId: id },
+        select: { id: true },
+      });
+
+      if (devices.length === 0) {
+        return res.json({ eventsPerDay: [], totalEvents: 0 });
+      }
+
+      const deviceIds = devices.map(d => d.id);
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysCount);
+      startDate.setHours(0, 0, 0, 0);
+
+      // Get readings with door status changes
+      const readings = await prisma.sensorReading.findMany({
+        where: {
+          deviceId: { in: deviceIds },
+          recordedAt: {
+            gte: startDate,
+          },
+          doorStatus: { not: null },
+        },
+        orderBy: {
+          recordedAt: 'asc',
+        },
+        select: {
+          doorStatus: true,
+          recordedAt: true,
+        },
+      });
+
+      // Count door events per day
+      const eventsPerDay = new Map<string, { opens: number; closes: number }>();
+      let previousStatus: boolean | null = null;
+
+      for (const reading of readings) {
+        const dayKey = reading.recordedAt.toISOString().split('T')[0];
+        
+        if (!eventsPerDay.has(dayKey)) {
+          eventsPerDay.set(dayKey, { opens: 0, closes: 0 });
+        }
+
+        const dayEvents = eventsPerDay.get(dayKey)!;
+        
+        // Count transitions: closed -> open (open event) or open -> closed (close event)
+        if (previousStatus !== null && previousStatus !== reading.doorStatus) {
+          if (reading.doorStatus === true) {
+            dayEvents.opens++;
+          } else {
+            dayEvents.closes++;
+          }
+        }
+        
+        previousStatus = reading.doorStatus ?? null;
+      }
+
+      // Convert to array format
+      const eventsArray = Array.from(eventsPerDay.entries()).map(([date, events]) => ({
+        date,
+        opens: events.opens,
+        closes: events.closes,
+        total: events.opens + events.closes,
+      }));
+
+      const totalEvents = eventsArray.reduce((sum, day) => sum + day.total, 0);
+
+      res.json({
+        eventsPerDay: eventsArray.sort((a, b) => a.date.localeCompare(b.date)),
+        totalEvents,
+      });
     } catch (error) {
       next(error);
     }

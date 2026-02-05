@@ -451,6 +451,12 @@ export const readingsApi = {
     const response = await api.get(`/readings/devices/${deviceId}/readings`, { params });
     return response.data;
   },
+  getDoorEvents: async (coldCellId: string, days: number = 1) => {
+    const response = await api.get(`/readings/coldcells/${coldCellId}/door-events`, {
+      params: { days },
+    });
+    return response.data;
+  },
 };
 
 // Alerts API

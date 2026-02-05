@@ -32,7 +32,7 @@ export class DataAggregationService {
       switch (range) {
         case '24h':
           startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
-          groupInterval = '5 minutes'; // Group by 5 minutes
+          groupInterval = '1 minute'; // Group by 1 minute
           break;
         case '7d':
           startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -80,7 +80,7 @@ export class DataAggregationService {
         };
       }
 
-      // Calculate stats
+      // Calculate stats (temperature only for now)
       const temperatures = readings.map(r => r.temperature);
       const stats: ReadingStats = {
         min: Math.min(...temperatures),
@@ -89,7 +89,7 @@ export class DataAggregationService {
         count: readings.length,
       };
 
-      // Aggregate data by time intervals
+      // Aggregate data by time intervals (includes humidity)
       const aggregated = this.aggregateByInterval(readings, groupInterval);
 
       return { stats, data: aggregated };
@@ -107,7 +107,7 @@ export class DataAggregationService {
     interval: string
   ): AggregatedReading[] {
     const intervalMs = this.parseInterval(interval);
-    const grouped = new Map<string, number[]>();
+    const grouped = new Map<string, { temps: number[]; humidities: number[] }>();
 
     // Group readings by time bucket
     for (const reading of readings) {
@@ -115,19 +115,28 @@ export class DataAggregationService {
       const bucketKey = new Date(bucketTime).toISOString();
 
       if (!grouped.has(bucketKey)) {
-        grouped.set(bucketKey, []);
+        grouped.set(bucketKey, { temps: [], humidities: [] });
       }
-      grouped.get(bucketKey)!.push(reading.temperature);
+      const bucket = grouped.get(bucketKey)!;
+      bucket.temps.push(reading.temperature);
+      if (reading.humidity != null) {
+        bucket.humidities.push(reading.humidity);
+      }
     }
 
     // Calculate averages for each bucket
     const aggregated: AggregatedReading[] = [];
-    for (const [timestamp, temps] of grouped.entries()) {
-      const avg = temps.reduce((a, b) => a + b, 0) / temps.length;
+    for (const [timestamp, bucket] of grouped.entries()) {
+      const avgTemp = bucket.temps.reduce((a, b) => a + b, 0) / bucket.temps.length;
+      const avgHumidity = bucket.humidities.length > 0
+        ? bucket.humidities.reduce((a, b) => a + b, 0) / bucket.humidities.length
+        : undefined;
+      
       aggregated.push({
         timestamp,
-        temperature: Math.round(avg * 10) / 10, // Round to 1 decimal
-        count: temps.length,
+        temperature: Math.round(avgTemp * 10) / 10, // Round to 1 decimal
+        humidity: avgHumidity != null ? Math.round(avgHumidity * 10) / 10 : undefined,
+        count: bucket.temps.length,
       });
     }
 

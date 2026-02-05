@@ -78,9 +78,12 @@ void setup() {
   logger.info("=== ColdMonitor ESP32 Firmware Starting ===");
   logger.info("Version: " + String(FIRMWARE_VERSION));
   
-  // Initialize LED (voor feedback bij WiFi-reset)
+  // Initialize LED (voor feedback bij WiFi-reset) - test eerst of LED werkt
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);  // Start uit
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(100);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(100);
   
   // Initialize SPIFFS
   if (!SPIFFS.begin(true)) {
@@ -97,46 +100,74 @@ void setup() {
   }
   logger.info("Configuration loaded");
   
-  // Knop om WiFi te resetten: houd BOOT (GPIO0) 3 s ingedrukt vóór/ tijdens opstarten
-  #define PIN_WIFI_RESET 0   // BOOT-knop op de meeste ESP32-devboards
+  // WiFi-reset: houd BOOT-knop (GPIO 0) 3 seconden ingedrukt tijdens opstarten
+  // BELANGRIJK: Gebruik de BOOT-knop (niet RESET). RESET reset alleen de chip.
+  // Stap 1: Druk kort op RESET om ESP32 te resetten
+  // Stap 2: Houd BOOT-knop (GPIO 0) direct ingedrukt tijdens opstarten
+  #define PIN_WIFI_RESET 0   // BOOT-knop (GPIO 0) - niet de RESET knop!
   pinMode(PIN_WIFI_RESET, INPUT_PULLUP);
-  delay(100);
-  logger.info(">>> Houd BOOT-knop 3 s ingedrukt om WiFi te resetten (LED knippert tijdens indrukken) <<<");
-  {
+  delay(300);  // Wacht zodat pin stabiel is na reset
+  
+  logger.info(">>> WiFi-reset: Houd BOOT-knop (GPIO 0) 3 s ingedrukt tijdens opstarten <<<");
+  logger.info(">>> LED knippert tijdens indrukken - laat los om te annuleren <<<");
+  
+  // Check direct of BOOT-knop ingedrukt is (LOW = ingedrukt bij INPUT_PULLUP)
+  bool buttonPressed = (digitalRead(PIN_WIFI_RESET) == LOW);
+  
+  if (buttonPressed) {
+    logger.info("BOOT-knop gedetecteerd - start 3s timer (LED knippert nu)...");
+    
     const unsigned long holdMs = 3000;
-    const unsigned long stepMs = 100;
-    const unsigned long ledBlinkMs = 200;  // LED knippert elke 200ms
-    unsigned long t = 0;
+    const unsigned long stepMs = 50;   // Check elke 50ms
+    const unsigned long ledBlinkMs = 200;  // LED knippert elke 200ms (sneller = beter zichtbaar)
+    unsigned long startTime = millis();
     unsigned long lastLedToggle = 0;
     bool ledState = false;
+    bool stillPressed = true;
     
-    while (t < holdMs && digitalRead(PIN_WIFI_RESET) == LOW) {
-      // LED knipperen tijdens indrukken
-      if (t - lastLedToggle >= ledBlinkMs) {
-        ledState = !ledState;
-        digitalWrite(LED_BUILTIN, ledState ? HIGH : LOW);
-        lastLedToggle = t;
+    // Timer loop: houd knop 3 seconden ingedrukt
+    while ((millis() - startTime) < holdMs && stillPressed) {
+      // Check of knop nog steeds ingedrukt is
+      stillPressed = (digitalRead(PIN_WIFI_RESET) == LOW);
+      
+      if (!stillPressed) {
+        // Knop losgelaten - annuleer
+        logger.info("BOOT-knop losgelaten - WiFi-reset geannuleerd");
+        digitalWrite(LED_BUILTIN, LOW);
+        break;
       }
       
-      if (t > 0 && t % 1000 < stepMs) {
-        unsigned int secLeft = (holdMs - t) / 1000;
+      unsigned long elapsed = millis() - startTime;
+      
+      // LED knipperen tijdens indrukken (elke 200ms)
+      if (elapsed - lastLedToggle >= ledBlinkMs) {
+        ledState = !ledState;
+        digitalWrite(LED_BUILTIN, ledState ? HIGH : LOW);
+        lastLedToggle = elapsed;
+      }
+      
+      // Log elke seconde
+      if (elapsed > 0 && elapsed % 1000 < stepMs) {
+        unsigned int secLeft = (holdMs - elapsed) / 1000;
         logger.info("WiFi-reset: nog " + String(secLeft) + " s vasthouden... (LED knippert)");
       }
+      
       delay(stepMs);
-      t += stepMs;
     }
     
-    // LED uit als knop losgelaten
-    digitalWrite(LED_BUILTIN, LOW);
-    
-    if (t >= holdMs) {
+    // Check of we de volledige 3 seconden hebben gehaald EN knop nog ingedrukt
+    if ((millis() - startTime) >= holdMs && digitalRead(PIN_WIFI_RESET) == LOW) {
       logger.info("========================================");
       logger.info("BOOT 3 s ingedrukt - WiFi-gegevens WISSEN");
       logger.info("========================================");
+      
       wifiManager.resetSettings();
       logger.info("WiFi gewist. Herstart over 2 seconden.");
       logger.info(">>> Na herstart: config-portal ColdMonitor-Setup opent <<<");
-      // LED snel knipperen als bevestiging
+      
+      // LED snel knipperen als bevestiging (5x snel)
+      digitalWrite(LED_BUILTIN, LOW);
+      delay(100);
       for (int i = 0; i < 5; i++) {
         digitalWrite(LED_BUILTIN, HIGH);
         delay(100);
@@ -145,7 +176,13 @@ void setup() {
       }
       delay(1000);
       ESP.restart();
+    } else {
+      // Niet lang genoeg ingedrukt of losgelaten
+      digitalWrite(LED_BUILTIN, LOW);
+      logger.info("WiFi-reset niet uitgevoerd (knop niet lang genoeg ingedrukt)");
     }
+  } else {
+    logger.info("BOOT-knop niet ingedrukt - normale opstart");
   }
   
   // WiFi EERST – AP "ColdMonitor-Setup" verschijnt direct (sensors kunnen I²C blokkeren)

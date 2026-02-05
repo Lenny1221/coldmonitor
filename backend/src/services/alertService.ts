@@ -121,6 +121,141 @@ export class AlertService {
   }
 
   /**
+   * Check door status and create alert if door is open longer than 5 minutes
+   */
+  async checkDoorStatus(
+    coldCellId: string,
+    doorStatus: boolean,
+    deviceId: string
+  ): Promise<void> {
+    try {
+      if (doorStatus) {
+        // Door is open - check if it's been open for more than 5 minutes
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        
+        // Get readings from the last 10 minutes to find when door was opened
+        const recentReadings = await prisma.sensorReading.findMany({
+          where: {
+            deviceId,
+            recordedAt: {
+              gte: new Date(Date.now() - 10 * 60 * 1000), // Last 10 minutes
+            },
+            doorStatus: { not: null },
+          },
+          orderBy: {
+            recordedAt: 'asc',
+          },
+          select: {
+            doorStatus: true,
+            recordedAt: true,
+          },
+        });
+
+        // Find the first reading where door was opened (transition from closed to open)
+        let doorOpenSince: Date | null = null;
+        
+        for (let i = 0; i < recentReadings.length; i++) {
+          const reading = recentReadings[i];
+          // Check if this is a transition from closed to open
+          if (reading.doorStatus === true) {
+            // Check previous reading (if exists) to see if door was closed before
+            if (i === 0 || recentReadings[i - 1].doorStatus === false) {
+              doorOpenSince = reading.recordedAt;
+              break;
+            }
+          }
+        }
+
+        // If we couldn't find a transition, check if door has been open since before 5 minutes ago
+        if (!doorOpenSince && recentReadings.length > 0) {
+          const oldestReading = recentReadings[0];
+          if (oldestReading.doorStatus === true && oldestReading.recordedAt <= fiveMinutesAgo) {
+            // Door has been open since before 5 minutes ago
+            doorOpenSince = fiveMinutesAgo;
+          }
+        }
+
+        // If door has been open continuously for 5+ minutes, create alert
+        if (doorOpenSince && (Date.now() - doorOpenSince.getTime()) >= 5 * 60 * 1000) {
+          // Check if alert already exists
+          const existingAlert = await prisma.alert.findFirst({
+            where: {
+              coldCellId,
+              type: 'DOOR_OPEN',
+              status: 'ACTIVE',
+            },
+          });
+
+          if (!existingAlert) {
+            const coldCell = await prisma.coldCell.findUnique({
+              where: { id: coldCellId },
+              include: {
+                location: {
+                  include: {
+                    customer: {
+                      include: {
+                        linkedTechnician: true,
+                      },
+                    },
+                  },
+                },
+              },
+            });
+
+            if (coldCell) {
+              const alert = await prisma.alert.create({
+                data: {
+                  coldCellId,
+                  type: 'DOOR_OPEN',
+                  status: 'ACTIVE',
+                  triggeredAt: new Date(),
+                  lastTriggeredAt: new Date(),
+                },
+                include: {
+                  coldCell: {
+                    include: {
+                      location: {
+                        include: {
+                          customer: {
+                            include: {
+                              linkedTechnician: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              });
+
+              logger.warn('Door open alert created', { alertId: alert.id, coldCellId });
+
+              await this.notificationService.sendCustomerAlert(alert);
+              await this.notificationService.sendTechnicianAlert(alert);
+            }
+          }
+        }
+      } else {
+        // Door is closed - resolve any active door open alerts
+        await prisma.alert.updateMany({
+          where: {
+            coldCellId,
+            type: 'DOOR_OPEN',
+            status: 'ACTIVE',
+          },
+          data: {
+            status: 'RESOLVED',
+            resolvedAt: new Date(),
+            resolutionNote: 'Door closed',
+          },
+        });
+      }
+    } catch (error) {
+      logger.error('Error checking door status', error as Error, { coldCellId, doorStatus });
+    }
+  }
+
+  /**
    * Check power status and create alert if power is lost
    */
   async checkPowerStatus(

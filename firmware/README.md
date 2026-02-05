@@ -133,12 +133,23 @@ Connect to this AP and configure:
 
 Om opnieuw een WiFi-netwerk te kiezen (bijv. ander netwerk of nieuw wachtwoord):
 
-1. **BOOT-knop** op de ESP32 (meestal naast de USB-poort, op **GPIO 0**).
-2. **Houd de knop 3 seconden ingedrukt** – direct na het inschakelen of tijdens het opstarten.
-3. In de Serial Monitor zie je: `WiFi-resetknop 3 s ingedrukt - WiFi-gegevens wissen...` en daarna `WiFi gewist. Herstart over 2 s.`
-4. De ESP32 herstart en opent het config-portal (**ColdMonitor-Setup**). Verbind met dat netwerk en kies opnieuw je WiFi + wachtwoord.
+**BELANGRIJK:** Gebruik de **BOOT-knop** (GPIO 0), **NIET** de RESET-knop!
 
-**Let op:** Alleen de **WiFi-gegevens** (SSID/wachtwoord) worden gewist. API URL, API key en serienummer blijven bewaard (in de ColdMonitor-config).
+- **BOOT-knop** (GPIO 0): Meestal naast de USB-poort, kan gelezen worden door de firmware
+- **RESET-knop**: Reset alleen de chip, kan niet gelezen worden
+
+**Stappen:**
+
+1. **Druk kort op RESET** (of koppel USB los en weer aan) om de ESP32 te resetten
+2. **Houd direct daarna de BOOT-knop (GPIO 0) 3 seconden ingedrukt** tijdens het opstarten
+3. De **LED knippert** elke 200ms terwijl je de knop indrukt (visuele feedback)
+4. Na 3 seconden knippert de LED **5x snel** als bevestiging
+5. In de Serial Monitor zie je: `BOOT 3 s ingedrukt - WiFi-gegevens WISSEN` en daarna `WiFi gewist. Herstart over 2 s.`
+6. De ESP32 herstart automatisch en opent het config-portal (**ColdMonitor-Setup**). Verbind met dat netwerk en kies opnieuw je WiFi + wachtwoord.
+
+**Let op:** 
+- Alleen de **WiFi-gegevens** (SSID/wachtwoord) worden gewist. API URL, API key en serienummer blijven bewaard (in de ColdMonitor-config).
+- Als je de knop loslaat vóór 3 seconden, wordt de reset geannuleerd en gaat de ESP32 normaal verder.
 
 ### Configuratie met QR-code (telefoon)
 

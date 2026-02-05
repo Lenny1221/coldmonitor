@@ -26,6 +26,7 @@ enum AlertType {
   LOW_TEMP
   POWER_LOSS
   SENSOR_ERROR
+  DOOR_OPEN
 }
 
 enum AlertStatus {

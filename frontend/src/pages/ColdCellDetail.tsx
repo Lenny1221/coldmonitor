@@ -44,6 +44,7 @@ const ColdCellDetail: React.FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [showAddLogger, setShowAddLogger] = useState(false);
+  const [doorEvents, setDoorEvents] = useState<{ eventsPerDay: Array<{ date: string; opens: number; closes: number; total: number }>; totalEvents: number } | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -59,8 +60,19 @@ const ColdCellDetail: React.FC = () => {
   useEffect(() => {
     if (id) {
       fetchReadings();
+      fetchDoorEvents();
     }
   }, [id, timeRange]);
+
+  const fetchDoorEvents = async () => {
+    if (!id) return;
+    try {
+      const result = await readingsApi.getDoorEvents(id, 1); // Last 1 day
+      setDoorEvents(result);
+    } catch (error) {
+      console.error('Failed to fetch door events:', error);
+    }
+  };
 
   // Automatisch vernieuwen elke 20 seconden
   useEffect(() => {
@@ -69,6 +81,7 @@ const ColdCellDetail: React.FC = () => {
       fetchColdCell();
       fetchReadings();
       fetchAlerts();
+      fetchDoorEvents();
     }, 20000);
     return () => clearInterval(intervalId);
   }, [id]);
@@ -80,6 +93,7 @@ const ColdCellDetail: React.FC = () => {
         fetchColdCell();
         fetchReadings();
         fetchAlerts();
+        fetchDoorEvents();
       }
     };
     document.addEventListener('visibilitychange', onVisible);
@@ -132,6 +146,7 @@ const ColdCellDetail: React.FC = () => {
   const chartData = readingsData
     .map((r: any) => {
       const temp = r.temperature ?? r.temp;
+      const humidity = r.humidity;
       const time = r.timestamp ?? r.recordedAt ?? r.time;
       const t = typeof time === 'string' ? time : new Date(time).toISOString();
       const isExceedance =
@@ -140,6 +155,7 @@ const ColdCellDetail: React.FC = () => {
         time: t,
         timeLabel: format(parseISO(t), timeRange === '24h' ? 'HH:mm' : timeRange === '7d' ? 'EEE HH:mm' : 'dd/MM HH:mm'),
         temperature: temp,
+        humidity: humidity,
         minThreshold: minTh,
         maxThreshold: maxTh,
         isExceedance: !!isExceedance,
@@ -524,6 +540,110 @@ const ColdCellDetail: React.FC = () => {
           <div className="py-12 text-center text-gray-500">
             Geen temperatuurdata voor deze periode.
           </div>
+        )}
+      </div>
+
+      {/* Luchtvochtigheidsgrafiek */}
+      {chartData.some((d: any) => d.humidity != null) && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Luchtvochtigheid per cel</h2>
+            <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-50">
+              {(['24h', '7d', '30d'] as const).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    timeRange === range
+                      ? 'bg-blue-600 text-white shadow'
+                      : 'text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {range === '24h' ? 'Laatste 24 u' : range === '7d' ? '7 dagen' : '30 dagen'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {chartData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={340}>
+                <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 30 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis
+                    dataKey="timeLabel"
+                    tick={{ fontSize: 11 }}
+                    angle={timeRange === '30d' ? -45 : 0}
+                    textAnchor={timeRange === '30d' ? 'end' : 'middle'}
+                    height={50}
+                  />
+                  <YAxis
+                    domain={[0, 100]}
+                    tick={{ fontSize: 12 }}
+                    label={{
+                      value: 'Luchtvochtigheid (%)',
+                      angle: -90,
+                      position: 'insideLeft',
+                      style: { textAnchor: 'middle' },
+                    }}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [`${value?.toFixed(1) ?? value} %`, 'Luchtvochtigheid']}
+                    labelFormatter={(label) => label}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="humidity"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    dot={{ r: 2, fill: '#10b981' }}
+                    name="Gemeten luchtvochtigheid"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </>
+          ) : (
+            <div className="py-12 text-center text-gray-500">
+              Geen luchtvochtigheidsdata voor deze periode.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Deur events per dag */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Deur events vandaag</h2>
+        {doorEvents ? (
+          <>
+            <div className="mb-4">
+              <div className="text-3xl font-bold text-gray-900">{doorEvents.totalEvents}</div>
+              <div className="text-sm text-gray-600">Totaal aantal deur events vandaag</div>
+            </div>
+            {doorEvents.eventsPerDay.length > 0 ? (
+              <div className="space-y-2">
+                {doorEvents.eventsPerDay.map((day) => (
+                  <div key={day.date} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">
+                        {format(parseISO(day.date), 'dd/MM/yyyy')}
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {day.opens} keer geopend · {day.closes} keer gesloten
+                      </div>
+                    </div>
+                    <div className="text-lg font-semibold text-gray-900">{day.total}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-gray-500">
+                Geen deur events vandaag.
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="py-8 text-center text-gray-500">Laden...</div>
         )}
       </div>
 
