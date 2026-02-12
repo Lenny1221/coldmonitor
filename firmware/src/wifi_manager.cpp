@@ -150,35 +150,37 @@ void WiFiManagerWrapper::setOnSaveParamsCallback(void (*cb)(const char* apiUrl, 
 }
 
 bool WiFiManagerWrapper::startConfigPortal(String apName) {
-  logger.info("Starting config portal: " + apName);
+  logger.info("========================================");
+  logger.info("PORTAL: Starten config portal...");
+  logger.info("PORTAL: AP SSID = " + apName);
+  logger.info("========================================");
   
-  // Ensure WiFi is in correct mode
-  WiFi.mode(WIFI_AP_STA);
-  delay(100);
+  // Light reset - WiFiManager doet de rest
+  WiFi.disconnect(true, true);
+  delay(200);
+  WiFi.mode(WIFI_OFF);
+  delay(300);
   
-  // QR-code (WIFI-connectie) + pre-fill script voor API-velden uit URL
+  // QR-code en custom velden
   static String customHtml;
   customHtml = buildConfigPortalCustomHtml(apName);
   wifiManager.setCustomBodyFooter(customHtml.c_str());
   
-  logger.info("Starting WiFiManager config portal...");
+  // Laat WiFiManager alles doen - geen eigen AP start (veroorzaakte conflict)
+  logger.info("PORTAL: WiFiManager start config portal (AP + web)...");
   bool result = wifiManager.startConfigPortal(apName.c_str());
   
-  if (result) {
+  // Verificatie
+  IPAddress apIP = WiFi.softAPIP();
+  if (apIP.toString() != "0.0.0.0" || result) {
     connected = true;
-    logger.info("WiFi configured and connected via config portal");
-    logger.info("AP IP: " + WiFi.softAPIP().toString());
-    logger.info("STA IP: " + WiFi.localIP().toString());
-  } else {
-    logger.error("Config portal failed to start");
-    // Try to start AP manually as fallback
-    WiFi.softAP(apName.c_str());
-    delay(500);
-    if (WiFi.softAPIP().toString() != "0.0.0.0") {
-      logger.info("AP started manually, IP: " + WiFi.softAPIP().toString());
-      connected = true;
-      result = true;
-    }
+    logger.info("========================================");
+    logger.info("PORTAL: Config portal actief");
+    logger.info("PORTAL: AP SSID = " + apName);
+    logger.info("PORTAL: AP IP = " + apIP.toString());
+    logger.info("PORTAL: Open http://" + apIP.toString() + " in browser");
+    logger.info("========================================");
+    result = true;
   }
   
   return result;

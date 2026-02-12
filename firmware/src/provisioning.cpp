@@ -1,5 +1,7 @@
 #include "provisioning.h"
 #include "logger.h"
+#include <nvs.h>
+#include <nvs_flash.h>
 
 extern Logger logger;
 
@@ -140,6 +142,39 @@ bool ProvisioningManager::setAPICredentials(const String& url, const String& key
   return success;
 }
 
+String ProvisioningManager::getDeviceSerial() {
+  return prefs.getString(KEY_DEVICE_SERIAL, "");
+}
+
+bool ProvisioningManager::setDeviceSerial(const String& serial) {
+  if (serial.length() > MAX_DEVICE_SERIAL_LEN) {
+    logger.error("PROVISIONING: Serienummer te lang: " + String(serial.length()));
+    return false;
+  }
+  bool ok = prefs.putString(KEY_DEVICE_SERIAL, serial) > 0;
+  if (ok) {
+    logger.info("PROVISIONING: Serienummer opgeslagen: " + (serial.length() > 0 ? serial : "(leeg)"));
+  }
+  return ok;
+}
+
+bool ProvisioningManager::saveSettingsIfChanged(const String& apiUrl, const String& apiKey, const String& deviceSerial) {
+  bool changed = false;
+  if (getAPIUrl() != apiUrl || getAPIKey() != apiKey) {
+    if (apiUrl.length() > 0 && apiKey.length() > 0) {
+      changed |= (prefs.putString(KEY_API_URL, apiUrl) > 0);
+      changed |= (prefs.putString(KEY_API_KEY, apiKey) > 0);
+      if (changed) logger.info("NVS: API credentials gewijzigd, opgeslagen");
+    }
+  }
+  if (deviceSerial.length() > 0 && getDeviceSerial() != deviceSerial) {
+    bool ok = prefs.putString(KEY_DEVICE_SERIAL, deviceSerial) > 0;
+    changed |= ok;
+    if (ok) logger.info("NVS: Serienummer gewijzigd, opgeslagen");
+  }
+  return changed;
+}
+
 bool ProvisioningManager::save() {
   // Mark as provisioned if we have both WiFi and API credentials
   bool hasWiFi = hasWiFiCredentials();
@@ -164,28 +199,94 @@ bool ProvisioningManager::save() {
 
 bool ProvisioningManager::factoryReset() {
   logger.warn("========================================");
-  logger.warn("FACTORY RESET: Wissen van alle instellingen...");
+  logger.warn("FACTORY RESET: Wissen van ALLE instellingen...");
+  
+  // First, disconnect WiFi completely and erase credentials from WiFi stack
+  logger.warn("FACTORY RESET: WiFi disconnect en wissen...");
+  WiFi.disconnect(true, true); // disconnect, erase credentials
+  WiFi.mode(WIFI_OFF);
+  delay(500);
+  
+  // CRITICAL: Wis de ESP32 WiFi driver's eigen NVS namespace (nvs.net80211)
+  // Dit is waar SSID en password worden opgeslagen - anders verbindt WiFi.reconnect() steeds opnieuw!
+  logger.warn("FACTORY RESET: Wissen ESP32 WiFi stack credentials (nvs.net80211)...");
+  nvs_handle_t nvs_wifi;
+  if (nvs_open("nvs.net80211", NVS_READWRITE, &nvs_wifi) == ESP_OK) {
+    esp_err_t err = nvs_erase_all(nvs_wifi);
+    if (err == ESP_OK) {
+      nvs_commit(nvs_wifi);
+      logger.info("FACTORY RESET: nvs.net80211 gewist - WiFi credentials uit flash verwijderd");
+    } else {
+      logger.error("FACTORY RESET: nvs_erase_all failed: " + String(err));
+    }
+    nvs_close(nvs_wifi);
+  } else {
+    logger.warn("FACTORY RESET: nvs.net80211 niet geopend (mogelijk al gewist)");
+  }
   
   bool success = true;
   
-  // Remove all keys
+  // Remove all provisioning keys
+  logger.warn("FACTORY RESET: Wissen provisioning namespace...");
   success &= prefs.remove(KEY_WIFI_SSID);
   success &= prefs.remove(KEY_WIFI_PASS);
   success &= prefs.remove(KEY_API_URL);
   success &= prefs.remove(KEY_API_KEY);
+  success &= prefs.remove(KEY_DEVICE_SERIAL);
   success &= prefs.remove(KEY_PROVISIONED);
   
-  // Also clear WiFiManager settings if namespace exists
+  // Clear entire provisioning namespace
+  prefs.clear();
+  prefs.end();
+  
+  // Clear WiFiManager namespace (WiFiManager uses "wm" namespace)
+  logger.warn("FACTORY RESET: Wissen WiFiManager namespace...");
   Preferences wmPrefs;
   if (wmPrefs.begin("wm", false)) {
     wmPrefs.clear();
     wmPrefs.end();
+    logger.info("FACTORY RESET: WiFiManager namespace gewist");
+  } else {
+    logger.warn("FACTORY RESET: WiFiManager namespace niet gevonden (mogelijk al gewist)");
   }
+  
+  // Also try to clear WiFiManager's other possible namespaces
+  Preferences wmPrefs2;
+  if (wmPrefs2.begin("WiFiManager", false)) {
+    wmPrefs2.clear();
+    wmPrefs2.end();
+    logger.info("FACTORY RESET: WiFiManager alternatieve namespace gewist");
+  }
+  
+  // Clear config manager namespace
+  logger.warn("FACTORY RESET: Wissen config manager namespace...");
+  Preferences configPrefs;
+  if (configPrefs.begin("coldmonitor", false)) {
+    configPrefs.clear();
+    configPrefs.end();
+    logger.info("FACTORY RESET: Config manager namespace gewist");
+  }
+  
+  // Reopen provisioning preferences
+  prefs.begin(PROVISION_NAMESPACE, false);
   
   provisioned = false;
   
+  // Verify everything is cleared
+  String testSSID = prefs.getString(KEY_WIFI_SSID, "");
+  String testAPI = prefs.getString(KEY_API_URL, "");
+  
+  if (testSSID.length() == 0 && testAPI.length() == 0) {
+    logger.warn("FACTORY RESET: Verificatie OK - alle provisioning data gewist");
+  } else {
+    logger.error("FACTORY RESET: WAARSCHUWING - sommige data niet gewist!");
+    logger.error("  SSID: " + testSSID);
+    logger.error("  API: " + testAPI);
+  }
+  
   if (success) {
     logger.warn("FACTORY RESET: Alle instellingen gewist");
+    logger.warn("FACTORY RESET: WiFi credentials gewist uit WiFi stack");
     logger.warn("FACTORY RESET: Device zal opnieuw config portal starten");
   } else {
     logger.error("FACTORY RESET: FOUT bij wissen instellingen!");
@@ -194,6 +295,26 @@ bool ProvisioningManager::factoryReset() {
   logger.warn("========================================");
   
   return success;
+}
+
+bool ProvisioningManager::wipeWiFiCredentials() {
+  logger.info("PROVISIONING: Wissen ESP32 WiFi stack credentials (nvs.net80211)...");
+  WiFi.disconnect(true, true);
+  WiFi.mode(WIFI_OFF);
+  delay(300);
+  
+  nvs_handle_t nvs_wifi;
+  if (nvs_open("nvs.net80211", NVS_READWRITE, &nvs_wifi) == ESP_OK) {
+    esp_err_t err = nvs_erase_all(nvs_wifi);
+    nvs_commit(nvs_wifi);
+    nvs_close(nvs_wifi);
+    if (err == ESP_OK) {
+      logger.info("PROVISIONING: nvs.net80211 gewist - oude WiFi credentials verwijderd");
+      return true;
+    }
+  }
+  logger.warn("PROVISIONING: nvs.net80211 niet gewist");
+  return false;
 }
 
 void ProvisioningManager::logBootReason() {
@@ -240,8 +361,10 @@ void ProvisioningManager::logAPIState() {
   if (hasAPICredentials()) {
     String url = getAPIUrl();
     String key = getAPIKey();
+    String serial = getDeviceSerial();
     logger.info("API: URL = " + url);
     logger.info("API: Key = " + maskSecret(key));
+    logger.info("API: Device serial = " + (serial.length() > 0 ? serial : "(niet ingesteld)"));
   } else {
     logger.warn("API: Geen opgeslagen API credentials gevonden");
   }

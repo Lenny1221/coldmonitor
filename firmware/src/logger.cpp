@@ -29,10 +29,11 @@ void Logger::printLog(LogLevel logLevel, String message) {
   if (serialEnabled) {
     unsigned long timestamp = millis();
     String levelStr = getLevelString(logLevel);
-    
-    Serial.print("[");
-    Serial.print(timestamp);
-    Serial.print("] [");
+    // [00010] format: 8 cijfers met leading zeros (tot 99999999 ms)
+    char tsBuf[14];
+    snprintf(tsBuf, sizeof(tsBuf), "[%08lu]", timestamp);
+    Serial.print(tsBuf);
+    Serial.print(" [");
     Serial.print(levelStr);
     Serial.print("] ");
     Serial.println(message);

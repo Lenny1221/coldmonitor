@@ -2,6 +2,48 @@
 
 Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD temperature sensing, RS485/Modbus communication, and cloud connectivity.
 
+---
+
+## Configuratie, NVS keys & status (production setup)
+
+### Boot flow (state machine)
+
+| State | Beschrijving |
+|-------|--------------|
+| **BOOT** | Init brownout, Serial, LED |
+| **LOAD_NVS** | Provisioning + config laden uit NVS |
+| **WIFI_CONNECT** | Verbinden met opgeslagen WiFi (timeout 20s) |
+| **CONFIG_PORTAL** | ColdMonitor-Setup AP als WiFi/API ontbreekt |
+| **API_HANDSHAKE** | POST /devices/heartbeat → status ONLINE |
+| **RUN** | Sensoren, upload, periodieke heartbeat |
+
+### NVS keys (namespace `provision`)
+
+| Key | Beschrijving |
+|-----|--------------|
+| `wifi_ssid` | WiFi SSID |
+| `wifi_pass` | WiFi wachtwoord |
+| `api_url` | Backend URL (bijv. `https://xxx.railway.app/api`) |
+| `api_key` | Device API key (x-device-key) |
+| `device_serial` | Serienummer (zoals in app/database) |
+| `provisioned` | Boolean: configuratie compleet |
+
+### Status richting app
+
+- **connected_to_wifi**: `true` als WiFi verbonden
+- **connected_to_api**: `true` als heartbeat succesvol
+- **last_error**: Laatste fout (bijv. "API handshake failed")
+- **Heartbeat**: POST `/api/devices/heartbeat` met `x-device-key`, payload: `deviceId`, `firmwareVersion`, `ip`, `rssi`, `uptime`
+- **Exponentiële backoff**: Bij API-fout 60s → 120s → 240s → … tot max 10 min
+
+### Logging
+
+- Format: `[millis()] [LEVEL] message`
+- Voorbeelden: `[00010] BOOT: ...`, `[00100] NVS: ...`, `[00500] WIFI: connected`, `[01000] API: ONLINE`
+- Secrets (api_key, wifi_pass) worden nooit volledig gelogd
+
+---
+
 ## Features
 
 - ✅ **BMP180** (I²C) temperatuur + luchtdruk

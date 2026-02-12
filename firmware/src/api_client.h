@@ -24,6 +24,12 @@ public:
   bool checkConnection();
   String getDeviceInfo();
   
+  // POST /devices/heartbeat - meldt device als ONLINE, met telemetrie
+  bool apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const String& ip);
+  
+  // Genereer JSON status voor app: connected_to_wifi, connected_to_api, last_error
+  String publishStatusJson(bool connectedToWifi, bool connectedToApi, const String& lastError);
+  
   // Command handling
   bool getPendingCommand(String& commandType, String& commandId, DynamicJsonDocument& parameters);
   bool completeCommand(const String& commandId, bool success, const DynamicJsonDocument& result);

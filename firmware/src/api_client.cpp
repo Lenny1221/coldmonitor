@@ -127,6 +127,70 @@ String APIClient::getDeviceInfo() {
   return "";
 }
 
+bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const String& ip) {
+  if (!WiFi.isConnected() || apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) {
+    return false;
+  }
+  
+  String url = apiUrl + "/devices/heartbeat";
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("x-device-key", apiKey);
+  http.setConnectTimeout(15000);
+  http.setTimeout(10000);
+  
+  DynamicJsonDocument doc(512);
+  doc["deviceId"] = WiFi.macAddress();
+  doc["firmwareVersion"] = FIRMWARE_VERSION;
+  doc["ip"] = ip.length() > 0 ? ip : WiFi.localIP().toString();
+  doc["rssi"] = rssi;
+  doc["uptime"] = millis() / 1000;
+  doc["connected_to_wifi"] = connectedToWifi;
+  
+  String jsonData;
+  serializeJson(doc, jsonData);
+  
+  int httpCode = http.POST(jsonData);
+  bool success = (httpCode == 200 || httpCode == 201);
+  
+  http.end();
+  
+  if (success) {
+    logger.debug("Heartbeat OK: " + String(httpCode));
+  } else {
+    const char* errMsg = nullptr;
+    if (httpCode == -1) errMsg = "connection refused / DNS failed";
+    else if (httpCode == -2) errMsg = "send header failed";
+    else if (httpCode == -3) errMsg = "send payload failed";
+    else if (httpCode == -4) errMsg = "not connected";
+    else if (httpCode == -5) errMsg = "connection lost";
+    else if (httpCode == -11) errMsg = "timeout";
+    else if (httpCode == 401) errMsg = "invalid API key";
+    else if (httpCode == 404) errMsg = "endpoint not found";
+    if (errMsg) {
+      logger.warn("Heartbeat failed: " + String(httpCode) + " " + String(errMsg));
+    } else {
+      logger.warn("Heartbeat failed: " + String(httpCode));
+    }
+  }
+  
+  return success;
+}
+
+String APIClient::publishStatusJson(bool connectedToWifi, bool connectedToApi, const String& lastError) {
+  DynamicJsonDocument doc(256);
+  doc["connected_to_wifi"] = connectedToWifi;
+  doc["connected_to_api"] = connectedToApi;
+  doc["last_error"] = lastError;
+  doc["uptime"] = millis() / 1000;
+  doc["deviceId"] = WiFi.macAddress();
+  doc["firmwareVersion"] = FIRMWARE_VERSION;
+  
+  String json;
+  serializeJson(doc, json);
+  return json;
+}
+
 bool APIClient::getPendingCommand(String& commandType, String& commandId, DynamicJsonDocument& parameters) {
   if (!WiFi.isConnected()) {
     return false;

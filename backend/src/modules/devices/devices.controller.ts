@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole, AuthRequest } from '../../middleware/auth';
+import { requireDeviceAuth, DeviceRequest } from '../../middleware/deviceAuth';
 import { prisma } from '../../config/database';
 import { generateApiKey } from '../../utils/crypto';
 import { CustomError } from '../../middleware/errorHandler';
@@ -73,6 +74,42 @@ router.post('/', requireAuth, requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'), as
     next(error);
   }
 });
+
+/**
+ * POST /devices/heartbeat
+ * Device online/heartbeat - ESP32 meldt zich als ONLINE, met telemetrie
+ * Requires x-device-key header. Updates lastSeenAt, status=ONLINE.
+ */
+router.post(
+  '/heartbeat',
+  requireDeviceAuth,
+  async (req: DeviceRequest, res, next) => {
+    try {
+      if (!req.deviceId) {
+        throw new CustomError('Device ID not found', 400, 'DEVICE_ID_MISSING');
+      }
+
+      const { firmwareVersion, ip, rssi, uptime } = req.body || {};
+
+      const updateData: { firmwareVersion?: string; lastSeenAt: Date; status: 'ONLINE' } = {
+        lastSeenAt: new Date(),
+        status: 'ONLINE',
+      };
+      if (firmwareVersion && typeof firmwareVersion === 'string') {
+        updateData.firmwareVersion = firmwareVersion;
+      }
+
+      await prisma.device.update({
+        where: { id: req.deviceId },
+        data: updateData,
+      });
+
+      res.status(200).json({ success: true, status: 'ONLINE' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 /**
  * GET /devices/coldcell/:coldCellId

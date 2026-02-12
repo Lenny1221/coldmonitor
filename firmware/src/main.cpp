@@ -20,6 +20,7 @@
 #include "wifi_manager.h"
 #include "api_client.h"
 #include "battery_monitor.h"
+#include "boot_state.h"
 #include "ota_update.h"
 #include "power_manager.h"
 
@@ -27,7 +28,8 @@
 ConfigManager config;
 Logger logger;
 ProvisioningManager provisioning;
-ResetButtonHandler resetButton(DEFAULT_RESET_PIN, RESET_HOLD_TIME_MS);
+// Two-step reset: BOOT button (GPIO 0) + RESET button (GPIO 0, same pin) within 10 seconds
+ResetButtonHandler resetButton(DEFAULT_BOOT_PIN, DEFAULT_RESET_PIN, BOOT_WINDOW_MS, RESET_HOLD_TIME_MS);
 Sensors sensors;
 MAX31865Driver tempSensor;
 RS485Modbus modbus;
@@ -47,6 +49,9 @@ TaskHandle_t commandTaskHandle = NULL;
 // WiFi status tracking
 String lastWiFiSSID = "";
 bool lastWiFiConnected = false;
+
+// App-visible status (connected_to_wifi, connected_to_api, last_error)
+DeviceStatus deviceStatus = { false, false, "", 0, 0 };
 
 // Sensor reading structure
 struct SensorReading {
@@ -74,6 +79,13 @@ void commandTask(void *parameter);
 void setupWiFi();
 void setupOTA();
 void deepSleepIfNeeded();
+
+// Serienummer voor deviceId: provisioning (ColdMonitor-setup) heeft voorrang, anders config
+static String getEffectiveDeviceSerial() {
+  String s = provisioning.getDeviceSerial();
+  if (s.length() > 0) return s;
+  return config.getDeviceSerial();
+}
 
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);  // Brownout detector uit (voorkomt reset bij WiFi/AP stroompiek)
@@ -109,18 +121,37 @@ void setup() {
   // Log boot reason
   provisioning.logBootReason();
   
-  // Check reset button BEFORE loading settings
-  logger.info("RESET: Controleren reset knop...");
+  // Check two-step reset BEFORE loading settings
+  logger.info("RESET: Controleren twee-staps reset sequentie...");
+  logger.info("RESET: Stap 1 = Druk BOOT knop");
+  logger.info("RESET: Stap 2 = Binnen 10s, houd RESET knop 3s vast");
   delay(300); // Stabilize button
   
-  if (resetButton.check()) {
-    logger.warn("RESET: Factory reset getriggerd!");
-    provisioning.factoryReset();
-    wifiManager.resetSettings();
-    logger.warn("RESET: Herstarten in 2 seconden...");
-    delay(2000);
-    ESP.restart();
-    return;
+  // Check for two-step reset sequence
+  unsigned long resetCheckStart = millis();
+  const unsigned long resetCheckTimeout = 12000; // Check for 12 seconds max
+  
+  while (millis() - resetCheckStart < resetCheckTimeout) {
+      if (resetButton.checkTwoStepReset()) {
+        logger.warn("RESET: Factory reset getriggerd via twee-staps sequentie!");
+        
+        // Complete factory reset - wipe everything
+        logger.warn("RESET: Uitvoeren volledige factory reset...");
+        provisioning.factoryReset();
+        wifiManager.resetSettings();
+        
+        // Additional WiFi stack reset
+        logger.warn("RESET: WiFi stack volledig resetten...");
+        WiFi.disconnect(true, true); // disconnect and erase credentials
+        WiFi.mode(WIFI_OFF);
+        delay(500);
+        
+        logger.warn("RESET: Herstarten in 2 seconden...");
+        delay(2000);
+        ESP.restart();
+        return;
+      }
+    delay(50); // Small delay to prevent tight loop
   }
   
   // Load configuration
@@ -246,19 +277,22 @@ void setup() {
     logger.info("Command task not created (Modbus disabled)");
   }
   
-  // Set serial number for API client
-  apiClient.setSerialNumber(config.getDeviceSerial());
+  // Set serial number for API client (moet overeenkomen met ColdMonitor-setup/database)
+  apiClient.setSerialNumber(getEffectiveDeviceSerial());
   
   logger.info("All tasks started");
   logger.info("=== System Ready ===");
 }
 
 void loop() {
-  // Check reset button first
-  if (resetButton.check()) {
+  // Check two-step reset sequence
+  if (resetButton.checkTwoStepReset()) {
     logger.warn("RESET: Factory reset getriggerd vanuit loop!");
     provisioning.factoryReset();
     wifiManager.resetSettings();
+    WiFi.disconnect(true, true);
+    WiFi.mode(WIFI_OFF);
+    delay(500);
     delay(2000);
     ESP.restart();
     return;
@@ -266,6 +300,8 @@ void loop() {
   
   // Main loop handles system-level tasks
   static unsigned long lastHeartbeat = 0;
+  static unsigned long lastApiHeartbeat = 0;
+  static unsigned long apiRetryBackoff = 60000;  // Start 60s, exponential backoff
   static unsigned long lastBatteryCheck = 0;
   
   unsigned long now = millis();
@@ -274,6 +310,27 @@ void loop() {
   if (now - lastHeartbeat > 1000) {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     lastHeartbeat = now;
+  }
+  
+  // Periodieke API heartbeat (exponentiële backoff bij failure)
+  if (WiFi.isConnected() && provisioning.hasAPICredentials()) {
+    if (lastApiHeartbeat == 0 || (now - lastApiHeartbeat >= apiRetryBackoff)) {
+      bool apiOk = apiClient.apiHandshakeOrHeartbeat(true, WiFi.RSSI(), WiFi.localIP().toString());
+      deviceStatus.connectedToWifi = true;
+      deviceStatus.connectedToApi = apiOk;
+      deviceStatus.lastError = apiOk ? "" : "API heartbeat failed";
+      deviceStatus.lastHeartbeat = now;
+      deviceStatus.uptimeMs = now;
+      lastApiHeartbeat = now;
+      if (apiOk) {
+        apiRetryBackoff = 60000;  // Reset naar 60s bij succes
+      } else {
+        apiRetryBackoff = (apiRetryBackoff < 600000) ? apiRetryBackoff * 2 : 600000;  // Max 10 min
+      }
+    }
+  } else {
+    deviceStatus.connectedToWifi = WiFi.isConnected();
+    deviceStatus.connectedToApi = false;
   }
   
   // Battery check
@@ -341,7 +398,7 @@ void sensorTask(void *parameter) {
                     " (pin=" + String(data.doorPinHigh ? 1 : 0) + ")");
 
         DynamicJsonDocument doc(512);
-        doc["deviceId"] = config.getDeviceSerial();
+        doc["deviceId"] = getEffectiveDeviceSerial();
         doc["temperature"] = round(data.temperature * 10) / 10.0;  // 1 decimaal
         doc["humidity"] = round(data.humidity * 10) / 10.0;
         doc["doorStatus"] = data.doorOpen;
@@ -483,8 +540,10 @@ void uploadTask(void *parameter) {
         lastUpload = now;
       }
     } else {
-      // WiFi offline: periodiek opnieuw verbinden proberen
-      if (lastReconnectAttempt == 0 || (now - lastReconnectAttempt >= reconnectInterval)) {
+      // WiFi offline: alleen reconnect proberen als we PROVISIONED zijn
+      // Anders: geen reconnect - oude credentials zouden anders gebruikt worden
+      bool isProvisioned = provisioning.isProvisioned();
+      if (isProvisioned && (lastReconnectAttempt == 0 || (now - lastReconnectAttempt >= reconnectInterval))) {
         logger.warn("WiFi offline - poging tot opnieuw verbinden...");
         WiFi.reconnect();
         lastReconnectAttempt = now;
@@ -608,11 +667,14 @@ void commandTask(void *parameter) {
       }
     }
     
-    // Check reset button periodically
-    if (resetButton.check()) {
+    // Check two-step reset sequence periodically
+    if (resetButton.checkTwoStepReset()) {
       logger.warn("RESET: Factory reset getriggerd vanuit upload task!");
       provisioning.factoryReset();
       wifiManager.resetSettings();
+      WiFi.disconnect(true, true);
+      WiFi.mode(WIFI_OFF);
+      delay(500);
       delay(2000);
       ESP.restart();
       return;
@@ -649,8 +711,11 @@ static void onWifiParamsSaved(const char* apiUrl, const char* apiKey, const char
   
   bool success = true;
   
-  // Save API credentials to provisioning manager
+  // Save API credentials + serienummer naar provisioning manager
   success &= provisioning.setAPICredentials(String(apiUrl), String(apiKey));
+  if (deviceSerial && strlen(deviceSerial) > 0) {
+    success &= provisioning.setDeviceSerial(String(deviceSerial));
+  }
   
   // Save WiFi SSID (password is handled by WiFiManager)
   if (ssid.length() > 0) {
@@ -680,6 +745,9 @@ static void onWifiParamsSaved(const char* apiUrl, const char* apiKey, const char
     // Set API client for immediate use
     apiClient.setAPIUrl(String(apiUrl));
     apiClient.setAPIKey(String(apiKey));
+    if (deviceSerial && strlen(deviceSerial) > 0) {
+      apiClient.setSerialNumber(String(deviceSerial));
+    }
     
     delay(2000);
     ESP.restart();
@@ -704,30 +772,37 @@ void setupWiFi() {
   bool hasAPI = provisioning.hasAPICredentials();
   
   // Determine if we need config portal
-  bool needsConfigPortal = false;
+  // ALWAYS start portal if provisioning is not complete
+  bool needsConfigPortal = (!isProvisioned || !hasWiFi || !hasAPI);
   
-  if (!isProvisioned || !hasWiFi || !hasAPI) {
-    needsConfigPortal = true;
+  if (needsConfigPortal) {
     logger.warn("========================================");
-    logger.warn("EERSTE BOOT: Configuratie vereist");
+    logger.warn("BOOT: Eerste start: geen configuratie -> start ColdMonitor-Setup");
+    if (!hasAPI) logger.warn("BOOT: API config ontbreekt (api_url/api_key)");
     logger.warn("  Provisioned: " + String(isProvisioned ? "JA" : "NEE"));
     logger.warn("  WiFi credentials: " + String(hasWiFi ? "JA" : "NEE"));
     logger.warn("  API credentials: " + String(hasAPI ? "JA" : "NEE"));
-    logger.warn("Config portal wordt gestart...");
+    logger.warn("PORTAL: Config portal wordt gestart...");
     logger.warn("========================================");
-  } else {
-    // Try to connect with saved credentials
-    logger.info("WIFI: Opgeslagen credentials gevonden");
-    logger.info("WIFI: Verbinden met SSID: " + provisioning.getWiFiSSID());
     
-    String ssid = provisioning.getWiFiSSID();
-    String pass = provisioning.getWiFiPassword();
+    // CRITICAL: Wis OUDE WiFi credentials eerst - anders blijven aanhangsels hangen
+    logger.info("PORTAL: Schoonmaken: oude WiFi credentials wissen...");
+    provisioning.wipeWiFiCredentials();
+    delay(500);
     
-    // Setup WiFiManager with saved values
-    String apiUrl = provisioning.getAPIUrl();
-    String apiKey = provisioning.getAPIKey();
-    String deviceSerial = config.getDeviceSerial();
+    logger.info("PORTAL: Wissen oude WiFiManager credentials...");
+    wifiManager.resetSettings();
+    delay(1500);  // Laat WiFi stack volledig stabiliseren na reset
     
+    // Start config portal
+    logger.info("PORTAL: Config portal starten (provisioning niet compleet)...");
+    
+    // Get current values (if any)
+    String apiUrl = provisioning.hasAPICredentials() ? provisioning.getAPIUrl() : "";
+    String apiKey = provisioning.hasAPICredentials() ? provisioning.getAPIKey() : "";
+    String deviceSerial = getEffectiveDeviceSerial();
+    
+    // Setup WiFiManager parameters
     wifiManager.setupColdMonitorParams(
       apiUrl.c_str(),
       apiKey.c_str(),
@@ -735,12 +810,62 @@ void setupWiFi() {
     );
     wifiManager.setOnSaveParamsCallback(onWifiParamsSaved);
     
-    // Try auto-connect
-    logger.info("WIFI: Auto-connect starten (timeout: 20s)...");
-    bool connected = wifiManager.autoConnect("ColdMonitor-Setup");
+    // Start config portal (it will handle WiFi mode internally)
+    logger.info("PORTAL: Starten config portal...");
+    
+    bool portalStarted = wifiManager.startConfigPortal("ColdMonitor-Setup");
+    
+    if (portalStarted) {
+      logger.info("PORTAL: Config portal actief");
+      logger.info("PORTAL: Wacht op configuratie...");
+      // Portal will block until configured or timeout
+      // After configuration, callback will be called and device will restart
+    } else {
+      logger.error("PORTAL: Config portal start mislukt!");
+      logger.error("PORTAL: Probeer opnieuw of gebruik factory reset");
+    }
+    
+    return; // Exit - portal is running
+  } else {
+    // Try to connect with saved credentials
+    logger.info("WIFI: Opgeslagen credentials gevonden");
+    logger.info("WIFI: Verbinden met SSID: " + provisioning.getWiFiSSID());
+    
+    // IMPORTANT: Disconnect and clear any old WiFi credentials first
+    // This prevents WiFiManager from using cached credentials
+    logger.info("WIFI: Wissen oude WiFi stack credentials...");
+    WiFi.disconnect(true, true); // disconnect and erase
+    delay(500);
+    
+    String ssid = provisioning.getWiFiSSID();
+    String pass = provisioning.getWiFiPassword();
+    
+    // Verify credentials are not empty
+    if (ssid.length() == 0 || pass.length() == 0) {
+      logger.warn("WIFI: Opgeslagen credentials zijn leeg - start config portal");
+      needsConfigPortal = true;
+    } else {
+      // Setup WiFiManager with saved values
+      String apiUrl = provisioning.getAPIUrl();
+      String apiKey = provisioning.getAPIKey();
+      String deviceSerial = getEffectiveDeviceSerial();
+      
+      wifiManager.setupColdMonitorParams(
+        apiUrl.c_str(),
+        apiKey.c_str(),
+        deviceSerial.c_str()
+      );
+      wifiManager.setOnSaveParamsCallback(onWifiParamsSaved);
+      
+      // Try auto-connect
+      logger.info("WIFI: Auto-connect starten (timeout: 20s)...");
+      bool connected = wifiManager.autoConnect("ColdMonitor-Setup");
     
     if (!connected) {
       logger.warn("WIFI: Auto-connect mislukt - start config portal");
+      // Clear failed credentials to prevent retry
+      WiFi.disconnect(true, true);
+      delay(200);
       needsConfigPortal = true;
     } else {
       // Connected successfully
@@ -764,46 +889,36 @@ void setupWiFi() {
       apiKey = provisioning.getAPIKey();
       apiClient.setAPIUrl(apiUrl);
       apiClient.setAPIKey(apiKey);
+      apiClient.setSerialNumber(getEffectiveDeviceSerial());
       
       logger.info("API: Configuratie geladen vanuit provisioning");
+      
+      // API handshake: meld device als ONLINE
+      bool apiOk = apiClient.apiHandshakeOrHeartbeat(true, WiFi.RSSI(), WiFi.localIP().toString());
+      deviceStatus.connectedToWifi = true;
+      deviceStatus.connectedToApi = apiOk;
+      deviceStatus.lastError = apiOk ? "" : "API handshake failed";
+      deviceStatus.lastHeartbeat = millis();
+      deviceStatus.uptimeMs = millis();
+      
+      if (apiOk) {
+        logger.info("API: ONLINE - heartbeat succesvol");
+      } else {
+        logger.warn("API: WIFI_OK_API_FAIL - retry op interval");
+      }
+      
+      String statusJson = apiClient.publishStatusJson(true, apiOk, apiOk ? "" : "API handshake failed");
+      logger.info("STATUS: " + statusJson);
+      
       return; // Success - exit
     }
+    } // End of else block for credentials check
   }
   
-  // Start config portal if needed
+  // If we get here and needsConfigPortal is true, portal should have been started above
+  // This is just a safety check
   if (needsConfigPortal) {
-    logger.info("PORTAL: Config portal starten...");
-    
-    // Get current values (if any)
-    String apiUrl = provisioning.hasAPICredentials() ? provisioning.getAPIUrl() : "";
-    String apiKey = provisioning.hasAPICredentials() ? provisioning.getAPIKey() : "";
-    String deviceSerial = config.getDeviceSerial();
-    
-    // Setup WiFiManager parameters
-    wifiManager.setupColdMonitorParams(
-      apiUrl.c_str(),
-      apiKey.c_str(),
-      deviceSerial.c_str()
-    );
-    wifiManager.setOnSaveParamsCallback(onWifiParamsSaved);
-    
-    // Ensure WiFi is in AP_STA mode
-    WiFi.mode(WIFI_AP_STA);
-    delay(100);
-    
-    logger.info("PORTAL: AP SSID = ColdMonitor-Setup");
-    logger.info("PORTAL: Open http://192.168.4.1 in browser");
-    
-    bool portalStarted = wifiManager.startConfigPortal("ColdMonitor-Setup");
-    
-    if (portalStarted) {
-      logger.info("PORTAL: Config portal actief");
-      logger.info("PORTAL: Wacht op configuratie...");
-      // Portal will block until configured or timeout
-      // After configuration, callback will be called and device will restart
-    } else {
-      logger.error("PORTAL: Config portal start mislukt!");
-    }
+    logger.warn("WIFI: Config portal zou moeten zijn gestart, maar is niet actief");
   }
 }
 

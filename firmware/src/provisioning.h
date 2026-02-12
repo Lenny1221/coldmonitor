@@ -24,6 +24,7 @@
  *   - wifi_pass: WiFi password
  *   - api_url: Backend API URL
  *   - api_key: API authentication key
+ *   - device_serial: Serienummer (zoals in ColdMonitor app/database)
  *   - provisioned: Boolean flag (0/1)
  * 
  * RESET KNOOP:
@@ -36,9 +37,11 @@
 #define KEY_WIFI_PASS "wifi_pass"
 #define KEY_API_URL "api_url"
 #define KEY_API_KEY "api_key"
+#define KEY_DEVICE_SERIAL "device_serial"
 #define KEY_PROVISIONED "provisioned"
 
 #define MAX_SSID_LEN 32
+#define MAX_DEVICE_SERIAL_LEN 48
 #define MAX_PASS_LEN 64
 #define MAX_API_URL_LEN 256
 #define MAX_API_KEY_LEN 128
@@ -73,12 +76,22 @@ public:
   String getAPIUrl();
   String getAPIKey();
   bool setAPICredentials(const String& url, const String& key);
+
+  // Device serial (moet overeenkomen met serienummer in ColdMonitor app/database)
+  String getDeviceSerial();
+  bool setDeviceSerial(const String& serial);
   
   // Save all settings to NVS
   bool save();
   
+  // Save only if values changed (reduces flash wear)
+  bool saveSettingsIfChanged(const String& apiUrl, const String& apiKey, const String& deviceSerial);
+  
   // Factory reset - wipe all settings
   bool factoryReset();
+  
+  // Wipe ESP32 WiFi stack credentials (nvs.net80211) - voorkomt auto-reconnect met oude netwerken
+  bool wipeWiFiCredentials();
   
   // Logging helpers
   void logBootReason();
