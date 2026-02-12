@@ -5,9 +5,7 @@ import { coldCellStateApi } from '../services/api';
 export interface DoorState {
   doorState: 'OPEN' | 'CLOSED' | null;
   doorLastChangedAt: string | null;
-  doorOpenCountTotal: number;
-  doorCloseCountTotal: number;
-  doorStatsToday?: { opens: number; closes: number; totalOpenSeconds: number };
+  doorStatsToday: { opens: number; closes: number; totalOpenSeconds: number };
 }
 
 export interface UseDoorStateSSEReturn {
@@ -36,9 +34,7 @@ export function useDoorStateSSE(coldCellId: string | undefined): UseDoorStateSSE
         setDoorState({
           doorState: data.doorState?.doorState ?? null,
           doorLastChangedAt: data.doorState?.doorLastChangedAt ?? null,
-          doorOpenCountTotal: data.doorState?.doorOpenCountTotal ?? 0,
-          doorCloseCountTotal: data.doorState?.doorCloseCountTotal ?? 0,
-          doorStatsToday: data.doorStatsToday,
+          doorStatsToday: data.doorStatsToday ?? { opens: 0, closes: 0, totalOpenSeconds: 0 },
         });
       } catch (e) {
         setError('Kon state niet laden');
@@ -81,9 +77,7 @@ export function useDoorStateSSE(coldCellId: string | undefined): UseDoorStateSSE
                     setDoorState((prev) => ({
                       doorState: payload.doorState ?? prev?.doorState ?? null,
                       doorLastChangedAt: payload.doorLastChangedAt ?? prev?.doorLastChangedAt ?? null,
-                      doorOpenCountTotal: payload.doorOpenCountTotal ?? prev?.doorOpenCountTotal ?? 0,
-                      doorCloseCountTotal: payload.doorCloseCountTotal ?? prev?.doorCloseCountTotal ?? 0,
-                      doorStatsToday: payload.doorStatsToday ?? prev?.doorStatsToday,
+                      doorStatsToday: payload.doorStatsToday ?? prev?.doorStatsToday ?? { opens: 0, closes: 0, totalOpenSeconds: 0 },
                     }));
                   }
                 } catch (_) {}
@@ -127,9 +121,7 @@ export function useDoorStateSSE(coldCellId: string | undefined): UseDoorStateSSE
         setDoorState((prev) => ({
           doorState: data.doorState?.doorState ?? prev?.doorState ?? null,
           doorLastChangedAt: data.doorState?.doorLastChangedAt ?? prev?.doorLastChangedAt ?? null,
-          doorOpenCountTotal: data.doorState?.doorOpenCountTotal ?? prev?.doorOpenCountTotal ?? 0,
-          doorCloseCountTotal: data.doorState?.doorCloseCountTotal ?? prev?.doorCloseCountTotal ?? 0,
-          doorStatsToday: data.doorStatsToday ?? prev?.doorStatsToday,
+          doorStatsToday: data.doorStatsToday ?? prev?.doorStatsToday ?? { opens: 0, closes: 0, totalOpenSeconds: 0 },
         }));
       } catch (_) {}
     };

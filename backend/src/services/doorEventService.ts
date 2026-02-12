@@ -125,7 +125,7 @@ export async function processDoorEvent(
     });
   });
 
-  // Publish to SSE subscribers for this cold cell (incl. counts from DeviceState)
+  // Publish to SSE subscribers for this cold cell (doorStatsToday = vandaag, reset bij middernacht)
   const subs = sseSubscribers.get(device.coldCellId);
   if (subs && subs.size > 0) {
     const allDevices = await prisma.device.findMany({
@@ -133,12 +133,16 @@ export async function processDoorEvent(
       select: { id: true },
     });
     const deviceIds = allDevices.map((d) => d.id);
-    const states = await prisma.deviceState.findMany({
-      where: { deviceId: { in: deviceIds } },
+    const today = new Date(eventTime);
+    today.setHours(0, 0, 0, 0);
+    const dailyStats = await prisma.doorStatsDaily.findMany({
+      where: { deviceId: { in: deviceIds }, date: today },
     });
-    const doorOpenCountTotal = states.reduce((s, r) => s + r.doorOpenCountTotal, 0);
-    const doorCloseCountTotal = states.reduce((s, r) => s + r.doorCloseCountTotal, 0);
-    const doorStatsToday = { opens: doorOpenCountTotal, closes: doorCloseCountTotal, totalOpenSeconds: 0 };
+    const doorStatsToday = {
+      opens: dailyStats.reduce((s, r) => s + r.opens, 0),
+      closes: dailyStats.reduce((s, r) => s + r.closes, 0),
+      totalOpenSeconds: dailyStats.reduce((s, r) => s + r.totalOpenSeconds, 0),
+    };
 
     const payload = JSON.stringify({
       type: 'door_state',
@@ -146,8 +150,6 @@ export async function processDoorEvent(
       coldCellId: device.coldCellId,
       doorState: state,
       doorLastChangedAt: eventTime.toISOString(),
-      doorOpenCountTotal,
-      doorCloseCountTotal,
       doorStatsToday,
       timestamp: Date.now(),
     });
@@ -207,20 +209,23 @@ export async function syncDoorStateFromReading(
       select: { id: true },
     });
     const deviceIds = allDevices.map((d) => d.id);
-    const states = await prisma.deviceState.findMany({
-      where: { deviceId: { in: deviceIds } },
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dailyStats = await prisma.doorStatsDaily.findMany({
+      where: { deviceId: { in: deviceIds }, date: today },
     });
-    const doorOpenCountTotal = states.reduce((s, r) => s + r.doorOpenCountTotal, 0);
-    const doorCloseCountTotal = states.reduce((s, r) => s + r.doorCloseCountTotal, 0);
+    const doorStatsToday = {
+      opens: dailyStats.reduce((s, r) => s + r.opens, 0),
+      closes: dailyStats.reduce((s, r) => s + r.closes, 0),
+      totalOpenSeconds: dailyStats.reduce((s, r) => s + r.totalOpenSeconds, 0),
+    };
     const payload = JSON.stringify({
       type: 'door_state',
       deviceId,
       coldCellId: device.coldCellId,
       doorState: state,
       doorLastChangedAt: eventTime.toISOString(),
-      doorOpenCountTotal,
-      doorCloseCountTotal,
-      doorStatsToday: { opens: doorOpenCountTotal, closes: doorCloseCountTotal, totalOpenSeconds: 0 },
+      doorStatsToday,
       timestamp: Date.now(),
     });
     subs.forEach((res) => {

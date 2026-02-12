@@ -190,9 +190,9 @@ const ColdCellDetail: React.FC = () => {
   const latestReading = coldCell?.latestReading;
   const displayDoorState = liveDoorState?.doorState ?? coldCell?.doorState?.doorState ?? (latestReading?.doorStatus === true ? 'OPEN' : latestReading?.doorStatus === false ? 'CLOSED' : null);
   const displayDoorChangedAt = liveDoorState?.doorLastChangedAt ?? coldCell?.doorState?.doorLastChangedAt ?? latestReading?.recordedAt;
-  const todayKey = new Date().toISOString().split('T')[0];
-  const doorOpenTotal = liveDoorState?.doorOpenCountTotal ?? coldCell?.doorState?.doorOpenCountTotal ?? 0;
-  const doorCloseTotal = liveDoorState?.doorCloseCountTotal ?? coldCell?.doorState?.doorCloseCountTotal ?? 0;
+  const doorStatsToday = liveDoorState?.doorStatsToday ?? coldCell?.doorStatsToday ?? { opens: 0, closes: 0, totalOpenSeconds: 0 };
+  const todayOpens = doorStatsToday.opens ?? 0;
+  const todayCloses = doorStatsToday.closes ?? 0;
   const readingsData = readingsResult?.data || [];
   const minTh = coldCell?.temperatureMinThreshold ?? 0;
   const maxTh = coldCell?.temperatureMaxThreshold ?? 10;
@@ -526,9 +526,9 @@ const ColdCellDetail: React.FC = () => {
                   Laatste wijziging: {format(parseISO(displayDoorChangedAt), 'dd/MM HH:mm')}
                 </p>
               )}
-              {(liveDoorState || coldCell?.doorState || doorOpenTotal > 0 || doorCloseTotal > 0) && (
+              {(liveDoorState || coldCell?.doorState || todayOpens > 0 || todayCloses > 0) && (
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Totaal: {doorOpenTotal}× open / {doorCloseTotal}× dicht
+                  Vandaag: {todayOpens}× open / {todayCloses}× dicht
                 </p>
               )}
               {isTechnician && coldCell?.devices?.length > 0 && (
