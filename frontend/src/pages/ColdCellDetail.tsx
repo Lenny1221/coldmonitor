@@ -734,13 +734,15 @@ const ColdCellDetail: React.FC = () => {
                   dataKey="temperature"
                   stroke="#3b82f6"
                   strokeWidth={2}
-                  dot={({ payload, cx, cy }) =>
-                    payload.isExceedance ? (
+                  dot={false}
+                  activeDot={(props: { payload?: { isExceedance?: boolean }; cx?: number; cy?: number }) => {
+                    const { payload, cx, cy } = props;
+                    return payload?.isExceedance ? (
                       <circle cx={cx} cy={cy} r={4} fill="#ef4444" stroke="#b91c1c" strokeWidth={1} />
                     ) : (
-                      <circle cx={cx} cy={cy} r={2} fill="#3b82f6" />
-                    )
-                  }
+                      <circle cx={cx} cy={cy} r={4} fill="#3b82f6" />
+                    );
+                  }}
                   name="Gemeten temperatuur"
                 />
               </ComposedChart>
@@ -810,7 +812,8 @@ const ColdCellDetail: React.FC = () => {
                     dataKey="humidity"
                     stroke="#10b981"
                     strokeWidth={2}
-                    dot={{ r: 2, fill: '#10b981' }}
+                    dot={false}
+                    activeDot={{ r: 4, fill: '#10b981' }}
                     name="Gemeten luchtvochtigheid"
                   />
                 </ComposedChart>
