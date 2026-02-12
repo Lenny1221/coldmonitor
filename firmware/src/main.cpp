@@ -455,8 +455,8 @@ void loop() {
     deepSleepIfNeeded();
   }
   
-  // Snellere loop bij deur-events (50ms i.p.v. 100ms) voor directe respons
-  delay(doorEventManager.hasPending() ? 50 : 100);
+    // Snellere loop bij deur-events (25ms) voor directe live-update in app
+    delay(doorEventManager.hasPending() ? 25 : 100);
 }
 
 void sensorTask(void *parameter) {
@@ -472,10 +472,10 @@ void sensorTask(void *parameter) {
   while (true) {
     unsigned long now = millis();
     
-    // Deur elke 25ms checken met debounce; bij state change event in queue
-    if (now - lastDoorCheck >= 25) {
+    // Deur elke 20ms checken met debounce; bij state change direct event in queue (live app-update)
+    if (now - lastDoorCheck >= 20) {
       bool doorOpen = sensors.readDoorOnly();
-      if (doorEventManager.poll(doorOpen) && hasValidReading) {
+      if (doorEventManager.poll(doorOpen)) {
         DoorEvent ev;
         ev.isOpen = doorOpen;
         ev.timestamp = now;

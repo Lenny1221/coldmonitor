@@ -349,8 +349,9 @@ bool APIClient::uploadDoorEvent(const char* state, uint32_t seq, unsigned long t
   if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
   
   unsigned long now = millis();
-  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) {
-    delay(400 - (now - lastHttpEndMs));
+  const unsigned long doorCooldown = 150;  // Korter voor live deur-update
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < doorCooldown) {
+    delay(doorCooldown - (now - lastHttpEndMs));
   }
   
   String url = apiUrl + "/readings/devices/" + serialNumber + "/door-events";
