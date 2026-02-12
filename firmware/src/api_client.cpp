@@ -100,6 +100,7 @@ bool APIClient::uploadReading(String jsonData) {
     else if (httpCode == -4) errMsg = "not connected";
     else if (httpCode == -5) errMsg = "connection lost";
     else if (httpCode == -11) errMsg = "timeout";
+    else if (httpCode == 429) errMsg = "rate limit (te veel requests) - backend update nodig";
     if (errMsg) {
       logger.warn("Upload failed: " + String(httpCode) + " " + String(errMsg));
       if (httpCode == -1) {
@@ -266,6 +267,10 @@ bool APIClient::getPendingCommand(String& commandType, String& commandId, Dynami
   http.setTimeout(5000);
   
   int httpCode = http.GET();
+  
+  if (httpCode == 429) {
+    logger.warn("Command poll 429: rate limit - commando's niet ontvangen");
+  }
   
   if (httpCode == 200) {
     String response = http.getString();

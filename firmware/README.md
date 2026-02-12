@@ -318,6 +318,32 @@ De verbinding met de backend faalt vóór of tijdens het sturen van de request. 
 - Check DE/RE pin configuration
 - Use serial monitor to debug
 
+### RS485 hardware check (ontdooiing / Modbus)
+
+Controleer de bekabeling als ontdooiing niet werkt:
+
+| ESP32 pin | RS485 module | Carel regelaar |
+|-----------|--------------|----------------|
+| GPIO 16 (RX) | RO (Receiver Output) | — |
+| GPIO 17 (TX) | DI (Driver Input) | — |
+| GPIO 4 | DE + RE (zelfde pin) | — |
+| A+ | A+ / D+ | A+ of D+ |
+| B- | B- / D- | B- of D- |
+
+**Let op:** A en B kunnen bij sommige modules T+ / T- heten. Haal A/B niet om – dat keert het signaal om.
+
+- **Terminatie:** Alleen bij lange kabels (>10 m) een 120 Ω-weerstand tussen A en B.
+- **Common/GND:** Soms moet GND van ESP32 en regelaar verbonden zijn; probeer bij aanhoudende problemen.
+- **Slave ID:** Moet exact overeenkomen met het Modbus-adres in het Carel-menu (vaak 1).
+- **Baud:** Standaard 9600; Carel pCO/pZD-modellen soms 19200. Pas `modbus.baudRate` in config aan.
+
+### Ontdooiing werkt niet
+
+1. **Modbus write moet aan staan** – In config: `modbus.writeEnabled = true` (standaard nu aan). Als je eerder `false` handmatig hebt gezet, schakel terug naar `true`.
+2. **Regelaar-handleiding** – Het defrost-adres verschilt per merk. Firmware probeert: register 6 → coil 2 → coil 6. Als jouw regelaar een ander adres gebruikt, pas `DEFROST_REG_ADDR`/`DEFROST_COIL_ADDR` aan in `main.cpp`.
+3. **Carel PZD2S0P001** – Carel Modbus-booleans beginnen vaak bij adres 2 (coil 2, 3, 4, 5…). Baud: veel Carel-modellen gebruiken 19200 8N1; firmware standaard 9600. Pas `modbus.baudRate` in config aan indien nodig.
+4. **Serial Monitor** – Open Device Monitor (`pio device monitor`) en druk in de app op "Start ontdooiing". Je ziet nu **ONTDOOIING DIAGNOSTIEK** met config, TX-hexbytes en RX-resultaat. Bij `TIMEOUT: geen bytes ontvangen` → bekabeling/slave ID/baud. Bij `Modbus exception 0x02` → verkeerd adres. Zie ook sectie "RS485 hardware check" hierboven.
+
 ### Upload: "device disconnected or multiple access on port"
 
 1. **Serial Monitor / andere poortgebruik:** Sluit alle vensters waar de Serial Monitor open staat (`pio device monitor` of PlatformIO Serial Monitor). Er mag maar één programma de USB-poort gebruiken tijdens upload.

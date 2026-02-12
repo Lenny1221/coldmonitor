@@ -31,8 +31,10 @@ private:
   
   uint16_t responseBuffer[64];
   uint8_t responseLength;
+  bool defrostDebug;  // extra logging voor ontdooiing-diagnostiek
   
   void setTransmitMode(bool transmit);
+  static String bytesToHex(uint8_t* data, uint8_t len);
   uint16_t calculateCRC(uint8_t* data, uint8_t length);
   bool sendRequest(uint8_t functionCode, uint16_t startAddress, uint16_t quantity);
   bool receiveResponse(uint8_t expectedFunctionCode, uint16_t expectedBytes);
@@ -42,6 +44,7 @@ public:
   ~RS485Modbus();
   
   bool init(ModbusConfig config);
+  void setDefrostDebug(bool enable) { defrostDebug = enable; }
   
   // Read functions
   bool readHoldingRegisters(uint16_t startAddress, uint16_t quantity);

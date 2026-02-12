@@ -75,6 +75,10 @@ struct ModbusData {
 
 // Door events: debounced, immediate POST, offline queue
 
+// Defrost: Carel PZD2S0P001 – booleans vaak bij 2-5, register 6 soms. Zie README.
+#define DEFROST_REG_ADDR  0x0006  // Holding register (F06)
+#define DEFROST_COIL_ADDR 0x0002  // Coil (F05) – Carel booleans start bij 2
+
 // Function prototypes
 void sensorTask(void *parameter);
 void modbusTask(void *parameter);
@@ -665,19 +669,45 @@ void commandTask(void *parameter) {
             DynamicJsonDocument result(512); // Increased size
             
             if (commandType == "DEFROST_START") {
-              // Start defrost via RS485
-              // Carel PZD2S0P001: Usually register 0x0006 or coil 0x0006 for defrost command
-              // Value 1 = start defrost, 0 = stop
+              // Carel PZD2S0P001: probeer register 6, dan coil 2 (Carel booleans bij 2), dan coil 6
               logger.info("Executing DEFROST_START command...");
-              if (modbus.writeSingleRegister(0x0006, 1)) {
-                logger.info("Defrost command sent via RS485 - SUCCESS");
+              logger.info("========== ONTDOOIING DIAGNOSTIEK ==========");
+              ModbusConfig mcfg = config.getModbusConfig();
+              logger.info("Config: Slave ID=" + String(mcfg.slaveId) + ", Baud=" + String(mcfg.baudRate) + ", RX=" + String(mcfg.rxPin) + " TX=" + String(mcfg.txPin) + " DE/RE=" + String(mcfg.dePin));
+              logger.info("Poging 1: Register " + String(DEFROST_REG_ADDR) + " (FC06)...");
+              modbus.setDefrostDebug(true);
+              if (modbus.writeSingleRegister(DEFROST_REG_ADDR, 1)) {
+                logger.info("Defrost (register " + String(DEFROST_REG_ADDR) + ") - SUCCESS");
                 success = true;
                 result["status"] = "defrost_started";
-                // Small delay after RS485 write
                 delay(100);
               } else {
-                logger.error("Failed to send defrost command via RS485");
-                result["error"] = "RS485 write failed";
+                logger.info("  -> geen antwoord");
+                logger.info("Poging 2: Coil " + String(DEFROST_COIL_ADDR) + " (FC05)...");
+                if (modbus.writeSingleCoil(DEFROST_COIL_ADDR, true)) {
+                  logger.info("Defrost (coil " + String(DEFROST_COIL_ADDR) + ") - SUCCESS");
+                  success = true;
+                  result["status"] = "defrost_started";
+                  delay(100);
+                } else {
+                  logger.info("  -> geen antwoord");
+                  logger.info("Poging 3: Coil " + String(DEFROST_REG_ADDR) + " (FC05)...");
+                  if (modbus.writeSingleCoil(DEFROST_REG_ADDR, true)) {
+                    logger.info("Defrost (coil " + String(DEFROST_REG_ADDR) + ") - SUCCESS");
+                    success = true;
+                    result["status"] = "defrost_started";
+                    delay(100);
+                  } else {
+                    logger.info("  -> geen antwoord");
+                    logger.error("Defrost failed: alle 3 pogingen faalden");
+                    result["error"] = "RS485 write failed. Zie Serial Monitor voor diagnostiek.";
+                  }
+                }
+              }
+              modbus.setDefrostDebug(false);
+              if (!success) {
+                logger.info("===========================================");
+                logger.info("Lees README 'Ontdooiing werkt niet' + 'RS485 hardware check'");
               }
             } else if (commandType == "READ_TEMPERATURE") {
               // Read temperature via RS485

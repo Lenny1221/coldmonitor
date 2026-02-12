@@ -14,7 +14,10 @@ export const apiRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   // Skip rate limiting entirely in development if limit is very high
-  skip: () => isDevelopment && config.rateLimitMax >= 1000,
+  // Skip for device requests (ESP32): they use x-device-key and can burst when uploading backlog
+  skip: (req) =>
+    (isDevelopment && config.rateLimitMax >= 1000) ||
+    !!req.headers['x-device-key'],
 });
 
 // Stricter rate limiter for authentication routes

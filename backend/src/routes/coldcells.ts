@@ -338,6 +338,16 @@ router.get('/:id/state/stream', requireAuth, requireOwnership, async (req: AuthR
       doorStatsToday,
     });
     res.write(`data: ${payload}\n\n`);
+
+    // Keepalive elke 30s (proxies sluiten anders idle verbindingen)
+    const keepalive = setInterval(() => {
+      try {
+        res.write(': keepalive\n\n');
+      } catch {
+        clearInterval(keepalive);
+      }
+    }, 30000);
+    res.on('close', () => clearInterval(keepalive));
   } catch (error) {
     console.error('SSE stream error:', error);
     res.status(500).json({ error: 'Failed to open stream' });

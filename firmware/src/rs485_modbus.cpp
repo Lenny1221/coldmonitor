@@ -3,7 +3,17 @@
 
 extern Logger logger;
 
-RS485Modbus::RS485Modbus() : serial(nullptr), initialized(false), dePin(0), rePin(0), responseLength(0) {
+RS485Modbus::RS485Modbus() : serial(nullptr), initialized(false), dePin(0), rePin(0), responseLength(0), defrostDebug(false) {
+}
+
+String RS485Modbus::bytesToHex(uint8_t* data, uint8_t len) {
+  String s;
+  for (uint8_t i = 0; i < len && i < 32; i++) {
+    if (i > 0) s += " ";
+    if (data[i] < 16) s += "0";
+    s += String(data[i], HEX);
+  }
+  return s;
 }
 
 RS485Modbus::~RS485Modbus() {
@@ -74,6 +84,9 @@ bool RS485Modbus::sendRequest(uint8_t functionCode, uint16_t startAddress, uint1
   request[6] = crc & 0xFF;
   request[7] = (crc >> 8) & 0xFF;
   
+  if (defrostDebug) {
+    logger.info("[Modbus TX] " + String(functionCode, HEX) + " @ " + String(startAddress) + " | " + bytesToHex(request, 8));
+  }
   setTransmitMode(true);
   delay(1);
   
@@ -97,6 +110,10 @@ bool RS485Modbus::receiveResponse(uint8_t expectedFunctionCode, uint16_t expecte
   uint8_t buffer[256];
   uint8_t index = 0;
   
+  if (defrostDebug) {
+    logger.info("[Modbus] Wachten op antwoord (max 1s)...");
+  }
+  
   while (millis() < timeout && index < 256) {
     if (serial->available()) {
       buffer[index++] = serial->read();
@@ -104,23 +121,45 @@ bool RS485Modbus::receiveResponse(uint8_t expectedFunctionCode, uint16_t expecte
     }
   }
   
+  if (defrostDebug) {
+    if (index == 0) {
+      logger.info("[Modbus RX] TIMEOUT: geen bytes ontvangen");
+      logger.info("  -> Controleer: A+ B- aangesloten? Slave ID=" + String(config.slaveId) + " op regelaar? Baud=" + String(config.baudRate) + "?");
+      return false;
+    }
+    logger.info("[Modbus RX] " + String(index) + " bytes: " + bytesToHex(buffer, index));
+  }
+  
   if (index < 5) {
+    if (defrostDebug) logger.info("[Modbus RX] Te kort antwoord (<5 bytes)");
     return false; // Minimum response length
   }
   
   // Check slave ID
   if (buffer[0] != config.slaveId) {
+    if (defrostDebug) {
+      logger.info("[Modbus RX] Fout: slave ID in antwoord (" + String(buffer[0]) + ") != verwacht (" + String(config.slaveId) + ")");
+    } else {
+      return false;
+    }
     return false;
   }
   
   // Check function code
   if (buffer[1] & 0x80) {
     // Exception response
-    logger.warn("Modbus exception: " + String(buffer[2]));
+    const char* exc = "?";
+    if (buffer[2] == 0x01) exc = "illegal function";
+    else if (buffer[2] == 0x02) exc = "illegal data address";
+    else if (buffer[2] == 0x03) exc = "illegal data value";
+    else if (buffer[2] == 0x04) exc = "slave device failure";
+    logger.warn("Modbus exception 0x" + String(buffer[2], HEX) + ": " + String(exc));
+    if (defrostDebug) logger.info("  -> Adres niet ondersteund door regelaar?");
     return false;
   }
   
   if (buffer[1] != expectedFunctionCode) {
+    if (defrostDebug) logger.info("[Modbus RX] Fout: function code " + String(buffer[1], HEX) + " != verwacht " + String(expectedFunctionCode, HEX));
     return false;
   }
   
@@ -130,15 +169,17 @@ bool RS485Modbus::receiveResponse(uint8_t expectedFunctionCode, uint16_t expecte
   
   if (receivedCRC != calculatedCRC) {
     logger.warn("Modbus CRC error");
+    if (defrostDebug) logger.info("  -> Elektrische storing of noise op RS485-lijn?");
     return false;
   }
   
-  // Extract data
+  // Extract data (for read responses)
   responseLength = buffer[2] / 2; // Number of registers (2 bytes each)
   for (uint8_t i = 0; i < responseLength && i < 64; i++) {
     responseBuffer[i] = (buffer[3 + i * 2] << 8) | buffer[4 + i * 2];
   }
   
+  if (defrostDebug) logger.info("[Modbus RX] OK");
   return true;
 }
 
@@ -189,6 +230,9 @@ bool RS485Modbus::writeSingleRegister(uint16_t address, uint16_t value) {
   request[6] = crc & 0xFF;
   request[7] = (crc >> 8) & 0xFF;
   
+  if (defrostDebug) {
+    logger.info("[Modbus TX] FC06 WriteRegister addr=" + String(address) + " val=" + String(value) + " | " + bytesToHex(request, 8));
+  }
   setTransmitMode(true);
   delay(1);
   
@@ -212,8 +256,32 @@ bool RS485Modbus::writeMultipleRegisters(uint16_t startAddress, uint16_t* values
 }
 
 bool RS485Modbus::writeSingleCoil(uint16_t address, bool value) {
-  // Implementation for single coil write
-  return false;
+  if (!initialized || !serial) {
+    return false;
+  }
+  // Modbus FC 0x05: value 0xFF00 = ON, 0x0000 = OFF
+  uint16_t coilValue = value ? 0xFF00 : 0x0000;
+  uint8_t request[8];
+  request[0] = config.slaveId;
+  request[1] = MODBUS_WRITE_SINGLE_COIL;
+  request[2] = (address >> 8) & 0xFF;
+  request[3] = address & 0xFF;
+  request[4] = (coilValue >> 8) & 0xFF;
+  request[5] = coilValue & 0xFF;
+  uint16_t crc = calculateCRC(request, 6);
+  request[6] = crc & 0xFF;
+  request[7] = (crc >> 8) & 0xFF;
+  if (defrostDebug) {
+    logger.info("[Modbus TX] FC05 WriteCoil addr=" + String(address) + " val=" + String(value ? "ON" : "OFF") + " | " + bytesToHex(request, 8));
+  }
+  setTransmitMode(true);
+  delay(1);
+  for (uint8_t i = 0; i < 8; i++) serial->write(request[i]);
+  serial->flush();
+  delay(1);
+  setTransmitMode(false);
+  delay(50);
+  return receiveResponse(MODBUS_WRITE_SINGLE_COIL, 4);
 }
 
 bool RS485Modbus::writeMultipleCoils(uint16_t startAddress, bool* values, uint16_t quantity) {

@@ -41,7 +41,7 @@ const ColdCellDetail: React.FC = () => {
   const { user } = useAuth();
   const isTechnician = user?.role === 'TECHNICIAN' || user?.role === 'ADMIN';
   const [coldCell, setColdCell] = useState<any>(null);
-  const { doorState: liveDoorState, isLive: doorStateLive } = useDoorStateSSE(id ?? undefined);
+  const { doorState: liveDoorState, isLive: doorStateLive, error: doorStateError, reconnect: doorStateReconnect } = useDoorStateSSE(id ?? undefined);
   const [readingsResult, setReadingsResult] = useState<{ stats?: any; data?: any[] }>({});
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -479,16 +479,30 @@ const ColdCellDetail: React.FC = () => {
               </div>
             </div>
           )}
-          {(displayDoorState != null || latestReading?.doorStatus != null) && (
+          {/* Deur altijd tonen wanneer er devices zijn (live-deur); anders alleen als er data is */}
+          {(coldCell?.devices?.length > 0 || displayDoorState != null || latestReading?.doorStatus != null) && (
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between text-gray-600 mb-1">
                 <div className="flex items-center">
                   <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
                   <span className="text-sm font-medium">Deur</span>
                 </div>
-                {doorStateLive && (
-                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded">Live</span>
-                )}
+                <div className="flex items-center gap-2">
+                  {doorStateLive ? (
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded">Live</span>
+                  ) : doorStateError ? (
+                    <button
+                      type="button"
+                      onClick={doorStateReconnect}
+                      className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded hover:bg-amber-100"
+                      title="Verbind opnieuw voor live updates"
+                    >
+                      Opnieuw verbinden
+                    </button>
+                  ) : (
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">Verbinden…</span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {displayDoorState === 'OPEN' ? (
@@ -496,11 +510,13 @@ const ColdCellDetail: React.FC = () => {
                     <span className="text-amber-600 font-semibold">Open</span>
                     <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
                   </>
-                ) : (
+                ) : displayDoorState === 'CLOSED' ? (
                   <>
                     <span className="text-green-600 font-semibold">Gesloten</span>
                     <CheckCircleIcon className="h-5 w-5 text-green-500" />
                   </>
+                ) : (
+                  <span className="text-gray-500 font-medium">Geen data</span>
                 )}
               </div>
               {displayDoorChangedAt && (

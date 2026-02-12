@@ -35,7 +35,7 @@ void ConfigManager::setDefaults() {
   configDoc["modbus"]["rePin"] = 4;
   configDoc["modbus"]["baudRate"] = 9600;
   configDoc["modbus"]["slaveId"] = 1;
-  configDoc["modbus"]["writeEnabled"] = false;
+  configDoc["modbus"]["writeEnabled"] = true;  // Ontdooiing vereist schrijven
 }
 
 bool ConfigManager::load() {
@@ -257,7 +257,7 @@ ModbusConfig ConfigManager::getModbusConfig() {
   config.rePin = configDoc["modbus"]["rePin"] | 4;
   config.baudRate = configDoc["modbus"]["baudRate"] | 9600;
   config.slaveId = configDoc["modbus"]["slaveId"] | 1;
-  config.writeEnabled = configDoc["modbus"]["writeEnabled"] | false;
+  config.writeEnabled = configDoc["modbus"]["writeEnabled"] | true;
   return config;
 }
 
@@ -272,7 +272,7 @@ void ConfigManager::setModbusConfig(ModbusConfig config) {
 }
 
 bool ConfigManager::getModbusWriteEnabled() {
-  return configDoc["modbus"]["writeEnabled"] | false;
+  return configDoc["modbus"]["writeEnabled"] | true;
 }
 
 void ConfigManager::setModbusWriteEnabled(bool enabled) {
