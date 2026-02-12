@@ -20,6 +20,7 @@
 #include "wifi_manager.h"
 #include "api_client.h"
 #include "battery_monitor.h"
+#include "door_events.h"
 #include "boot_state.h"
 #include "ota_update.h"
 #include "power_manager.h"
@@ -39,6 +40,7 @@ APIClient apiClient;
 BatteryMonitor batteryMonitor;
 OTAUpdate otaUpdate;
 PowerManager powerManager;
+DoorEventManager doorEventManager;
 
 // Task handles
 TaskHandle_t sensorTaskHandle = NULL;
@@ -71,15 +73,7 @@ struct ModbusData {
   bool valid;
 };
 
-// Pending door event: bij open/dicht direct versturen (los van temp-interval)
-struct PendingDoorEvent {
-  volatile bool hasEvent;
-  float temperature;
-  float humidity;
-  bool doorOpen;
-  unsigned long timestamp;
-};
-static PendingDoorEvent pendingDoorEvent = { false, 0, 0, false, 0 };
+// Door events: debounced, immediate POST, offline queue
 
 // Function prototypes
 void sensorTask(void *parameter);
@@ -238,7 +232,8 @@ void setup() {
   powerManager.init();
   logger.info("Power manager initialized");
   
-  // Setup OTA
+  // Setup OTA (met delay om Invalid mbox crash te voorkomen)
+  delay(500);  // Extra stabilisatie vóór netwerkinit
   setupOTA();
   
   // Create tasks
@@ -284,7 +279,7 @@ void setup() {
       NULL,
       1,
       &commandTaskHandle,
-      0
+      1  // Core 1 = zelfde als loop, voorkomt Invalid mbox bij HTTP
     );
     logger.info("Command task created (Modbus enabled)");
   } else {
@@ -312,12 +307,13 @@ void loop() {
     return;
   }
   
-  // Main loop handles system-level tasks
+  // Main loop handles system-level tasks (alle HTTP hier: zelfde core als WiFi → voorkomt Invalid mbox)
   static unsigned long lastHeartbeat = 0;
   static unsigned long lastApiHeartbeat = 0;
   static unsigned long apiRetryBackoff = 10000;  // 10s heartbeat interval (3x = 30s offline threshold)
   static unsigned long lastBatteryCheck = 0;
   static unsigned long lastSettingsFetch = 0;
+  static unsigned long lastUpload = 0;
   static float deviceMinTemp = -25.0f;
   static float deviceMaxTemp = -15.0f;
   static int deviceDoorAlarmDelaySec = 300;
@@ -391,6 +387,62 @@ void loop() {
     lastBatteryCheck = now;
   }
   
+  // Uploads (alle HTTP in loop = zelfde core als WiFi, voorkomt Invalid mbox crash)
+  if (WiFi.isConnected() && provisioning.hasAPICredentials()) {
+    // Flush door events first (FIFO, immediate + offline queue)
+    static DoorEvent retryDoorEvent;
+    static bool hasRetry = false;
+    if (hasRetry) {
+      const char* state = retryDoorEvent.isOpen ? "OPEN" : "CLOSED";
+      if (apiClient.uploadDoorEvent(state, retryDoorEvent.seq, retryDoorEvent.timestamp, retryDoorEvent.rssi, retryDoorEvent.uptimeMs)) {
+        hasRetry = false;
+        logger.info("Deur-event retry OK: " + String(state));
+      }
+    }
+    while (!hasRetry && doorEventManager.hasPending()) {
+      DoorEvent ev;
+      doorEventManager.dequeue(ev);
+      const char* state = ev.isOpen ? "OPEN" : "CLOSED";
+      if (apiClient.uploadDoorEvent(state, ev.seq, ev.timestamp, ev.rssi, ev.uptimeMs)) {
+        logger.info("Deur-event verstuurd: " + String(state) + " (seq=" + String(ev.seq) + ")");
+      } else {
+        retryDoorEvent = ev;
+        hasRetry = true;
+        logger.warn("Deur-event upload mislukt, retry later");
+        break;
+      }
+    }
+    int count = dataBuffer.getCount();
+    unsigned long uploadInterval = config.getUploadInterval() * 1000;
+    bool shouldUpload = (lastUpload == 0 && count > 0) || (lastUpload != 0 && (now - lastUpload >= uploadInterval));
+    if (shouldUpload && count > 0) {
+      logger.info("Uploading " + String(count) + " readings...");
+      int uploaded = 0;
+      for (int i = 0; i < count; i++) {
+        String data = dataBuffer.get(i);
+        if (apiClient.uploadReading(data)) {
+          uploaded++;
+          logger.debug("Uploaded: " + data);
+        } else {
+          logger.warn("Upload failed for: " + data);
+          break;
+        }
+        delay(100);
+      }
+      if (uploaded > 0) {
+        dataBuffer.remove(uploaded);
+        logger.info("Successfully uploaded " + String(uploaded) + " readings");
+      }
+      lastUpload = now;
+    }
+  }
+  
+  // Uitgestelde OTA-init als eerste poging mislukte (WiFi nog niet klaar)
+  static unsigned long lastOTADeferredAttempt = 0;
+  if (WiFi.isConnected() && (now - lastOTADeferredAttempt >= 30000)) {
+    lastOTADeferredAttempt = now;
+    otaUpdate.tryDeferredInit();
+  }
   // Check for OTA updates
   otaUpdate.handle();
   
@@ -408,7 +460,6 @@ void sensorTask(void *parameter) {
   unsigned long lastReading = 0;
   unsigned long lastDoorCheck = 0;
   unsigned long interval = config.getReadingInterval() * 1000; // ms
-  static bool lastDoorStatus = false;
   static float lastKnownTemp = 0.0f;
   static float lastKnownHumidity = 0.0f;
   static bool hasValidReading = false;
@@ -416,19 +467,18 @@ void sensorTask(void *parameter) {
   while (true) {
     unsigned long now = millis();
     
-    // Deur elke 100ms checken; bij verandering direct event voorbereiden (alleen na eerste geldige temp-read)
-    if (now - lastDoorCheck >= 100) {
+    // Deur elke 50ms checken met debounce; bij state change event in queue
+    if (now - lastDoorCheck >= 50) {
       bool doorOpen = sensors.readDoorOnly();
-      if (doorOpen != lastDoorStatus && hasValidReading) {
-        lastDoorStatus = doorOpen;
-        pendingDoorEvent.temperature = lastKnownTemp;
-        pendingDoorEvent.humidity = lastKnownHumidity;
-        pendingDoorEvent.doorOpen = doorOpen;
-        pendingDoorEvent.timestamp = now;
-        pendingDoorEvent.hasEvent = true;
-        logger.info("Deur " + String(doorOpen ? "OPEN" : "DICHT") + " – direct event voorbereid");
-      } else if (doorOpen != lastDoorStatus) {
-        lastDoorStatus = doorOpen;
+      if (doorEventManager.poll(doorOpen) && hasValidReading) {
+        DoorEvent ev;
+        ev.isOpen = doorOpen;
+        ev.timestamp = now;
+        ev.seq = doorEventManager.getNextSeq();
+        ev.rssi = WiFi.isConnected() ? WiFi.RSSI() : 0;
+        ev.uptimeMs = now;
+        doorEventManager.enqueue(ev);
+        logger.info("Deur " + String(doorOpen ? "OPEN" : "DICHT") + " (seq=" + String(ev.seq) + ") – event in queue");
       }
       lastDoorCheck = now;
     }
@@ -446,7 +496,6 @@ void sensorTask(void *parameter) {
       if (data.valid) {
         lastKnownTemp = data.temperature;
         lastKnownHumidity = data.humidity;
-        lastDoorStatus = data.doorOpen;
         hasValidReading = true;
         
         // Altijd op monitor tonen (INFO); pin=0/1 om deurcontact te debuggen
@@ -521,21 +570,15 @@ void modbusTask(void *parameter) {
 }
 
 void uploadTask(void *parameter) {
-  logger.info("Upload task started");
-  
-  unsigned long lastUpload = 0;
+  logger.info("Upload task started (WiFi monitor only – HTTP in loop)");
   unsigned long lastReconnectAttempt = 0;
-  const unsigned long reconnectInterval = 60000;  // Elke 60 s reconnect proberen bij offline
-  unsigned long interval = config.getUploadInterval() * 1000;
+  const unsigned long reconnectInterval = 60000;
   
   while (true) {
     unsigned long now = millis();
-    
-    // Check WiFi status en log wijzigingen
     bool currentlyConnected = (WiFi.status() == WL_CONNECTED);
     
     if (currentlyConnected && !lastWiFiConnected) {
-      // WiFi terug online
       String currentSSID = WiFi.SSID();
       logger.info("========================================");
       logger.info("WiFi TERUG ONLINE");
@@ -543,83 +586,24 @@ void uploadTask(void *parameter) {
       logger.info("IP: " + WiFi.localIP().toString());
       logger.info("RSSI: " + String(WiFi.RSSI()) + " dBm");
       logger.info("========================================");
-      
       if (lastWiFiSSID.length() > 0 && lastWiFiSSID != currentSSID) {
         logger.info(">>> NETWERK VERANDERD: " + currentSSID + " (was: " + lastWiFiSSID + ") <<<");
       }
-      
       lastWiFiSSID = currentSSID;
       lastWiFiConnected = true;
     } else if (!currentlyConnected && lastWiFiConnected) {
-      // WiFi offline gegaan
       logger.warn("========================================");
       logger.warn("WiFi OFFLINE - verbinding verloren");
       logger.warn("Laatste SSID: " + lastWiFiSSID);
       logger.warn("========================================");
       lastWiFiConnected = false;
     } else if (currentlyConnected && lastWiFiSSID != WiFi.SSID()) {
-      // Netwerk veranderd terwijl verbonden
       String newSSID = WiFi.SSID();
       logger.info(">>> NETWERK VERANDERD: " + newSSID + " (was: " + lastWiFiSSID + ") <<<");
       lastWiFiSSID = newSSID;
     }
     
-    // Check if WiFi is connected
-    if (currentlyConnected) {
-      // Deur-event direct versturen (los van temp-interval)
-      if (pendingDoorEvent.hasEvent) {
-        DynamicJsonDocument doc(512);
-        doc["deviceId"] = getEffectiveDeviceSerial();
-        doc["temperature"] = round(pendingDoorEvent.temperature * 10) / 10.0;
-        doc["humidity"] = round(pendingDoorEvent.humidity * 10) / 10.0;
-        doc["doorStatus"] = pendingDoorEvent.doorOpen;
-        doc["powerStatus"] = true;
-        doc["batteryLevel"] = batteryMonitor.getPercentage();
-        doc["batteryVoltage"] = batteryMonitor.getVoltage();
-        doc["timestamp"] = pendingDoorEvent.timestamp;
-        String jsonData;
-        serializeJson(doc, jsonData);
-        if (apiClient.uploadReading(jsonData)) {
-          pendingDoorEvent.hasEvent = false;
-          logger.info("Deur-event direct verstuurd: " + String(pendingDoorEvent.doorOpen ? "OPEN" : "DICHT"));
-        } else {
-          logger.warn("Deur-event upload mislukt, retry later");
-        }
-      }
-      
-      int count = dataBuffer.getCount();
-      // Eerste upload direct zodra er data is (lastUpload==0); daarna volgens interval
-      bool shouldUpload = (lastUpload == 0 && count > 0) || (lastUpload != 0 && (now - lastUpload >= interval));
-
-      if (shouldUpload) {
-        if (count > 0) {
-          logger.info("Uploading " + String(count) + " readings...");
-
-          int uploaded = 0;
-          for (int i = 0; i < count; i++) {
-            String data = dataBuffer.get(i);
-
-            if (apiClient.uploadReading(data)) {
-              uploaded++;
-              logger.debug("Uploaded: " + data);
-            } else {
-              logger.warn("Upload failed for: " + data);
-              break; // Stop on first failure
-            }
-
-            delay(100); // Small delay between uploads
-          }
-
-          if (uploaded > 0) {
-            dataBuffer.remove(uploaded);
-            logger.info("Successfully uploaded " + String(uploaded) + " readings");
-          }
-        }
-        lastUpload = now;
-      }
-    } else {
-      // WiFi offline: alleen reconnect proberen als we PROVISIONED zijn
-      // Anders: geen reconnect - oude credentials zouden anders gebruikt worden
+    if (!currentlyConnected) {
       bool isProvisioned = provisioning.isProvisioned();
       if (isProvisioned && (lastReconnectAttempt == 0 || (now - lastReconnectAttempt >= reconnectInterval))) {
         logger.warn("WiFi offline - poging tot opnieuw verbinden...");
@@ -913,21 +897,29 @@ void setupWiFi() {
     return; // Exit - portal is running
   } else {
     // Try to connect with saved credentials
-    logger.info("WIFI: Opgeslagen credentials gevonden");
-    logger.info("WIFI: Verbinden met SSID: " + provisioning.getWiFiSSID());
-    
-    // IMPORTANT: Disconnect and clear any old WiFi credentials first
-    // This prevents WiFiManager from using cached credentials
-    logger.info("WIFI: Wissen oude WiFi stack credentials...");
-    WiFi.disconnect(true, true); // disconnect and erase
-    delay(500);
-    
     String ssid = provisioning.getWiFiSSID();
     String pass = provisioning.getWiFiPassword();
+    bool passwordFromWiFiManager = (pass.length() == 0 || pass == "saved_by_wifimanager");
     
-    // Verify credentials are not empty
-    if (ssid.length() == 0 || pass.length() == 0) {
-      logger.warn("WIFI: Opgeslagen credentials zijn leeg - start config portal");
+    logger.info("WIFI: Opgeslagen credentials gevonden");
+    logger.info("WIFI: Verbinden met SSID: " + ssid);
+    if (passwordFromWiFiManager) {
+      logger.info("WIFI: Wachtwoord beheerd door WiFiManager (niet wissen!)");
+    }
+    
+    // NIET WiFi.disconnect(true,true) als WiFiManager het wachtwoord heeft opgeslagen!
+    // Dat wist de credentials die WiFiManager in de ESP32 WiFi-stack heeft gezet.
+    if (!passwordFromWiFiManager) {
+      logger.info("WIFI: Wissen oude WiFi stack credentials...");
+      WiFi.disconnect(true, true);
+      delay(500);
+    } else {
+      WiFi.disconnect();  // Alleen disconnect, credentials NIET wissen
+      delay(200);
+    }
+    
+    if (ssid.length() == 0) {
+      logger.warn("WIFI: Geen SSID opgeslagen - start config portal");
       needsConfigPortal = true;
     } else {
       // Setup WiFiManager with saved values
@@ -1000,10 +992,25 @@ void setupWiFi() {
     } // End of else block for credentials check
   }
   
-  // If we get here and needsConfigPortal is true, portal should have been started above
-  // This is just a safety check
+  // Als credentials ontbreken of autoConnect mislukte: start config portal
   if (needsConfigPortal) {
-    logger.warn("WIFI: Config portal zou moeten zijn gestart, maar is niet actief");
+    logger.warn("WIFI: Config portal starten (credentials ontbreken of connect mislukt)...");
+    provisioning.wipeWiFiCredentials();
+    delay(500);
+    wifiManager.resetSettings();
+    delay(500);
+    
+    String apiUrl = provisioning.getAPIUrl();
+    String apiKey = provisioning.getAPIKey();
+    String deviceSerial = getEffectiveDeviceSerial();
+    wifiManager.setupColdMonitorParams(apiUrl.c_str(), apiKey.c_str(), deviceSerial.c_str());
+    wifiManager.setOnSaveParamsCallback(onWifiParamsSaved);
+    
+    if (wifiManager.startConfigPortal("ColdMonitor-Setup")) {
+      logger.info("PORTAL: Config portal actief - wacht op configuratie");
+    } else {
+      logger.error("PORTAL: Config portal start mislukt");
+    }
   }
 }
 

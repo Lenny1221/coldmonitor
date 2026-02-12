@@ -14,6 +14,7 @@ public:
   ~OTAUpdate();
   
   bool init(String password);
+  bool tryDeferredInit();  // Retry init when WiFi connects (gebruikt opgeslagen password)
   void handle();
   void setHostname(String hostname);
 };

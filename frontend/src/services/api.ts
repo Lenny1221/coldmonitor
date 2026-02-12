@@ -479,6 +479,18 @@ export const readingsApi = {
   },
 };
 
+// Cold cell state API (door realtime + polling fallback)
+export const coldCellStateApi = {
+  getState: async (coldCellId: string) => {
+    const response = await api.get(`/coldcells/${coldCellId}/state`);
+    return response.data;
+  },
+  getSSEUrl: (coldCellId: string) => {
+    const base = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/+$/, '');
+    return `${base}/coldcells/${coldCellId}/state/stream`;
+  },
+};
+
 // Alerts API
 export const alertsApi = {
   getAll: async (params?: { status?: string; type?: string }) => {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { coldCellsApi, readingsApi, alertsApi, devicesApi } from '../services/api';
+import { useDoorStateSSE } from '../hooks/useDoorStateSSE';
 import {
   Line,
   XAxis,
@@ -40,6 +41,7 @@ const ColdCellDetail: React.FC = () => {
   const { user } = useAuth();
   const isTechnician = user?.role === 'TECHNICIAN' || user?.role === 'ADMIN';
   const [coldCell, setColdCell] = useState<any>(null);
+  const { doorState: liveDoorState, isLive: doorStateLive } = useDoorStateSSE(id ?? undefined);
   const [readingsResult, setReadingsResult] = useState<{ stats?: any; data?: any[] }>({});
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -182,8 +184,12 @@ const ColdCellDetail: React.FC = () => {
     }
   };
 
-  // latestReading wordt elke 20s bijgewerkt via fetchColdCell() (zelfde refresh als grafiek)
+  // latestReading wordt elke 5s bijgewerkt; liveDoorState = realtime via SSE
   const latestReading = coldCell?.latestReading;
+  const displayDoorState = liveDoorState?.doorState ?? coldCell?.doorState?.doorState ?? (latestReading?.doorStatus === true ? 'OPEN' : latestReading?.doorStatus === false ? 'CLOSED' : null);
+  const displayDoorChangedAt = liveDoorState?.doorLastChangedAt ?? coldCell?.doorState?.doorLastChangedAt ?? latestReading?.recordedAt;
+  const todayKey = new Date().toISOString().split('T')[0];
+  const doorStatsToday = liveDoorState?.doorStatsToday ?? doorEvents?.eventsPerDay?.find((d: any) => d.date === todayKey);
   const readingsData = readingsResult?.data || [];
   const minTh = coldCell?.temperatureMinThreshold ?? 0;
   const maxTh = coldCell?.temperatureMaxThreshold ?? 10;
@@ -472,14 +478,19 @@ const ColdCellDetail: React.FC = () => {
               </div>
             </div>
           )}
-          {latestReading?.doorStatus != null && (
+          {(displayDoorState != null || latestReading?.doorStatus != null) && (
             <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center text-gray-600 mb-1">
-                <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
-                <span className="text-sm font-medium">Deur</span>
+              <div className="flex items-center justify-between text-gray-600 mb-1">
+                <div className="flex items-center">
+                  <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
+                  <span className="text-sm font-medium">Deur</span>
+                </div>
+                {doorStateLive && (
+                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded">Live</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
-                {latestReading.doorStatus ? (
+                {displayDoorState === 'OPEN' ? (
                   <>
                     <span className="text-amber-600 font-semibold">Open</span>
                     <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
@@ -491,6 +502,16 @@ const ColdCellDetail: React.FC = () => {
                   </>
                 )}
               </div>
+              {displayDoorChangedAt && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Laatste wijziging: {format(parseISO(displayDoorChangedAt), 'dd/MM HH:mm')}
+                </p>
+              )}
+              {(liveDoorState || coldCell?.doorState || doorStatsToday) && (
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Vandaag: {(doorStatsToday?.opens ?? 0)}× open / {(doorStatsToday?.closes ?? 0)}× dicht
+                </p>
+              )}
             </div>
           )}
           <div className="border border-gray-200 rounded-lg p-4">

@@ -6,9 +6,11 @@ extern Logger logger;
 extern ConfigManager config;
 
 APIClient::APIClient() : serialNumber("") {
+  httpMutex = xSemaphoreCreateMutex();
 }
 
 APIClient::~APIClient() {
+  if (httpMutex) vSemaphoreDelete(httpMutex);
   http.end();
 }
 
@@ -25,6 +27,16 @@ bool APIClient::uploadReading(String jsonData) {
     logger.warn("WiFi not connected, cannot upload");
     return false;
   }
+  if (!httpMutex) return false;
+  if (xSemaphoreTake(httpMutex, pdMS_TO_TICKS(15000)) != pdTRUE) {
+    logger.warn("HTTP mutex timeout");
+    return false;
+  }
+  // Cooldown: min 400ms tussen HTTP-calls (LwIP stack moet herstellen)
+  unsigned long now = millis();
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) {
+    delay(400 - (now - lastHttpEndMs));
+  }
   
   if (apiUrl.length() == 0) {
     logger.error("API URL not configured - check config in NVS");
@@ -35,6 +47,7 @@ bool APIClient::uploadReading(String jsonData) {
     apiKey = config.getAPIKey();
     if (apiUrl.length() == 0) {
       logger.error("API URL still empty after reload - device needs reconfiguration");
+      xSemaphoreGive(httpMutex);
       return false;
     }
     logger.info("Reloaded API URL from config: " + apiUrl);
@@ -45,6 +58,7 @@ bool APIClient::uploadReading(String jsonData) {
     apiKey = config.getAPIKey();
     if (apiKey.length() == 0) {
       logger.error("API Key still empty after reload - device needs reconfiguration");
+      xSemaphoreGive(httpMutex);
       return false;
     }
     logger.info("Reloaded API Key from config");
@@ -56,6 +70,7 @@ bool APIClient::uploadReading(String jsonData) {
   
   if (error) {
     logger.error("Failed to parse JSON data");
+    xSemaphoreGive(httpMutex);
     return false;
   }
   
@@ -99,7 +114,8 @@ bool APIClient::uploadReading(String jsonData) {
   }
   
   http.end();
-  
+  lastHttpEndMs = millis();
+  xSemaphoreGive(httpMutex);
   return success;
 }
 
@@ -110,18 +126,18 @@ bool APIClient::uploadReadings(String jsonArray) {
 }
 
 bool APIClient::checkConnection() {
-  if (!WiFi.isConnected()) {
-    return false;
-  }
+  if (!WiFi.isConnected()) return false;
+  if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(5000)) != pdTRUE) return false;
+  unsigned long now = millis();
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
   
   String url = apiUrl + "/health";
   http.begin(url);
-  
   int httpCode = http.GET();
   bool success = (httpCode == 200);
-  
   http.end();
-  
+  lastHttpEndMs = millis();
+  xSemaphoreGive(httpMutex);
   return success;
 }
 
@@ -134,6 +150,9 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
   if (!WiFi.isConnected() || apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) {
     return false;
   }
+  if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(15000)) != pdTRUE) return false;
+  unsigned long now = millis();
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
   
   String url = apiUrl + "/devices/heartbeat";
   http.begin(url);
@@ -157,6 +176,8 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
   bool success = (httpCode == 200 || httpCode == 201);
   
   http.end();
+  lastHttpEndMs = millis();
+  xSemaphoreGive(httpMutex);
   
   if (success) {
     logger.debug("Heartbeat OK: " + String(httpCode));
@@ -184,6 +205,9 @@ bool APIClient::fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAla
   if (!WiFi.isConnected() || apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) {
     return false;
   }
+  if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
+  unsigned long now = millis();
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
   
   String url = apiUrl + "/devices/settings";
   http.begin(url);
@@ -208,6 +232,8 @@ bool APIClient::fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAla
   }
   
   http.end();
+  lastHttpEndMs = millis();
+  xSemaphoreGive(httpMutex);
   return ok;
 }
 
@@ -226,16 +252,13 @@ String APIClient::publishStatusJson(bool connectedToWifi, bool connectedToApi, c
 }
 
 bool APIClient::getPendingCommand(String& commandType, String& commandId, DynamicJsonDocument& parameters) {
-  if (!WiFi.isConnected()) {
-    return false;
-  }
-  
-  if (apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) {
-    return false;
-  }
+  if (!WiFi.isConnected()) return false;
+  if (apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) return false;
+  if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
+  unsigned long now = millis();
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
   
   String url = apiUrl + "/devices/commands/pending";
-  
   http.begin(url);
   http.addHeader("x-device-key", apiKey);
   http.setConnectTimeout(10000);
@@ -270,22 +293,22 @@ bool APIClient::getPendingCommand(String& commandType, String& commandId, Dynami
         }
       }
       http.end();
+      xSemaphoreGive(httpMutex);
       return true;
     }
   }
   
   http.end();
+  xSemaphoreGive(httpMutex);
   return false;
 }
 
 bool APIClient::completeCommand(const String& commandId, bool success, const DynamicJsonDocument& result) {
-  if (!WiFi.isConnected()) {
-    return false;
-  }
-  
-  if (apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) {
-    return false;
-  }
+  if (!WiFi.isConnected()) return false;
+  if (apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) return false;
+  if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
+  unsigned long now = millis();
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
   
   String url = apiUrl + "/devices/commands/" + commandId + "/complete";
   
@@ -308,5 +331,50 @@ bool APIClient::completeCommand(const String& commandId, bool success, const Dyn
   bool ok = (httpCode == 200);
   
   http.end();
+  lastHttpEndMs = millis();
+  xSemaphoreGive(httpMutex);
   return ok;
+}
+
+bool APIClient::uploadDoorEvent(const char* state, uint32_t seq, unsigned long timestamp, int rssi, unsigned long uptimeMs) {
+  if (!WiFi.isConnected() || apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) {
+    return false;
+  }
+  if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
+  
+  unsigned long now = millis();
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) {
+    delay(400 - (now - lastHttpEndMs));
+  }
+  
+  String url = apiUrl + "/readings/devices/" + serialNumber + "/door-events";
+  
+  DynamicJsonDocument doc(256);
+  doc["device_id"] = serialNumber;
+  doc["state"] = state;
+  doc["timestamp"] = timestamp;
+  doc["seq"] = seq;
+  if (rssi != 0) doc["rssi"] = rssi;
+  if (uptimeMs > 0) doc["uptime_ms"] = uptimeMs;
+  
+  String jsonData;
+  serializeJson(doc, jsonData);
+  
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("x-device-key", apiKey);
+  http.setConnectTimeout(8000);
+  http.setTimeout(5000);
+  
+  int httpCode = http.POST(jsonData);
+  bool success = (httpCode == 200 || httpCode == 201);
+  
+  http.end();
+  lastHttpEndMs = millis();
+  xSemaphoreGive(httpMutex);
+  
+  if (!success) {
+    logger.warn("Door event upload failed: " + String(httpCode));
+  }
+  return success;
 }

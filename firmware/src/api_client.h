@@ -5,12 +5,16 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 #include <ArduinoJson.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 class APIClient {
 private:
   String apiUrl;
   String apiKey;
   HTTPClient http;
+  SemaphoreHandle_t httpMutex;
+  unsigned long lastHttpEndMs = 0;  // Cooldown tussen HTTP-calls (voorkomt Invalid mbox)
   
 public:
   APIClient();
@@ -38,6 +42,9 @@ public:
   bool completeCommand(const String& commandId, bool success, const DynamicJsonDocument& result);
   
   void setSerialNumber(String serial) { serialNumber = serial; }
+  
+  // POST /readings/devices/:serial/door-events - immediate door state change
+  bool uploadDoorEvent(const char* state, uint32_t seq, unsigned long timestamp, int rssi, unsigned long uptimeMs);
   
 private:
   String serialNumber;

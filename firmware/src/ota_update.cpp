@@ -1,5 +1,6 @@
 #include "ota_update.h"
 #include "logger.h"
+#include <WiFi.h>
 
 extern Logger logger;
 
@@ -41,11 +42,24 @@ bool OTAUpdate::init(String password) {
     logger.error(errorMsg);
   });
   
+  // Voorkom "Invalid mbox" crash: lwIP stack moet stabiliseren vóór mDNS/OTA
+  if (WiFi.status() != WL_CONNECTED) {
+    logger.warn("OTA: WiFi niet verbonden, OTA uitgesteld");
+    return false;
+  }
+  delay(2000);  // Laat TCP/IP stack volledig initialiseren
+  
   ArduinoOTA.begin();
   initialized = true;
   logger.info("OTA update initialized");
   
   return true;
+}
+
+bool OTAUpdate::tryDeferredInit() {
+  if (initialized) return true;
+  if (password.length() == 0) return false;
+  return init(password);
 }
 
 void OTAUpdate::handle() {

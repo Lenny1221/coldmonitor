@@ -167,11 +167,59 @@ model Device {
   
   sensorReadings SensorReading[]
   commands DeviceCommand[]
+  deviceState DeviceState?
+  doorEvents DoorEvent[]
+  doorStatsDaily DoorStatsDaily[]
 
   @@index([serialNumber])
   @@index([apiKey])
   @@index([coldCellId])
   @@index([status])
+}
+
+// Device door state (live status for realtime app)
+model DeviceState {
+  id                   String   @id @default(cuid())
+  deviceId             String   @unique
+  device               Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  doorState            String   // "OPEN" | "CLOSED"
+  doorLastChangedAt    DateTime
+  doorOpenCountTotal   Int      @default(0)
+  doorCloseCountTotal  Int      @default(0)
+  updatedAt            DateTime @updatedAt
+
+  @@index([deviceId])
+}
+
+// Door open/close events (event log)
+model DoorEvent {
+  id         String   @id @default(cuid())
+  deviceId   String
+  device     Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  state      String   // "OPEN" | "CLOSED"
+  timestamp  DateTime
+  seq        Int
+  receivedAt DateTime @default(now())
+
+  @@unique([deviceId, seq])
+  @@index([deviceId])
+  @@index([deviceId, timestamp])
+  @@index([timestamp])
+}
+
+// Daily door stats per device
+model DoorStatsDaily {
+  id                String   @id @default(cuid())
+  deviceId          String
+  device            Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  date              DateTime @db.Date
+  opens             Int      @default(0)
+  closes            Int      @default(0)
+  totalOpenSeconds  Int      @default(0)
+
+  @@unique([deviceId, date])
+  @@index([deviceId])
+  @@index([date])
 }
 
 // Device Command model (for RS485 commands like defrost)

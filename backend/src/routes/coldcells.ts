@@ -2,6 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { requireAuth, AuthRequest, requireRole, requireOwnership } from '../middleware/auth';
+import { addSSESubscriber } from '../services/doorEventService';
 import { logger } from '../utils/logger';
 
 const router = express.Router();
@@ -134,16 +135,28 @@ router.get('/:id', requireAuth, requireOwnership, async (req: AuthRequest, res) 
     // Get latest sensor reading from any device in this cold cell
     const deviceIds = coldCell.devices.map(d => d.id);
     let latestReading = null;
+    let doorState = null; // DeviceState (realtime door) overrides latestReading.doorStatus
     if (deviceIds.length > 0) {
       latestReading = await prisma.sensorReading.findFirst({
         where: { deviceId: { in: deviceIds } },
         orderBy: { recordedAt: 'desc' },
+      });
+      // Prefer DeviceState for door (real-time) over reading
+      doorState = await prisma.deviceState.findFirst({
+        where: { deviceId: { in: deviceIds } },
+        orderBy: { doorLastChangedAt: 'desc' },
       });
     }
 
     res.json({
       ...coldCell,
       latestReading,
+      doorState: doorState ? {
+        doorState: doorState.doorState,
+        doorLastChangedAt: doorState.doorLastChangedAt,
+        doorOpenCountTotal: doorState.doorOpenCountTotal,
+        doorCloseCountTotal: doorState.doorCloseCountTotal,
+      } : null,
     });
   } catch (error) {
     console.error('Get cold cell error:', error);
@@ -273,6 +286,148 @@ router.patch('/:id', requireAuth, requireOwnership, async (req: AuthRequest, res
     }
     console.error('Update cold cell error:', error);
     res.status(500).json({ error: 'Failed to update cold cell' });
+  }
+});
+
+// GET cold cell state stream (SSE) - realtime door updates (must be before /:id/state)
+router.get('/:id/state/stream', requireAuth, requireOwnership, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const coldCell = await prisma.coldCell.findUnique({
+      where: { id },
+      include: { location: true },
+    });
+    if (!coldCell) {
+      return res.status(404).json({ error: 'Cold cell not found' });
+    }
+    if (req.userRole === 'CUSTOMER' && coldCell.location.customerId !== req.customerId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    addSSESubscriber(id, res);
+    const deviceIds = (await prisma.device.findMany({ where: { coldCellId: id }, select: { id: true } })).map(d => d.id);
+    let doorState = null;
+    if (deviceIds.length > 0) {
+      doorState = await prisma.deviceState.findFirst({
+        where: { deviceId: { in: deviceIds } },
+        orderBy: { doorLastChangedAt: 'desc' },
+      });
+    }
+    const payload = JSON.stringify({
+      type: 'initial',
+      coldCellId: id,
+      doorState: doorState ? doorState.doorState : null,
+      doorLastChangedAt: doorState?.doorLastChangedAt?.toISOString() ?? null,
+    });
+    res.write(`data: ${payload}\n\n`);
+  } catch (error) {
+    console.error('SSE stream error:', error);
+    res.status(500).json({ error: 'Failed to open stream' });
+  }
+});
+
+// GET cold cell state (door + counters) - for polling fallback
+router.get('/:id/state', requireAuth, requireOwnership, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const coldCell = await prisma.coldCell.findUnique({
+      where: { id },
+      include: { location: true, devices: { select: { id: true } } },
+    });
+    if (!coldCell) {
+      return res.status(404).json({ error: 'Cold cell not found' });
+    }
+    if (req.userRole === 'CUSTOMER' && coldCell.location.customerId !== req.customerId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const deviceIds = coldCell.devices.map(d => d.id);
+    let doorState = null;
+    let doorStatsToday = null;
+    if (deviceIds.length > 0) {
+      const states = await prisma.deviceState.findMany({
+        where: { deviceId: { in: deviceIds } },
+        orderBy: { doorLastChangedAt: 'desc' },
+      });
+      doorState = states[0] || null;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const stats = await prisma.doorStatsDaily.aggregate({
+        where: {
+          deviceId: { in: deviceIds },
+          date: today,
+        },
+        _sum: { totalOpenSeconds: true },
+        _count: true,
+      });
+      const dailyRows = await prisma.doorStatsDaily.findMany({
+        where: {
+          deviceId: { in: deviceIds },
+          date: today,
+        },
+      });
+      const opensToday = dailyRows.reduce((s, r) => s + r.opens, 0);
+      const closesToday = dailyRows.reduce((s, r) => s + r.closes, 0);
+      doorStatsToday = { opens: opensToday, closes: closesToday, totalOpenSeconds: stats._sum.totalOpenSeconds ?? 0 };
+    }
+    res.json({
+      coldCellId: id,
+      doorState: doorState ? {
+        doorState: doorState.doorState,
+        doorLastChangedAt: doorState.doorLastChangedAt,
+        doorOpenCountTotal: doorState.doorOpenCountTotal,
+        doorCloseCountTotal: doorState.doorCloseCountTotal,
+      } : null,
+      doorStatsToday: doorStatsToday || { opens: 0, closes: 0, totalOpenSeconds: 0 },
+    });
+  } catch (error) {
+    console.error('Get cold cell state error:', error);
+    res.status(500).json({ error: 'Failed to fetch state' });
+  }
+});
+
+// GET cold cell state stream (SSE) - realtime door updates
+router.get('/:id/state/stream', requireAuth, requireOwnership, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const coldCell = await prisma.coldCell.findUnique({
+      where: { id },
+      include: { location: true },
+    });
+    if (!coldCell) {
+      return res.status(404).json({ error: 'Cold cell not found' });
+    }
+    if (req.userRole === 'CUSTOMER' && coldCell.location.customerId !== req.customerId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+    addSSESubscriber(id, res);
+    // Send initial state
+    const deviceIds = (await prisma.device.findMany({ where: { coldCellId: id }, select: { id: true } })).map(d => d.id);
+    let doorState = null;
+    if (deviceIds.length > 0) {
+      doorState = await prisma.deviceState.findFirst({
+        where: { deviceId: { in: deviceIds } },
+        orderBy: { doorLastChangedAt: 'desc' },
+      });
+    }
+    const payload = JSON.stringify({
+      type: 'initial',
+      coldCellId: id,
+      doorState: doorState ? doorState.doorState : null,
+      doorLastChangedAt: doorState?.doorLastChangedAt?.toISOString() ?? null,
+    });
+    res.write(`data: ${payload}\n\n`);
+    // Keep connection open; client will receive updates via addSSESubscriber
+  } catch (error) {
+    console.error('SSE stream error:', error);
+    res.status(500).json({ error: 'Failed to open stream' });
   }
 });
 

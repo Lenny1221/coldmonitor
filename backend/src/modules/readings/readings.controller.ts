@@ -4,6 +4,10 @@ import { requireDeviceAuth, DeviceRequest } from '../../middleware/deviceAuth';
 import { requireAuth, requireRole, AuthRequest } from '../../middleware/auth';
 import { prisma } from '../../config/database';
 import { alertService } from '../../services/alertService';
+import {
+  processDoorEvent,
+  validateDoorEventPayload,
+} from '../../services/doorEventService';
 import { CustomError } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
 
@@ -103,6 +107,37 @@ router.post(
           recordedAt: reading.recordedAt,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /devices/:serialNumber/door-events
+ * IoT endpoint: immediate door open/close event (with debounce on device)
+ */
+router.post(
+  '/devices/:serialNumber/door-events',
+  requireDeviceAuth,
+  async (req: DeviceRequest, res, next) => {
+    try {
+      const { serialNumber } = req.params;
+      if (req.deviceSerial !== serialNumber) {
+        logger.warn('Door event: URL serial differs from device key', {
+          urlSerial: serialNumber,
+          deviceSerial: req.deviceSerial,
+        });
+      }
+
+      const payload = validateDoorEventPayload(req.body);
+      const result = await processDoorEvent(req.deviceId!, payload);
+
+      if (result.duplicate) {
+        return res.status(200).json({ success: true, duplicate: true });
+      }
+
+      res.status(201).json({ success: true });
     } catch (error) {
       next(error);
     }
@@ -221,50 +256,47 @@ router.get(
       startDate.setDate(startDate.getDate() - daysCount);
       startDate.setHours(0, 0, 0, 0);
 
-      // Get readings with door status changes
-      const readings = await prisma.sensorReading.findMany({
+      // Prefer DoorStatsDaily when available (from door-events API)
+      const dailyStats = await prisma.doorStatsDaily.findMany({
         where: {
           deviceId: { in: deviceIds },
-          recordedAt: {
-            gte: startDate,
-          },
-          doorStatus: { not: null },
-        },
-        orderBy: {
-          recordedAt: 'asc',
-        },
-        select: {
-          doorStatus: true,
-          recordedAt: true,
+          date: { gte: startDate },
         },
       });
 
-      // Count door events per day
       const eventsPerDay = new Map<string, { opens: number; closes: number }>();
-      let previousStatus: boolean | null = null;
-
-      for (const reading of readings) {
-        const dayKey = reading.recordedAt.toISOString().split('T')[0];
-        
-        if (!eventsPerDay.has(dayKey)) {
-          eventsPerDay.set(dayKey, { opens: 0, closes: 0 });
-        }
-
-        const dayEvents = eventsPerDay.get(dayKey)!;
-        
-        // Count transitions: closed -> open (open event) or open -> closed (close event)
-        if (previousStatus !== null && previousStatus !== reading.doorStatus) {
-          if (reading.doorStatus === true) {
-            dayEvents.opens++;
-          } else {
-            dayEvents.closes++;
-          }
-        }
-        
-        previousStatus = reading.doorStatus ?? null;
+      for (const row of dailyStats) {
+        const dayKey = row.date.toISOString().split('T')[0];
+        const current = eventsPerDay.get(dayKey) || { opens: 0, closes: 0 };
+        current.opens += row.opens;
+        current.closes += row.closes;
+        eventsPerDay.set(dayKey, current);
       }
 
-      // Convert to array format
+      // Fallback: use SensorReading doorStatus if no DoorStatsDaily
+      if (eventsPerDay.size === 0) {
+        const readings = await prisma.sensorReading.findMany({
+          where: {
+            deviceId: { in: deviceIds },
+            recordedAt: { gte: startDate },
+            doorStatus: { not: null },
+          },
+          orderBy: { recordedAt: 'asc' },
+          select: { doorStatus: true, recordedAt: true },
+        });
+        let previousStatus: boolean | null = null;
+        for (const reading of readings) {
+          const dayKey = reading.recordedAt.toISOString().split('T')[0];
+          if (!eventsPerDay.has(dayKey)) eventsPerDay.set(dayKey, { opens: 0, closes: 0 });
+          const dayEvents = eventsPerDay.get(dayKey)!;
+          if (previousStatus !== null && previousStatus !== reading.doorStatus) {
+            if (reading.doorStatus === true) dayEvents.opens++;
+            else dayEvents.closes++;
+          }
+          previousStatus = reading.doorStatus ?? null;
+        }
+      }
+
       const eventsArray = Array.from(eventsPerDay.entries()).map(([date, events]) => ({
         date,
         opens: events.opens,
