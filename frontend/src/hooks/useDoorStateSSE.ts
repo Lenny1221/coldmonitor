@@ -133,7 +133,7 @@ export function useDoorStateSSE(coldCellId: string | undefined): UseDoorStateSSE
         }));
       } catch (_) {}
     };
-    const iv = setInterval(poll, 2000);
+    const iv = setInterval(poll, 500);
     poll(); // direct eerste keer
     return () => clearInterval(iv);
   }, [coldCellId]);

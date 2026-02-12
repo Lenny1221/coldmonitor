@@ -52,6 +52,7 @@ const ColdCellDetail: React.FC = () => {
   const [doorEvents, setDoorEvents] = useState<{ eventsPerDay: Array<{ date: string; opens: number; closes: number; total: number }>; totalEvents: number } | null>(null);
   const [rs485Status, setRs485Status] = useState<{ rs485Temperature: number | null; deviceOnline: boolean; lastUpdate: string | null } | null>(null);
   const [defrostLoading, setDefrostLoading] = useState(false);
+  const [pushDoorLoading, setPushDoorLoading] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -529,6 +530,50 @@ const ColdCellDetail: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-0.5">
                   Totaal: {doorOpenTotal}× open / {doorCloseTotal}× dicht
                 </p>
+              )}
+              {isTechnician && coldCell?.devices?.length > 0 && (
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    disabled={pushDoorLoading}
+                    onClick={async () => {
+                      if (!id) return;
+                      setPushDoorLoading(true);
+                      try {
+                        await coldCellStateApi.pushDoor(id, 'OPEN');
+                        fetchColdCell();
+                        fetchDoorEvents();
+                      } catch (e) {
+                        console.error(e);
+                      } finally {
+                        setPushDoorLoading(false);
+                      }
+                    }}
+                    className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700 hover:bg-amber-200 disabled:opacity-50"
+                  >
+                    Push Open
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pushDoorLoading}
+                    onClick={async () => {
+                      if (!id) return;
+                      setPushDoorLoading(true);
+                      try {
+                        await coldCellStateApi.pushDoor(id, 'CLOSED');
+                        fetchColdCell();
+                        fetchDoorEvents();
+                      } catch (e) {
+                        console.error(e);
+                      } finally {
+                        setPushDoorLoading(false);
+                      }
+                    }}
+                    className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-50"
+                  >
+                    Push Dicht
+                  </button>
+                </div>
               )}
             </div>
           )}

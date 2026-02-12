@@ -2,7 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { requireAuth, AuthRequest, requireRole, requireOwnership } from '../middleware/auth';
-import { addSSESubscriber } from '../services/doorEventService';
+import { addSSESubscriber, processDoorEvent } from '../services/doorEventService';
 import { logger } from '../utils/logger';
 
 const router = express.Router();
@@ -390,6 +390,45 @@ router.get('/:id/state', requireAuth, requireOwnership, async (req: AuthRequest,
   } catch (error) {
     console.error('Get cold cell state error:', error);
     res.status(500).json({ error: 'Failed to fetch state' });
+  }
+});
+
+// POST push door – simulate door event for testing (technician only)
+router.post('/:id/push-door', requireAuth, requireOwnership, requireRole('TECHNICIAN', 'ADMIN'), async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const body = req.body as { state?: 'OPEN' | 'CLOSED'; deviceId?: string };
+    const state = body?.state === 'OPEN' ? 'OPEN' : 'CLOSED';
+
+    const coldCell = await prisma.coldCell.findUnique({
+      where: { id },
+      include: { location: true, devices: { select: { id: true, serialNumber: true } } },
+    });
+    if (!coldCell) {
+      return res.status(404).json({ error: 'Cold cell not found' });
+    }
+    if (req.userRole === 'CUSTOMER' && coldCell.location.customerId !== req.customerId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const device = body.deviceId
+      ? coldCell.devices.find((d) => d.id === body.deviceId)
+      : coldCell.devices[0];
+    if (!device) {
+      return res.status(400).json({ error: 'Geen device gevonden voor deze cold cell' });
+    }
+
+    const seq = Math.floor(Date.now() / 1000) % 1000000;
+    await processDoorEvent(device.id, {
+      device_id: device.serialNumber,
+      state,
+      timestamp: Date.now(),
+      seq,
+    });
+
+    res.json({ success: true, state, deviceId: device.id });
+  } catch (error) {
+    console.error('Push door error:', error);
+    res.status(500).json({ error: 'Push door mislukt' });
   }
 });
 

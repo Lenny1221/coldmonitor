@@ -489,6 +489,10 @@ export const coldCellStateApi = {
     const base = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/+$/, '');
     return `${base}/coldcells/${coldCellId}/state/stream`;
   },
+  pushDoor: async (coldCellId: string, state: 'OPEN' | 'CLOSED', deviceId?: string) => {
+    const response = await api.post(`/coldcells/${coldCellId}/push-door`, { state, deviceId });
+    return response.data;
+  },
 };
 
 // Alerts API

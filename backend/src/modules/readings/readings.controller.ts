@@ -8,6 +8,7 @@ import {
   processDoorEvent,
   validateDoorEventPayload,
   validateDoorEventBatchPayload,
+  syncDoorStateFromReading,
 } from '../../services/doorEventService';
 import { CustomError } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
@@ -92,6 +93,7 @@ router.post(
           data.doorStatus,
           req.deviceId!
         );
+        await syncDoorStateFromReading(req.deviceId!, data.doorStatus);
       }
 
       logger.debug('Sensor reading received', {

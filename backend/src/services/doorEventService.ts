@@ -67,6 +67,8 @@ export async function processDoorEvent(
     throw new Error('Device not found');
   }
 
+  logger.info('Door event received', { deviceId, state, seq });
+
   await prisma.$transaction(async (tx) => {
     // Create DoorEvent
     await tx.doorEvent.create({
@@ -160,6 +162,76 @@ export async function processDoorEvent(
   }
 
   return { success: true };
+}
+
+/**
+ * Sync DeviceState from sensor reading (fallback when door-events fail).
+ * Updates doorState/doorLastChangedAt only – counters stay from door-events.
+ */
+export async function syncDoorStateFromReading(
+  deviceId: string,
+  doorStatus: boolean
+): Promise<void> {
+  const state = doorStatus ? 'OPEN' : 'CLOSED';
+  const device = await prisma.device.findUnique({
+    where: { id: deviceId },
+    include: { coldCell: true },
+  });
+  if (!device || !device.coldCellId) return;
+
+  const current = await prisma.deviceState.findUnique({
+    where: { deviceId },
+  });
+  if (current?.doorState === state) return;
+
+  const eventTime = new Date();
+  await prisma.deviceState.upsert({
+    where: { deviceId },
+    create: {
+      deviceId,
+      doorState: state,
+      doorLastChangedAt: eventTime,
+      doorOpenCountTotal: 0,
+      doorCloseCountTotal: 0,
+    },
+    update: {
+      doorState: state,
+      doorLastChangedAt: eventTime,
+    },
+  });
+
+  const subs = sseSubscribers.get(device.coldCellId);
+  if (subs && subs.size > 0) {
+    const allDevices = await prisma.device.findMany({
+      where: { coldCellId: device.coldCellId },
+      select: { id: true },
+    });
+    const deviceIds = allDevices.map((d) => d.id);
+    const states = await prisma.deviceState.findMany({
+      where: { deviceId: { in: deviceIds } },
+    });
+    const doorOpenCountTotal = states.reduce((s, r) => s + r.doorOpenCountTotal, 0);
+    const doorCloseCountTotal = states.reduce((s, r) => s + r.doorCloseCountTotal, 0);
+    const payload = JSON.stringify({
+      type: 'door_state',
+      deviceId,
+      coldCellId: device.coldCellId,
+      doorState: state,
+      doorLastChangedAt: eventTime.toISOString(),
+      doorOpenCountTotal,
+      doorCloseCountTotal,
+      doorStatsToday: { opens: doorOpenCountTotal, closes: doorCloseCountTotal, totalOpenSeconds: 0 },
+      timestamp: Date.now(),
+    });
+    subs.forEach((res) => {
+      try {
+        res.write(`data: ${payload}\n\n`);
+        if (typeof (res as any).flush === 'function') (res as any).flush();
+      } catch (e) {
+        subs.delete(res);
+      }
+    });
+  }
 }
 
 export function validateDoorEventPayload(body: unknown): DoorEventPayload {
