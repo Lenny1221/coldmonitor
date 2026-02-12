@@ -515,7 +515,7 @@ const ColdCellDetail: React.FC = () => {
               )}
               {(liveDoorState || coldCell?.doorState || doorOpenCountTotal > 0 || doorCloseCountTotal > 0) && (
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Totaal: {doorOpenCountTotal}× open / {doorCloseCountTotal}× dicht
+                  Vandaag: {doorOpenCountTotal}× open / {doorCloseCountTotal}× dicht
                 </p>
               )}
               {isTechnician && coldCell?.devices?.length > 0 && (
