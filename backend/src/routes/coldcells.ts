@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireAuth, AuthRequest, requireRole, requireOwnership } from '../middleware/auth';
 import { addSSESubscriber, processDoorEvent } from '../services/doorEventService';
 import { logger } from '../utils/logger';
+import { getEffectiveDoorCountsToday } from '../utils/dateUtils';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -148,14 +149,24 @@ router.get('/:id', requireAuth, requireOwnership, async (req: AuthRequest, res) 
       });
     }
 
+    const timezone = coldCell.location?.timezone ?? 'Europe/Brussels';
+    const counts = doorState
+      ? getEffectiveDoorCountsToday(
+          doorState.doorOpenCountTotal,
+          doorState.doorCloseCountTotal,
+          doorState.doorCountsDate,
+          timezone
+        )
+      : null;
+
     res.json({
       ...coldCell,
       latestReading,
       doorState: doorState ? {
         doorState: doorState.doorState,
         doorLastChangedAt: doorState.doorLastChangedAt,
-        doorOpenCountTotal: doorState.doorOpenCountTotal,
-        doorCloseCountTotal: doorState.doorCloseCountTotal,
+        doorOpenCountTotal: counts?.doorOpenCountTotal ?? 0,
+        doorCloseCountTotal: counts?.doorCloseCountTotal ?? 0,
       } : null,
     });
   } catch (error) {
@@ -318,13 +329,22 @@ router.get('/:id/state/stream', requireAuth, requireOwnership, async (req: AuthR
       });
       doorState = states[0] || null;
     }
+    const timezone = coldCell.location?.timezone ?? 'Europe/Brussels';
+    const counts = doorState
+      ? getEffectiveDoorCountsToday(
+          doorState.doorOpenCountTotal,
+          doorState.doorCloseCountTotal,
+          doorState.doorCountsDate,
+          timezone
+        )
+      : { doorOpenCountTotal: 0, doorCloseCountTotal: 0 };
     const payload = JSON.stringify({
       type: 'initial',
       coldCellId: id,
       doorState: doorState ? doorState.doorState : null,
       doorLastChangedAt: doorState?.doorLastChangedAt?.toISOString() ?? null,
-      doorOpenCountTotal: doorState?.doorOpenCountTotal ?? 0,
-      doorCloseCountTotal: doorState?.doorCloseCountTotal ?? 0,
+      doorOpenCountTotal: counts.doorOpenCountTotal,
+      doorCloseCountTotal: counts.doorCloseCountTotal,
       timestamp: Date.now(),
     });
     res.write(`data: ${payload}\n\n`);
@@ -368,13 +388,22 @@ router.get('/:id/state', requireAuth, requireOwnership, async (req: AuthRequest,
       });
       doorState = states[0] || null;
     }
+    const timezone = coldCell.location?.timezone ?? 'Europe/Brussels';
+    const counts = doorState
+      ? getEffectiveDoorCountsToday(
+          doorState.doorOpenCountTotal,
+          doorState.doorCloseCountTotal,
+          doorState.doorCountsDate,
+          timezone
+        )
+      : null;
     res.json({
       coldCellId: id,
       doorState: doorState ? {
         doorState: doorState.doorState,
         doorLastChangedAt: doorState.doorLastChangedAt,
-        doorOpenCountTotal: doorState.doorOpenCountTotal,
-        doorCloseCountTotal: doorState.doorCloseCountTotal,
+        doorOpenCountTotal: counts?.doorOpenCountTotal ?? 0,
+        doorCloseCountTotal: counts?.doorCloseCountTotal ?? 0,
       } : null,
     });
   } catch (error) {

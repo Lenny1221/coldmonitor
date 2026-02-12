@@ -301,16 +301,31 @@ router.get(
       const { id } = req.params;
       await assertDeviceAccess(id, req);
 
-      const state = await prisma.deviceState.findUnique({
-        where: { deviceId: id },
-      });
+      const [device, state] = await Promise.all([
+        prisma.device.findUnique({
+          where: { id },
+          include: { coldCell: { include: { location: true } } },
+        }),
+        prisma.deviceState.findUnique({
+          where: { deviceId: id },
+        }),
+      ]);
+      const timezone = device?.coldCell?.location?.timezone ?? 'Europe/Brussels';
+      const counts = state
+        ? getEffectiveDoorCountsToday(
+            state.doorOpenCountTotal,
+            state.doorCloseCountTotal,
+            state.doorCountsDate,
+            timezone
+          )
+        : { doorOpenCountTotal: 0, doorCloseCountTotal: 0 };
 
       res.json({
         deviceId: id,
         doorState: state?.doorState ?? null,
         doorLastChangedAt: state?.doorLastChangedAt ?? null,
-        doorOpenCountTotal: state?.doorOpenCountTotal ?? 0,
-        doorCloseCountTotal: state?.doorCloseCountTotal ?? 0,
+        doorOpenCountTotal: counts.doorOpenCountTotal,
+        doorCloseCountTotal: counts.doorCloseCountTotal,
       });
     } catch (error) {
       next(error);
@@ -331,15 +346,30 @@ router.get(
       const { id } = req.params;
       await assertDeviceAccess(id, req);
 
-      const state = await prisma.deviceState.findUnique({
-        where: { deviceId: id },
-      });
+      const [device, state] = await Promise.all([
+        prisma.device.findUnique({
+          where: { id },
+          include: { coldCell: { include: { location: true } } },
+        }),
+        prisma.deviceState.findUnique({
+          where: { deviceId: id },
+        }),
+      ]);
+      const timezone = device?.coldCell?.location?.timezone ?? 'Europe/Brussels';
+      const counts = state
+        ? getEffectiveDoorCountsToday(
+            state.doorOpenCountTotal,
+            state.doorCloseCountTotal,
+            state.doorCountsDate,
+            timezone
+          )
+        : { doorOpenCountTotal: 0, doorCloseCountTotal: 0 };
 
       res.json({
         deviceId: id,
         doorState: state?.doorState ?? null,
-        doorOpenCountTotal: state?.doorOpenCountTotal ?? 0,
-        doorCloseCountTotal: state?.doorCloseCountTotal ?? 0,
+        doorOpenCountTotal: counts.doorOpenCountTotal,
+        doorCloseCountTotal: counts.doorCloseCountTotal,
       });
     } catch (error) {
       next(error);

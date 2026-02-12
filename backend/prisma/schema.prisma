@@ -188,6 +188,7 @@ model DeviceState {
   doorOpenedAt         DateTime? // When door was last opened (for total_open_seconds calc)
   doorOpenCountTotal   Int       @default(0)
   doorCloseCountTotal  Int       @default(0)
+  doorCountsDate       DateTime? @db.Date   // Datum waarvoor de tellers gelden (reset o.g.v. middernacht)
   updatedAt            DateTime  @updatedAt
 
   @@index([deviceId])

@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { prisma } from '../config/database';
 import { logger } from '../utils/logger';
+import { getTodayDateString } from '../utils/dateUtils';
 
 const doorEventSchema = {
   device_id: (v: unknown) => typeof v === 'string',
@@ -85,13 +86,15 @@ export async function processDoorEvent(
 
   const device = await prisma.device.findUnique({
     where: { id: deviceId },
-    include: { coldCell: true },
+    include: { coldCell: { include: { location: true } } },
   });
   if (!device || !device.coldCellId) {
     throw new Error('Device not found');
   }
 
   const isOpen = state === 'OPEN';
+  const timezone = device.coldCell.location?.timezone ?? 'Europe/Brussels';
+  const today = getTodayDateString(timezone);
 
   const current = await prisma.deviceState.findUnique({
     where: { deviceId },
@@ -100,6 +103,11 @@ export async function processDoorEvent(
     logger.debug('Door state unchanged, skip', { deviceId, state });
     return { success: true, duplicate: true };
   }
+
+  const countsDateStr = current?.doorCountsDate
+    ? current.doorCountsDate.toLocaleDateString('en-CA', { timeZone: timezone })
+    : null;
+  const isNewDay = countsDateStr !== today;
 
   const updated = await prisma.deviceState.upsert({
     where: { deviceId },
@@ -110,13 +118,22 @@ export async function processDoorEvent(
       doorOpenedAt: isOpen ? eventTime : null,
       doorOpenCountTotal: isOpen ? 1 : 0,
       doorCloseCountTotal: isOpen ? 0 : 1,
+      doorCountsDate: eventTime,
     },
     update: {
       doorState: state,
       doorLastChangedAt: eventTime,
       doorOpenedAt: isOpen ? eventTime : null,
-      doorOpenCountTotal: isOpen ? { increment: 1 } : undefined,
-      doorCloseCountTotal: !isOpen ? { increment: 1 } : undefined,
+      ...(isNewDay
+        ? {
+            doorOpenCountTotal: isOpen ? 1 : 0,
+            doorCloseCountTotal: isOpen ? 0 : 1,
+            doorCountsDate: eventTime,
+          }
+        : {
+            doorOpenCountTotal: isOpen ? { increment: 1 } : undefined,
+            doorCloseCountTotal: !isOpen ? { increment: 1 } : undefined,
+          }),
     },
   });
 
@@ -150,7 +167,7 @@ export async function syncDoorStateFromReading(
   const state = doorStatus ? 'OPEN' : 'CLOSED';
   const device = await prisma.device.findUnique({
     where: { id: deviceId },
-    include: { coldCell: true },
+    include: { coldCell: { include: { location: true } } },
   });
   if (!device || !device.coldCellId) return;
 
@@ -161,6 +178,12 @@ export async function syncDoorStateFromReading(
 
   const eventTime = new Date();
   const isOpen = state === 'OPEN';
+  const timezone = device.coldCell.location?.timezone ?? 'Europe/Brussels';
+  const today = getTodayDateString(timezone);
+  const countsDateStr = current?.doorCountsDate
+    ? current.doorCountsDate.toLocaleDateString('en-CA', { timeZone: timezone })
+    : null;
+  const isNewDay = countsDateStr !== today;
 
   const updated = await prisma.deviceState.upsert({
     where: { deviceId },
@@ -171,13 +194,22 @@ export async function syncDoorStateFromReading(
       doorOpenedAt: isOpen ? eventTime : null,
       doorOpenCountTotal: isOpen ? 1 : 0,
       doorCloseCountTotal: isOpen ? 0 : 1,
+      doorCountsDate: eventTime,
     },
     update: {
       doorState: state,
       doorLastChangedAt: eventTime,
       doorOpenedAt: isOpen ? eventTime : null,
-      doorOpenCountTotal: isOpen ? { increment: 1 } : undefined,
-      doorCloseCountTotal: !isOpen ? { increment: 1 } : undefined,
+      ...(isNewDay
+        ? {
+            doorOpenCountTotal: isOpen ? 1 : 0,
+            doorCloseCountTotal: isOpen ? 0 : 1,
+            doorCountsDate: eventTime,
+          }
+        : {
+            doorOpenCountTotal: isOpen ? { increment: 1 } : undefined,
+            doorCloseCountTotal: !isOpen ? { increment: 1 } : undefined,
+          }),
     },
   });
 
