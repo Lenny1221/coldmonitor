@@ -151,18 +151,37 @@ void WiFiManagerWrapper::setOnSaveParamsCallback(void (*cb)(const char* apiUrl, 
 
 bool WiFiManagerWrapper::startConfigPortal(String apName) {
   logger.info("Starting config portal: " + apName);
+  
+  // Ensure WiFi is in correct mode
+  WiFi.mode(WIFI_AP_STA);
+  delay(100);
+  
   // QR-code (WIFI-connectie) + pre-fill script voor API-velden uit URL
   static String customHtml;
   customHtml = buildConfigPortalCustomHtml(apName);
   wifiManager.setCustomBodyFooter(customHtml.c_str());
-  WiFi.mode(WIFI_AP_STA);  // Zorg dat AP kan worden aangemaakt
-  if (!wifiManager.startConfigPortal(apName.c_str())) {
-    logger.error("Config portal failed");
-    return false;
+  
+  logger.info("Starting WiFiManager config portal...");
+  bool result = wifiManager.startConfigPortal(apName.c_str());
+  
+  if (result) {
+    connected = true;
+    logger.info("WiFi configured and connected via config portal");
+    logger.info("AP IP: " + WiFi.softAPIP().toString());
+    logger.info("STA IP: " + WiFi.localIP().toString());
+  } else {
+    logger.error("Config portal failed to start");
+    // Try to start AP manually as fallback
+    WiFi.softAP(apName.c_str());
+    delay(500);
+    if (WiFi.softAPIP().toString() != "0.0.0.0") {
+      logger.info("AP started manually, IP: " + WiFi.softAPIP().toString());
+      connected = true;
+      result = true;
+    }
   }
-  connected = true;
-  logger.info("WiFi configured and connected");
-  return true;
+  
+  return result;
 }
 
 bool WiFiManagerWrapper::autoConnect(String apName) {

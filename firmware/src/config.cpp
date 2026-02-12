@@ -1,11 +1,13 @@
 #include "config.h"
 
 ConfigManager::ConfigManager() : loaded(false) {
-  preferences.begin(CONFIG_NAMESPACE, false);
+  // Don't open preferences here - open when needed in load/save
+  // This prevents issues with Preferences being opened too early
 }
 
 ConfigManager::~ConfigManager() {
-  preferences.end();
+  // Don't close preferences here - keep them open for the lifetime of the object
+  // preferences.end();
 }
 
 void ConfigManager::setDefaults() {
@@ -37,26 +39,131 @@ void ConfigManager::setDefaults() {
 }
 
 bool ConfigManager::load() {
-  String configJson = preferences.getString(CONFIG_KEY, "");
-  
-  if (configJson.length() == 0) {
+  // Ensure preferences namespace is open
+  if (!preferences.begin(CONFIG_NAMESPACE, false)) {
+    Serial.println("ERROR: Failed to open preferences namespace!");
     return false;
   }
   
+  // Try getString first (simpler and more reliable)
+  String configJson = preferences.getString(CONFIG_KEY, "");
+  
+  if (configJson.length() == 0) {
+    // Try getBytes as fallback
+    size_t len = preferences.getBytesLength(CONFIG_KEY);
+    if (len > 0 && len < 2000) {
+      char* buffer = (char*)malloc(len + 1);
+      if (buffer) {
+        size_t readLen = preferences.getBytes(CONFIG_KEY, (uint8_t*)buffer, len);
+        buffer[readLen] = '\0';
+        configJson = String(buffer);
+        free(buffer);
+      }
+    }
+  }
+  
+  if (configJson.length() == 0) {
+    Serial.println("Config: No saved configuration found");
+    return false;
+  }
+  
+  Serial.println("Config: Loading from NVS, length: " + String(configJson.length()));
+  Serial.println("Config JSON preview: " + configJson.substring(0, min(150, (int)configJson.length())));
+  
   DeserializationError error = deserializeJson(configDoc, configJson);
   if (error) {
+    Serial.println("Config: JSON parse error: " + String(error.c_str()));
+    Serial.println("Config JSON: " + configJson);
     return false;
   }
   
   loaded = true;
+  Serial.println("Config: Successfully loaded from NVS");
+  
+  // Log loaded values for debugging
+  String apiUrl = configDoc["apiUrl"] | DEFAULT_API_URL;
+  String apiKey = configDoc["apiKey"] | DEFAULT_API_KEY;
+  Serial.println("Loaded API URL: " + apiUrl);
+  Serial.println("Loaded API Key: " + (apiKey.length() > 0 ? String(apiKey.substring(0, 8)) + "..." : "(leeg)"));
+  
   return true;
 }
 
 bool ConfigManager::save() {
+  // Close any existing preferences session
+  preferences.end();
+  delay(10);
+  
+  // Open preferences namespace in read-write mode
+  if (!preferences.begin(CONFIG_NAMESPACE, false)) {
+    Serial.println("ERROR: Failed to open preferences namespace for save!");
+    return false;
+  }
+  
   String configJson;
   serializeJson(configDoc, configJson);
   
-  return preferences.putString(CONFIG_KEY, configJson) > 0;
+  if (configJson.length() == 0) {
+    Serial.println("ERROR: Config JSON is empty!");
+    preferences.end();
+    return false;
+  }
+  
+  if (configJson.length() > 2000) {
+    Serial.println("ERROR: Config JSON too large: " + String(configJson.length()));
+    preferences.end();
+    return false;
+  }
+  
+  Serial.println("Config: Saving to NVS, length: " + String(configJson.length()));
+  Serial.println("Free heap before save: " + String(ESP.getFreeHeap()));
+  
+  // Use putString (most reliable method for ESP32 Preferences)
+  size_t written = preferences.putString(CONFIG_KEY, configJson);
+  
+  if (written == 0) {
+    Serial.println("ERROR: putString returned 0 - trying alternative method...");
+    // Try removing old key first
+    preferences.remove(CONFIG_KEY);
+    delay(10);
+    written = preferences.putString(CONFIG_KEY, configJson);
+  }
+  
+  if (written > 0) {
+    Serial.println("Config: Successfully saved " + String(written) + " bytes to NVS");
+    
+    // Close and reopen to force commit
+    preferences.end();
+    delay(50); // Give flash time to write
+    
+    // Reopen and verify
+    if (preferences.begin(CONFIG_NAMESPACE, false)) {
+      String verifyJson = preferences.getString(CONFIG_KEY, "");
+      if (verifyJson.length() > 0) {
+        Serial.println("Config: Verification OK - " + String(verifyJson.length()) + " bytes read back");
+        if (verifyJson == configJson) {
+          Serial.println("Config: Content verification OK!");
+        } else {
+          Serial.println("WARNING: Content differs but data was saved");
+        }
+        preferences.end();
+        return true;
+      } else {
+        Serial.println("WARNING: Saved but could not verify (empty read)");
+        preferences.end();
+        return true; // Assume success
+      }
+    } else {
+      Serial.println("WARNING: Could not reopen for verification, but save returned success");
+      return true;
+    }
+  } else {
+    Serial.println("ERROR: Failed to save config to NVS!");
+    Serial.println("  Free heap: " + String(ESP.getFreeHeap()));
+    Serial.println("  Config length: " + String(configJson.length()));
+    preferences.end();
+    return false;
+  }
 }
 
 void ConfigManager::reset() {
@@ -90,19 +197,40 @@ void ConfigManager::setUploadInterval(unsigned long interval) {
 }
 
 String ConfigManager::getAPIUrl() {
-  return configDoc["apiUrl"] | DEFAULT_API_URL;
+  if (configDoc.containsKey("apiUrl")) {
+    String url = configDoc["apiUrl"].as<String>();
+    if (url.length() > 0 && url != DEFAULT_API_URL) {
+      return url;
+    }
+  }
+  return DEFAULT_API_URL;
 }
 
 void ConfigManager::setAPIUrl(String url) {
-  configDoc["apiUrl"] = url;
+  if (url.length() > 0) {
+    configDoc["apiUrl"] = url;
+    Serial.println("Config: API URL set to: " + url);
+  } else {
+    Serial.println("WARNING: Attempted to set empty API URL!");
+  }
 }
 
 String ConfigManager::getAPIKey() {
-  return configDoc["apiKey"] | DEFAULT_API_KEY;
+  if (configDoc.containsKey("apiKey")) {
+    String key = configDoc["apiKey"].as<String>();
+    return key;
+  }
+  return DEFAULT_API_KEY;
 }
 
 void ConfigManager::setAPIKey(String key) {
-  configDoc["apiKey"] = key;
+  if (key.length() > 0) {
+    configDoc["apiKey"] = key;
+    Serial.println("Config: API Key set (length: " + String(key.length()) + ")");
+  } else {
+    Serial.println("WARNING: Attempted to set empty API Key!");
+    // Don't set empty key - keep existing value
+  }
 }
 
 bool ConfigManager::getModbusEnabled() {

@@ -275,6 +275,7 @@ router.post(
 /**
  * GET /devices/commands/pending
  * Get pending commands for a device (called by ESP32 using device auth)
+ * Marks command as EXECUTING when fetched to prevent duplicate execution
  */
 router.get(
   '/commands/pending',
@@ -285,7 +286,7 @@ router.get(
         throw new CustomError('Device ID not found', 400, 'DEVICE_ID_MISSING');
       }
 
-      const commands = await prisma.deviceCommand.findMany({
+      const command = await prisma.deviceCommand.findFirst({
         where: {
           deviceId: req.deviceId,
           status: 'PENDING',
@@ -293,10 +294,19 @@ router.get(
         orderBy: {
           createdAt: 'asc',
         },
-        take: 1, // Only get the oldest pending command
       });
 
-      res.json({ commands });
+      if (command) {
+        // Immediately mark as EXECUTING to prevent duplicate execution
+        await prisma.deviceCommand.update({
+          where: { id: command.id },
+          data: { status: 'EXECUTING' },
+        });
+        
+        res.json({ commands: [command] });
+      } else {
+        res.json({ commands: [] });
+      }
     } catch (error) {
       next(error);
     }
