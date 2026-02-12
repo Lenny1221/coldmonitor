@@ -9,7 +9,7 @@
 
 struct DoorEvent {
   bool isOpen;           // true = OPEN, false = CLOSED
-  unsigned long timestamp;
+  uint64_t timestamp;    // Unix ms (UTC) if NTP synced; else millis() – backend detecteert fallback
   uint32_t seq;
   int rssi;
   unsigned long uptimeMs;

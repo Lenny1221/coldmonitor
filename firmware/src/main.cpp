@@ -22,6 +22,7 @@
 #include "battery_monitor.h"
 #include "door_events.h"
 #include "boot_state.h"
+#include "time_utils.h"
 #include "ota_update.h"
 #include "power_manager.h"
 
@@ -324,6 +325,13 @@ void loop() {
   
   unsigned long now = millis();
   
+  // NTP sync bij WiFi‑connect (ook na reconnect)
+  static bool ntpInitDone = false;
+  if (WiFi.isConnected() && !ntpInitDone) {
+    initNtpTime();
+    ntpInitDone = true;
+  }
+  
   // Heartbeat LED
   if (now - lastHeartbeat > 1000) {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
@@ -478,7 +486,7 @@ void sensorTask(void *parameter) {
       if (doorEventManager.poll(doorOpen)) {
         DoorEvent ev;
         ev.isOpen = doorOpen;
-        ev.timestamp = now;
+        ev.timestamp = getUnixTimeMs() ? getUnixTimeMs() : (uint64_t)now;  // Unix ms of millis fallback
         ev.seq = doorEventManager.getNextSeq();
         ev.rssi = WiFi.isConnected() ? WiFi.RSSI() : 0;
         ev.uptimeMs = now;
@@ -987,6 +995,8 @@ void setupWiFi() {
       logger.info("  RSSI: " + String(WiFi.RSSI()) + " dBm");
       logger.info("  Gebruikt opgeslagen API-instellingen");
       logger.info("========================================");
+      
+      initNtpTime();  // Sync tijd voor Unix timestamps in deur-events
       
       lastWiFiSSID = currentSSID;
       lastWiFiConnected = true;

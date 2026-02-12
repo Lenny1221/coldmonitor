@@ -2,6 +2,18 @@ import { Response } from 'express';
 import { prisma } from '../config/database';
 import { logger } from '../utils/logger';
 
+/** Bepaal lokale datum in gegeven timezone (voor DoorStatsDaily). */
+export function getLocalDateKey(date: Date, timezone: string): Date {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const str = formatter.format(date);
+  return new Date(str + 'T12:00:00Z');
+}
+
 const doorEventSchema = {
   device_id: (v: unknown) => typeof v === 'string',
   state: (v: unknown) => v === 'OPEN' || v === 'CLOSED',
@@ -62,17 +74,24 @@ export async function processDoorEvent(
 
   const device = await prisma.device.findUnique({
     where: { id: deviceId },
-    include: { coldCell: true },
+    include: {
+      coldCell: {
+        include: {
+          location: true,
+        },
+      },
+    },
   });
   if (!device) {
     throw new Error('Device not found');
   }
 
+  const timezone = device.coldCell?.location?.timezone ?? 'Europe/Brussels';
+  const dateKey = getLocalDateKey(eventTime, timezone);
+
   logger.info('Door event received', { deviceId, state, seq });
 
   const isOpen = state === 'OPEN';
-  const dateKey = new Date(eventTime);
-  dateKey.setHours(0, 0, 0, 0);
 
   const doorEvent = await prisma.$transaction(async (tx) => {
     const ev = await tx.doorEvent.create({
@@ -176,8 +195,7 @@ export async function processDoorEvent(
       select: { id: true },
     });
     const deviceIds = allDevices.map((d) => d.id);
-    const today = new Date(eventTime);
-    today.setHours(0, 0, 0, 0);
+    const today = getLocalDateKey(new Date(), timezone);
     const dailyStats = await prisma.doorStatsDaily.findMany({
       where: { deviceId: { in: deviceIds }, date: today },
     });
@@ -224,9 +242,11 @@ export async function syncDoorStateFromReading(
   const state = doorStatus ? 'OPEN' : 'CLOSED';
   const device = await prisma.device.findUnique({
     where: { id: deviceId },
-    include: { coldCell: true },
+    include: { coldCell: { include: { location: true } } },
   });
   if (!device || !device.coldCellId) return;
+
+  const syncTimezone = device.coldCell?.location?.timezone ?? 'Europe/Brussels';
 
   const current = await prisma.deviceState.findUnique({
     where: { deviceId },
@@ -256,8 +276,7 @@ export async function syncDoorStateFromReading(
       select: { id: true },
     });
     const deviceIds = allDevices.map((d) => d.id);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getLocalDateKey(new Date(), syncTimezone);
     const dailyStats = await prisma.doorStatsDaily.findMany({
       where: { deviceId: { in: deviceIds }, date: today },
     });

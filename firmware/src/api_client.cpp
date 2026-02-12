@@ -342,7 +342,7 @@ bool APIClient::completeCommand(const String& commandId, bool success, const Dyn
   return ok;
 }
 
-bool APIClient::uploadDoorEvent(const char* state, uint32_t seq, unsigned long timestamp, int rssi, unsigned long uptimeMs) {
+bool APIClient::uploadDoorEvent(const char* state, uint32_t seq, uint64_t timestamp, int rssi, unsigned long uptimeMs) {
   if (!WiFi.isConnected() || apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) {
     return false;
   }
@@ -359,7 +359,7 @@ bool APIClient::uploadDoorEvent(const char* state, uint32_t seq, unsigned long t
   DynamicJsonDocument doc(256);
   doc["device_id"] = serialNumber;
   doc["state"] = state;
-  doc["timestamp"] = timestamp;
+  doc["timestamp"] = (uint64_t)timestamp;  // Unix ms (UTC) of millis() fallback
   doc["seq"] = seq;
   if (rssi != 0) doc["rssi"] = rssi;
   if (uptimeMs > 0) doc["uptime_ms"] = uptimeMs;

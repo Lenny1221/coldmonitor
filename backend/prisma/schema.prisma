@@ -113,11 +113,12 @@ model Customer {
 
 // Location model (customer can have multiple locations)
 model Location {
-  id          String   @id @default(cuid())
+  id           String   @id @default(cuid())
   locationName String
-  address     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  address      String?
+  timezone     String   @default("Europe/Brussels") // IANA timezone voor dag-tellers (date_local)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
   customerId String

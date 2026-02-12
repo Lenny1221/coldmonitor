@@ -71,12 +71,12 @@ const ColdCellDetail: React.FC = () => {
       fetchDoorEvents();
       fetchRS485Status();
     }
-  }, [id, timeRange]);
+  }, [id, timeRange, doorStatsRange]);
 
   const fetchDoorEvents = async () => {
     if (!id) return;
     try {
-      const result = await readingsApi.getDoorEvents(id, 1); // Last 1 day
+      const result = await readingsApi.getDoorEvents(id, doorStatsRange);
       setDoorEvents(result);
     } catch (error) {
       console.error('Failed to fetch door events:', error);
@@ -115,12 +115,11 @@ const ColdCellDetail: React.FC = () => {
     }
   };
 
-  // Automatisch vernieuwen: cold cell + deur-events elke 5s (live weergave), rest elke 20s
+  // Automatisch vernieuwen: cold cell elke 5s (live weergave), rest elke 20s
   useEffect(() => {
     if (!id) return;
     const fastInterval = setInterval(() => {
-      fetchColdCell(); // Deurstatus + DeviceState
-      fetchDoorEvents(); // Teller "Vandaag X× open / Y× dicht"
+      fetchColdCell(); // Deurstatus + DeviceState (vandaag counts via SSE/state)
     }, 5000);
     const slowInterval = setInterval(() => {
       fetchReadings();
@@ -845,14 +844,33 @@ const ColdCellDetail: React.FC = () => {
         </div>
       )}
 
-      {/* Deur events per dag */}
+      {/* Deurstatistieken per dag */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Deur events vandaag</h2>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Deurstatistieken per dag</h2>
+          <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-50">
+            {([1, 7, 30] as const).map((days) => (
+              <button
+                key={days}
+                onClick={() => setDoorStatsRange(days)}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  doorStatsRange === days
+                    ? 'bg-blue-600 text-white shadow'
+                    : 'text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {days === 1 ? 'Vandaag' : `${days} dagen`}
+              </button>
+            ))}
+          </div>
+        </div>
         {doorEvents ? (
           <>
             <div className="mb-4">
               <div className="text-3xl font-bold text-gray-900">{doorEvents.totalEvents}</div>
-              <div className="text-sm text-gray-600">Totaal aantal deur events vandaag</div>
+              <div className="text-sm text-gray-600">
+                Totaal aantal deur events {doorStatsRange === 1 ? 'vandaag' : `in de laatste ${doorStatsRange} dagen`}
+              </div>
             </div>
             {doorEvents.eventsPerDay.length > 0 ? (
               <div className="space-y-2">
@@ -860,7 +878,7 @@ const ColdCellDetail: React.FC = () => {
                   <div key={day.date} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex-1">
                       <div className="text-sm font-medium text-gray-900">
-                        {format(parseISO(day.date), 'dd/MM/yyyy')}
+                        {format(parseISO(day.date), 'EEEE d MMM yyyy')}
                       </div>
                       <div className="text-xs text-gray-600 mt-1">
                         {day.opens} keer geopend · {day.closes} keer gesloten
@@ -872,7 +890,7 @@ const ColdCellDetail: React.FC = () => {
               </div>
             ) : (
               <div className="py-8 text-center text-gray-500">
-                Geen deur events vandaag.
+                Geen deur events in deze periode.
               </div>
             )}
           </>

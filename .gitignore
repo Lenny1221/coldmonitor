@@ -41,3 +41,6 @@ Thumbs.db
 *.sqlite
 
 # Prisma (migrations moeten wel gecommit worden voor deployment)
+
+# PlatformIO
+.pio/

@@ -411,6 +411,7 @@ firmware/
 │   ├── wifi_manager.h/cpp  # WiFi management
 │   ├── api_client.h/cpp    # API communication
 │   ├── door_events.h/cpp   # Door event debounce + offline queue
+│   ├── time_utils.h/cpp   # NTP sync + Unix timestamp voor deur-events
 │   ├── battery_monitor.h/cpp # Battery monitoring
 │   ├── power_manager.h/cpp  # Power management
 │   └── ota_update.h/cpp    # OTA updates

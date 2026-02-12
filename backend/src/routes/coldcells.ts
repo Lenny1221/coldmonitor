@@ -2,7 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { requireAuth, AuthRequest, requireRole, requireOwnership } from '../middleware/auth';
-import { addSSESubscriber, processDoorEvent } from '../services/doorEventService';
+import { addSSESubscriber, processDoorEvent, getLocalDateKey } from '../services/doorEventService';
 import { logger } from '../utils/logger';
 
 const router = express.Router();
@@ -328,8 +328,7 @@ router.get('/:id/state/stream', requireAuth, requireOwnership, async (req: AuthR
         orderBy: { doorLastChangedAt: 'desc' },
       });
       doorState = states[0] || null;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = getLocalDateKey(new Date(), coldCell.location?.timezone ?? 'Europe/Brussels');
       const dailyStats = await prisma.doorStatsDaily.findMany({
         where: { deviceId: { in: deviceIds }, date: today },
       });
@@ -388,8 +387,7 @@ router.get('/:id/state', requireAuth, requireOwnership, async (req: AuthRequest,
         orderBy: { doorLastChangedAt: 'desc' },
       });
       doorState = states[0] || null;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = getLocalDateKey(new Date(), coldCell.location?.timezone ?? 'Europe/Brussels');
       const dailyStats = await prisma.doorStatsDaily.findMany({
         where: { deviceId: { in: deviceIds }, date: today },
       });

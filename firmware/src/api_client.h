@@ -44,7 +44,7 @@ public:
   void setSerialNumber(String serial) { serialNumber = serial; }
   
   // POST /readings/devices/:serial/door-events - single or batch
-  bool uploadDoorEvent(const char* state, uint32_t seq, unsigned long timestamp, int rssi, unsigned long uptimeMs);
+  bool uploadDoorEvent(const char* state, uint32_t seq, uint64_t timestamp, int rssi, unsigned long uptimeMs);
   bool uploadDoorEventsBatch(const void* events, int count);  // events = DoorEvent*
   
 private:

@@ -347,6 +347,17 @@ export const devicesApi = {
     const response = await api.get(`/devices/serial/${serialNumber}`);
     return response.data;
   },
+  getState: async (deviceId: string) => {
+    const response = await api.get(`/devices/${deviceId}/state`);
+    return response.data;
+  },
+  getDoorStats: async (deviceId: string, from?: string, to?: string) => {
+    const params: Record<string, string> = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    const response = await api.get(`/devices/${deviceId}/door-stats`, { params });
+    return response.data;
+  },
   getAll: async () => {
     try {
       const locations = await locationsApi.getAll();
