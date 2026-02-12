@@ -112,17 +112,22 @@ const ColdCellDetail: React.FC = () => {
     }
   };
 
-  // Automatisch vernieuwen elke 20 seconden
+  // Automatisch vernieuwen: cold cell (incl. deur) elke 5s, rest elke 20s
   useEffect(() => {
     if (!id) return;
-    const intervalId = setInterval(() => {
-      fetchColdCell();
+    const fastInterval = setInterval(() => {
+      fetchColdCell(); // Deurstatus direct zichtbaar
+    }, 5000);
+    const slowInterval = setInterval(() => {
       fetchReadings();
       fetchAlerts();
       fetchDoorEvents();
       fetchRS485Status();
     }, 20000);
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(fastInterval);
+      clearInterval(slowInterval);
+    };
   }, [id]);
 
   // Bij terugkeer naar tab direct verversen (browsers vertragen timers in achtergrond tot ~10 min)

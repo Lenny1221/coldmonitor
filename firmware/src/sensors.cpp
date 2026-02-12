@@ -70,3 +70,8 @@ SensorData Sensors::read() {
 
   return data;
 }
+
+bool Sensors::readDoorOnly() {
+  bool pinHigh = (digitalRead(PIN_DOOR) == HIGH);
+  return PIN_DOOR_INVERTED ? !pinHigh : pinHigh;
+}

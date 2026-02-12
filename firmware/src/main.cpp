@@ -71,6 +71,16 @@ struct ModbusData {
   bool valid;
 };
 
+// Pending door event: bij open/dicht direct versturen (los van temp-interval)
+struct PendingDoorEvent {
+  volatile bool hasEvent;
+  float temperature;
+  float humidity;
+  bool doorOpen;
+  unsigned long timestamp;
+};
+static PendingDoorEvent pendingDoorEvent = { false, 0, 0, false, 0 };
+
 // Function prototypes
 void sensorTask(void *parameter);
 void modbusTask(void *parameter);
@@ -396,11 +406,34 @@ void sensorTask(void *parameter) {
   logger.info("Sensor task started");
   
   unsigned long lastReading = 0;
+  unsigned long lastDoorCheck = 0;
   unsigned long interval = config.getReadingInterval() * 1000; // ms
+  static bool lastDoorStatus = false;
+  static float lastKnownTemp = 0.0f;
+  static float lastKnownHumidity = 0.0f;
+  static bool hasValidReading = false;
   
   while (true) {
     unsigned long now = millis();
     
+    // Deur elke 100ms checken; bij verandering direct event voorbereiden (alleen na eerste geldige temp-read)
+    if (now - lastDoorCheck >= 100) {
+      bool doorOpen = sensors.readDoorOnly();
+      if (doorOpen != lastDoorStatus && hasValidReading) {
+        lastDoorStatus = doorOpen;
+        pendingDoorEvent.temperature = lastKnownTemp;
+        pendingDoorEvent.humidity = lastKnownHumidity;
+        pendingDoorEvent.doorOpen = doorOpen;
+        pendingDoorEvent.timestamp = now;
+        pendingDoorEvent.hasEvent = true;
+        logger.info("Deur " + String(doorOpen ? "OPEN" : "DICHT") + " – direct event voorbereid");
+      } else if (doorOpen != lastDoorStatus) {
+        lastDoorStatus = doorOpen;
+      }
+      lastDoorCheck = now;
+    }
+    
+    // Volledige sensorread op interval (temp, humidity, deur)
     if (now - lastReading >= interval) {
       SensorData data = sensors.read();
       
@@ -411,6 +444,11 @@ void sensorTask(void *parameter) {
       }
       
       if (data.valid) {
+        lastKnownTemp = data.temperature;
+        lastKnownHumidity = data.humidity;
+        lastDoorStatus = data.doorOpen;
+        hasValidReading = true;
+        
         // Altijd op monitor tonen (INFO); pin=0/1 om deurcontact te debuggen
         logger.info("Data | Temp: " + String(data.temperature, 2) + "°C | Hum: " +
                     String(data.humidity, 1) + "% | Deur: " + (data.doorOpen ? "OPEN" : "dicht") +
@@ -439,7 +477,7 @@ void sensorTask(void *parameter) {
       lastReading = now;
     }
     
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(50));
   }
 }
 
@@ -528,6 +566,27 @@ void uploadTask(void *parameter) {
     
     // Check if WiFi is connected
     if (currentlyConnected) {
+      // Deur-event direct versturen (los van temp-interval)
+      if (pendingDoorEvent.hasEvent) {
+        DynamicJsonDocument doc(512);
+        doc["deviceId"] = getEffectiveDeviceSerial();
+        doc["temperature"] = round(pendingDoorEvent.temperature * 10) / 10.0;
+        doc["humidity"] = round(pendingDoorEvent.humidity * 10) / 10.0;
+        doc["doorStatus"] = pendingDoorEvent.doorOpen;
+        doc["powerStatus"] = true;
+        doc["batteryLevel"] = batteryMonitor.getPercentage();
+        doc["batteryVoltage"] = batteryMonitor.getVoltage();
+        doc["timestamp"] = pendingDoorEvent.timestamp;
+        String jsonData;
+        serializeJson(doc, jsonData);
+        if (apiClient.uploadReading(jsonData)) {
+          pendingDoorEvent.hasEvent = false;
+          logger.info("Deur-event direct verstuurd: " + String(pendingDoorEvent.doorOpen ? "OPEN" : "DICHT"));
+        } else {
+          logger.warn("Deur-event upload mislukt, retry later");
+        }
+      }
+      
       int count = dataBuffer.getCount();
       // Eerste upload direct zodra er data is (lastUpload==0); daarna volgens interval
       bool shouldUpload = (lastUpload == 0 && count > 0) || (lastUpload != 0 && (now - lastUpload >= interval));

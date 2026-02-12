@@ -27,6 +27,8 @@ public:
   Sensors();
   bool init();
   SensorData read();
+  // Snelle enkel deur-read (voor onmiddellijke event bij open/dicht)
+  bool readDoorOnly();
   
 private:
   bool bmpReady;
