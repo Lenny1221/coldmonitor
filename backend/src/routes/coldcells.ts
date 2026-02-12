@@ -311,31 +311,25 @@ router.get('/:id/state/stream', requireAuth, requireOwnership, async (req: AuthR
     addSSESubscriber(id, res);
     const deviceIds = (await prisma.device.findMany({ where: { coldCellId: id }, select: { id: true } })).map(d => d.id);
     let doorState = null;
-    let doorStatsToday = { opens: 0, closes: 0, totalOpenSeconds: 0 };
+    let doorOpenCountTotal = 0;
+    let doorCloseCountTotal = 0;
     if (deviceIds.length > 0) {
-      doorState = await prisma.deviceState.findFirst({
+      const states = await prisma.deviceState.findMany({
         where: { deviceId: { in: deviceIds } },
         orderBy: { doorLastChangedAt: 'desc' },
       });
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const dailyRows = await prisma.doorStatsDaily.findMany({
-        where: { deviceId: { in: deviceIds }, date: today },
-      });
-      doorStatsToday = {
-        opens: dailyRows.reduce((s, r) => s + r.opens, 0),
-        closes: dailyRows.reduce((s, r) => s + r.closes, 0),
-        totalOpenSeconds: dailyRows.reduce((s, r) => s + r.totalOpenSeconds, 0),
-      };
+      doorState = states[0] || null;
+      doorOpenCountTotal = states.reduce((s, r) => s + r.doorOpenCountTotal, 0);
+      doorCloseCountTotal = states.reduce((s, r) => s + r.doorCloseCountTotal, 0);
     }
     const payload = JSON.stringify({
       type: 'initial',
       coldCellId: id,
       doorState: doorState ? doorState.doorState : null,
       doorLastChangedAt: doorState?.doorLastChangedAt?.toISOString() ?? null,
-      doorOpenCountTotal: doorState?.doorOpenCountTotal ?? 0,
-      doorCloseCountTotal: doorState?.doorCloseCountTotal ?? 0,
-      doorStatsToday,
+      doorOpenCountTotal,
+      doorCloseCountTotal,
+      doorStatsToday: { opens: doorOpenCountTotal, closes: doorCloseCountTotal, totalOpenSeconds: 0 },
     });
     res.write(`data: ${payload}\n\n`);
     if (typeof (res as any).flush === 'function') (res as any).flush();
@@ -371,42 +365,27 @@ router.get('/:id/state', requireAuth, requireOwnership, async (req: AuthRequest,
     }
     const deviceIds = coldCell.devices.map(d => d.id);
     let doorState = null;
-    let doorStatsToday = null;
+    let doorOpenCountTotal = 0;
+    let doorCloseCountTotal = 0;
     if (deviceIds.length > 0) {
       const states = await prisma.deviceState.findMany({
         where: { deviceId: { in: deviceIds } },
         orderBy: { doorLastChangedAt: 'desc' },
       });
       doorState = states[0] || null;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const stats = await prisma.doorStatsDaily.aggregate({
-        where: {
-          deviceId: { in: deviceIds },
-          date: today,
-        },
-        _sum: { totalOpenSeconds: true },
-        _count: true,
-      });
-      const dailyRows = await prisma.doorStatsDaily.findMany({
-        where: {
-          deviceId: { in: deviceIds },
-          date: today,
-        },
-      });
-      const opensToday = dailyRows.reduce((s, r) => s + r.opens, 0);
-      const closesToday = dailyRows.reduce((s, r) => s + r.closes, 0);
-      doorStatsToday = { opens: opensToday, closes: closesToday, totalOpenSeconds: stats._sum.totalOpenSeconds ?? 0 };
+      // Gebruik DeviceState (niet DoorStatsDaily) voor tellers
+      doorOpenCountTotal = states.reduce((s, r) => s + r.doorOpenCountTotal, 0);
+      doorCloseCountTotal = states.reduce((s, r) => s + r.doorCloseCountTotal, 0);
     }
     res.json({
       coldCellId: id,
       doorState: doorState ? {
         doorState: doorState.doorState,
         doorLastChangedAt: doorState.doorLastChangedAt,
-        doorOpenCountTotal: doorState.doorOpenCountTotal,
-        doorCloseCountTotal: doorState.doorCloseCountTotal,
+        doorOpenCountTotal,
+        doorCloseCountTotal,
       } : null,
-      doorStatsToday: doorStatsToday || { opens: 0, closes: 0, totalOpenSeconds: 0 },
+      doorStatsToday: { opens: doorOpenCountTotal, closes: doorCloseCountTotal, totalOpenSeconds: 0 },
     });
   } catch (error) {
     console.error('Get cold cell state error:', error);

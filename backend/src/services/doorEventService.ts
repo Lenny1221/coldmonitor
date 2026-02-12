@@ -123,29 +123,20 @@ export async function processDoorEvent(
     });
   });
 
-  // Publish to SSE subscribers for this cold cell (incl. counts for direct UI update)
+  // Publish to SSE subscribers for this cold cell (incl. counts from DeviceState)
   const subs = sseSubscribers.get(device.coldCellId);
   if (subs && subs.size > 0) {
-    const today = new Date(eventTime);
-    today.setHours(0, 0, 0, 0);
-    // Aggregeer over alle devices van deze cold cell (zoals state endpoint)
     const allDevices = await prisma.device.findMany({
       where: { coldCellId: device.coldCellId },
       select: { id: true },
     });
     const deviceIds = allDevices.map((d) => d.id);
-    const dailyRows = await prisma.doorStatsDaily.findMany({
-      where: { deviceId: { in: deviceIds }, date: today },
-    });
-    const doorStatsToday = {
-      opens: dailyRows.reduce((s, r) => s + r.opens, 0),
-      closes: dailyRows.reduce((s, r) => s + r.closes, 0),
-      totalOpenSeconds: dailyRows.reduce((s, r) => s + (r.totalOpenSeconds ?? 0), 0),
-    };
-    const deviceState = await prisma.deviceState.findFirst({
+    const states = await prisma.deviceState.findMany({
       where: { deviceId: { in: deviceIds } },
-      orderBy: { doorLastChangedAt: 'desc' },
     });
+    const doorOpenCountTotal = states.reduce((s, r) => s + r.doorOpenCountTotal, 0);
+    const doorCloseCountTotal = states.reduce((s, r) => s + r.doorCloseCountTotal, 0);
+    const doorStatsToday = { opens: doorOpenCountTotal, closes: doorCloseCountTotal, totalOpenSeconds: 0 };
 
     const payload = JSON.stringify({
       type: 'door_state',
@@ -153,8 +144,8 @@ export async function processDoorEvent(
       coldCellId: device.coldCellId,
       doorState: state,
       doorLastChangedAt: eventTime.toISOString(),
-      doorOpenCountTotal: deviceState?.doorOpenCountTotal ?? 0,
-      doorCloseCountTotal: deviceState?.doorCloseCountTotal ?? 0,
+      doorOpenCountTotal,
+      doorCloseCountTotal,
       doorStatsToday,
       timestamp: Date.now(),
     });
