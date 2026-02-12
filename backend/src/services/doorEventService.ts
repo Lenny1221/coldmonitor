@@ -45,7 +45,9 @@ export async function processDoorEvent(
   payload: DoorEventPayload
 ): Promise<{ success: boolean; duplicate?: boolean }> {
   const { state, timestamp, seq } = payload;
-  const eventTime = new Date(timestamp);
+  // ESP32 stuurt millis() (uptime), geen Unix timestamp; gebruik servertijd voor datum
+  const isLikelyUptime = timestamp < 86400000 * 365; // < ~1 jaar in ms
+  const eventTime = isLikelyUptime ? new Date() : new Date(timestamp);
 
   // Idempotency: (deviceId, seq) unique
   const existing = await prisma.doorEvent.findUnique({
