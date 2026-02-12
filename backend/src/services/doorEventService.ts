@@ -84,22 +84,54 @@ export async function processDoorEvent(
       },
     });
 
-    await tx.deviceState.upsert({
+    const currentState = await tx.deviceState.findUnique({
       where: { deviceId },
-      create: {
-        deviceId,
-        doorState: state,
-        doorLastChangedAt: eventTime,
-        doorOpenCountTotal: isOpen ? 1 : 0,
-        doorCloseCountTotal: isOpen ? 0 : 1,
-      },
-      update: {
-        doorState: state,
-        doorLastChangedAt: eventTime,
-        doorOpenCountTotal: { increment: isOpen ? 1 : 0 },
-        doorCloseCountTotal: { increment: isOpen ? 0 : 1 },
-      },
     });
+
+    let totalOpenSecondsIncrement = 0;
+    if (isOpen) {
+      // Door opened: record when
+      await tx.deviceState.upsert({
+        where: { deviceId },
+        create: {
+          deviceId,
+          doorState: state,
+          doorLastChangedAt: eventTime,
+          doorOpenedAt: eventTime,
+          doorOpenCountTotal: 1,
+          doorCloseCountTotal: 0,
+        },
+        update: {
+          doorState: state,
+          doorLastChangedAt: eventTime,
+          doorOpenedAt: eventTime,
+          doorOpenCountTotal: { increment: 1 },
+        },
+      });
+    } else {
+      // Door closed: add open duration to today's total_open_seconds
+      const openedAt = currentState?.doorOpenedAt;
+      if (openedAt) {
+        totalOpenSecondsIncrement = Math.max(0, Math.floor((eventTime.getTime() - openedAt.getTime()) / 1000));
+      }
+      await tx.deviceState.upsert({
+        where: { deviceId },
+        create: {
+          deviceId,
+          doorState: state,
+          doorLastChangedAt: eventTime,
+          doorOpenedAt: null,
+          doorOpenCountTotal: 0,
+          doorCloseCountTotal: 1,
+        },
+        update: {
+          doorState: state,
+          doorLastChangedAt: eventTime,
+          doorOpenedAt: null,
+          doorCloseCountTotal: { increment: 1 },
+        },
+      });
+    }
 
     const daily = await tx.doorStatsDaily.upsert({
       where: {
@@ -113,10 +145,12 @@ export async function processDoorEvent(
         date: dateKey,
         opens: isOpen ? 1 : 0,
         closes: isOpen ? 0 : 1,
+        totalOpenSeconds: totalOpenSecondsIncrement,
       },
       update: {
         opens: { increment: isOpen ? 1 : 0 },
         closes: { increment: isOpen ? 0 : 1 },
+        totalOpenSeconds: { increment: totalOpenSecondsIncrement },
       },
     });
 

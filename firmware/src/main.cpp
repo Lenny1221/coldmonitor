@@ -472,8 +472,8 @@ void sensorTask(void *parameter) {
   while (true) {
     unsigned long now = millis();
     
-    // Deur elke 20ms checken met debounce; bij state change direct event in queue (live app-update)
-    if (now - lastDoorCheck >= 20) {
+    // Deur elke 25ms checken met debounce (50ms); bij state change direct event in queue (live app-update)
+    if (now - lastDoorCheck >= 25) {
       bool doorOpen = sensors.readDoorOnly();
       if (doorEventManager.poll(doorOpen)) {
         DoorEvent ev;

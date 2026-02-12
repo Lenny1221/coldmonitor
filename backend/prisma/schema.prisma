@@ -179,14 +179,15 @@ model Device {
 
 // Device door state (live status for realtime app)
 model DeviceState {
-  id                   String   @id @default(cuid())
-  deviceId             String   @unique
-  device               Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  doorState            String   // "OPEN" | "CLOSED"
+  id                   String    @id @default(cuid())
+  deviceId             String    @unique
+  device               Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  doorState            String    // "OPEN" | "CLOSED"
   doorLastChangedAt    DateTime
-  doorOpenCountTotal   Int      @default(0)
-  doorCloseCountTotal  Int      @default(0)
-  updatedAt            DateTime @updatedAt
+  doorOpenedAt         DateTime? // When door was last opened (for total_open_seconds calc)
+  doorOpenCountTotal   Int       @default(0)
+  doorCloseCountTotal  Int       @default(0)
+  updatedAt            DateTime  @updatedAt
 
   @@index([deviceId])
 }

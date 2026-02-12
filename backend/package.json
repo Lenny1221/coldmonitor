@@ -14,7 +14,8 @@
     "create:client": "tsx src/scripts/create-client.ts",
     "simulate:device": "tsx src/scripts/device-simulator.ts",
     "seed": "tsx src/scripts/seed.ts",
-    "generate-keys": "tsx src/scripts/generate-device-keys.ts"
+    "generate-keys": "tsx src/scripts/generate-device-keys.ts",
+    "test": "tsx src/services/__tests__/doorEventService.test.ts"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
@@ -40,6 +41,7 @@
     "@types/node": "^20.10.5",
     "prisma": "5.22.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
   }
 }

@@ -501,6 +501,8 @@ const ColdCellDetail: React.FC = () => {
                     >
                       Opnieuw verbinden
                     </button>
+                  ) : displayDoorState != null ? (
+                    <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded" title="Polling (elke 5s)">Vertraagd</span>
                   ) : (
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">Verbinden…</span>
                   )}
@@ -529,6 +531,9 @@ const ColdCellDetail: React.FC = () => {
               {(liveDoorState || coldCell?.doorState || todayOpens > 0 || todayCloses > 0) && (
                 <p className="text-xs text-gray-500 mt-0.5">
                   Vandaag: {todayOpens}× open / {todayCloses}× dicht
+                  {(doorStatsToday?.totalOpenSeconds ?? 0) > 0 && (
+                    <> • {Math.round((doorStatsToday?.totalOpenSeconds ?? 0) / 60)} min open</>
+                  )}
                 </p>
               )}
               {isTechnician && coldCell?.devices?.length > 0 && (

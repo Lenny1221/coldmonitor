@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define DOOR_DEBOUNCE_MS 20
+#define DOOR_DEBOUNCE_MS 50
 #define DOOR_EVENT_QUEUE_SIZE 32
 #define DOOR_MAX_EVENTS_PER_SECOND 5
 

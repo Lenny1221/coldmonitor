@@ -112,7 +112,7 @@ export function useDoorStateSSE(coldCellId: string | undefined): UseDoorStateSSE
     };
   }, [connect]);
 
-  // Polling fallback elke 2s: zorgt dat deur + "Vandaag X× open" altijd up-to-date is
+  // Polling fallback elke 5s (spec): zorgt dat deur + tellers up-to-date blijven als SSE faalt
   useEffect(() => {
     if (!coldCellId) return;
     const poll = async () => {
@@ -125,7 +125,7 @@ export function useDoorStateSSE(coldCellId: string | undefined): UseDoorStateSSE
         }));
       } catch (_) {}
     };
-    const iv = setInterval(poll, 500);
+    const iv = setInterval(poll, 5000);
     poll(); // direct eerste keer
     return () => clearInterval(iv);
   }, [coldCellId]);

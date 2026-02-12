@@ -102,6 +102,8 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 - Contact open (deur open) → GPIO leest **HIGH**. In Serial Monitor: pin=0 of pin=1. Melding verkeerd om? In sensors.h: PIN_DOOR_INVERTED 1
 - Tip: NC (normally closed) is fail-safe: kabelbreuk = “deur open” alarm
 
+**Real-time deur-events:** Debounce 50 ms, direct event naar backend bij state change. Offline queue (32 events), rate limit 5/s.
+
 ### SPI (MAX31865) – optioneel
 - **CS Pin**: GPIO 5 (configurable)
 - **MOSI**: GPIO 23 (SPI default)

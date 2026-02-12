@@ -37,7 +37,16 @@ bool DoorEventManager::poll(bool currentDoorOpen) {
 
 void DoorEventManager::enqueue(const DoorEvent& ev) {
   if (queueCount >= DOOR_EVENT_QUEUE_SIZE) return;
-  
+
+  unsigned long now = millis();
+  if (lastEventMs == 0 || (now - lastEventMs) >= 1000) {
+    lastEventMs = now;
+    eventsThisSecond = 0;
+  }
+  if (eventsThisSecond >= DOOR_MAX_EVENTS_PER_SECOND) return;
+
+  eventsThisSecond++;
+
   queue[queueTail] = ev;
   queueTail = (queueTail + 1) % DOOR_EVENT_QUEUE_SIZE;
   queueCount++;
