@@ -49,7 +49,6 @@ const ColdCellDetail: React.FC = () => {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [showAddLogger, setShowAddLogger] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [doorEvents, setDoorEvents] = useState<{ eventsPerDay: Array<{ date: string; opens: number; closes: number; total: number }>; totalEvents: number } | null>(null);
   const [rs485Status, setRs485Status] = useState<{ rs485Temperature: number | null; deviceOnline: boolean; lastUpdate: string | null } | null>(null);
   const [defrostLoading, setDefrostLoading] = useState(false);
   const [pushDoorLoading, setPushDoorLoading] = useState(false);
@@ -68,20 +67,9 @@ const ColdCellDetail: React.FC = () => {
   useEffect(() => {
     if (id) {
       fetchReadings();
-      fetchDoorEvents();
       fetchRS485Status();
     }
-  }, [id, timeRange, doorStatsRange]);
-
-  const fetchDoorEvents = async () => {
-    if (!id) return;
-    try {
-      const result = await readingsApi.getDoorEvents(id, doorStatsRange);
-      setDoorEvents(result);
-    } catch (error) {
-      console.error('Failed to fetch door events:', error);
-    }
-  };
+  }, [id, timeRange]);
 
   const fetchRS485Status = async () => {
     if (!id) return;
@@ -124,7 +112,6 @@ const ColdCellDetail: React.FC = () => {
     const slowInterval = setInterval(() => {
       fetchReadings();
       fetchAlerts();
-      fetchDoorEvents();
       fetchRS485Status();
     }, 20000);
     return () => {
@@ -140,7 +127,6 @@ const ColdCellDetail: React.FC = () => {
         fetchColdCell();
         fetchReadings();
         fetchAlerts();
-        fetchDoorEvents();
         fetchRS485Status();
       }
     };
@@ -527,12 +513,9 @@ const ColdCellDetail: React.FC = () => {
                   Laatste wijziging: {format(parseISO(displayDoorChangedAt), 'dd/MM HH:mm')}
                 </p>
               )}
-              {(liveDoorState || coldCell?.doorState || todayOpens > 0 || todayCloses > 0) && (
+              {(liveDoorState || coldCell?.doorState || doorOpenCountTotal > 0 || doorCloseCountTotal > 0) && (
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Vandaag: {todayOpens}× open / {todayCloses}× dicht
-                  {(doorStatsToday?.totalOpenSeconds ?? 0) > 0 && (
-                    <> • {Math.round((doorStatsToday?.totalOpenSeconds ?? 0) / 60)} min open</>
-                  )}
+                  Totaal: {doorOpenCountTotal}× open / {doorCloseCountTotal}× dicht
                 </p>
               )}
               {isTechnician && coldCell?.devices?.length > 0 && (
@@ -546,7 +529,6 @@ const ColdCellDetail: React.FC = () => {
                       try {
                         await coldCellStateApi.pushDoor(id, 'OPEN');
                         fetchColdCell();
-                        fetchDoorEvents();
                       } catch (e) {
                         console.error(e);
                       } finally {
@@ -566,7 +548,6 @@ const ColdCellDetail: React.FC = () => {
                       try {
                         await coldCellStateApi.pushDoor(id, 'CLOSED');
                         fetchColdCell();
-                        fetchDoorEvents();
                       } catch (e) {
                         console.error(e);
                       } finally {
@@ -843,61 +824,6 @@ const ColdCellDetail: React.FC = () => {
           )}
         </div>
       )}
-
-      {/* Deurstatistieken per dag */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Deurstatistieken per dag</h2>
-          <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-50">
-            {([1, 7, 30] as const).map((days) => (
-              <button
-                key={days}
-                onClick={() => setDoorStatsRange(days)}
-                className={`px-4 py-2 rounded-md text-sm font-medium ${
-                  doorStatsRange === days
-                    ? 'bg-blue-600 text-white shadow'
-                    : 'text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {days === 1 ? 'Vandaag' : `${days} dagen`}
-              </button>
-            ))}
-          </div>
-        </div>
-        {doorEvents ? (
-          <>
-            <div className="mb-4">
-              <div className="text-3xl font-bold text-gray-900">{doorEvents.totalEvents}</div>
-              <div className="text-sm text-gray-600">
-                Totaal aantal deur events {doorStatsRange === 1 ? 'vandaag' : `in de laatste ${doorStatsRange} dagen`}
-              </div>
-            </div>
-            {doorEvents.eventsPerDay.length > 0 ? (
-              <div className="space-y-2">
-                {doorEvents.eventsPerDay.map((day) => (
-                  <div key={day.date} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-gray-900">
-                        {format(parseISO(day.date), 'EEEE d MMM yyyy')}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {day.opens} keer geopend · {day.closes} keer gesloten
-                      </div>
-                    </div>
-                    <div className="text-lg font-semibold text-gray-900">{day.total}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-8 text-center text-gray-500">
-                Geen deur events in deze periode.
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="py-8 text-center text-gray-500">Laden...</div>
-        )}
-      </div>
 
       {/* RS485 Control Tabel */}
       <div className="bg-white rounded-lg shadow p-6">

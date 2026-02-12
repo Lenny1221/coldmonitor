@@ -2,7 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { requireAuth, AuthRequest, requireRole, requireOwnership } from '../middleware/auth';
-import { addSSESubscriber, processDoorEvent, getLocalDateKey } from '../services/doorEventService';
+import { addSSESubscriber, processDoorEvent } from '../services/doorEventService';
 import { logger } from '../utils/logger';
 
 const router = express.Router();
@@ -136,27 +136,16 @@ router.get('/:id', requireAuth, requireOwnership, async (req: AuthRequest, res) 
     const deviceIds = coldCell.devices.map(d => d.id);
     let latestReading = null;
     let doorState = null; // DeviceState (realtime door) overrides latestReading.doorStatus
-    let doorStatsToday = { opens: 0, closes: 0, totalOpenSeconds: 0 };
     if (deviceIds.length > 0) {
       latestReading = await prisma.sensorReading.findFirst({
         where: { deviceId: { in: deviceIds } },
         orderBy: { recordedAt: 'desc' },
       });
-      // Prefer DeviceState for door (real-time) over reading
+      // DeviceState: doorState + doorOpenCountTotal + doorCloseCountTotal
       doorState = await prisma.deviceState.findFirst({
         where: { deviceId: { in: deviceIds } },
         orderBy: { doorLastChangedAt: 'desc' },
       });
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const dailyStats = await prisma.doorStatsDaily.findMany({
-        where: { deviceId: { in: deviceIds }, date: today },
-      });
-      doorStatsToday = {
-        opens: dailyStats.reduce((s, r) => s + r.opens, 0),
-        closes: dailyStats.reduce((s, r) => s + r.closes, 0),
-        totalOpenSeconds: dailyStats.reduce((s, r) => s + r.totalOpenSeconds, 0),
-      };
     }
 
     res.json({
@@ -165,8 +154,9 @@ router.get('/:id', requireAuth, requireOwnership, async (req: AuthRequest, res) 
       doorState: doorState ? {
         doorState: doorState.doorState,
         doorLastChangedAt: doorState.doorLastChangedAt,
+        doorOpenCountTotal: doorState.doorOpenCountTotal,
+        doorCloseCountTotal: doorState.doorCloseCountTotal,
       } : null,
-      doorStatsToday,
     });
   } catch (error) {
     console.error('Get cold cell error:', error);
@@ -321,29 +311,20 @@ router.get('/:id/state/stream', requireAuth, requireOwnership, async (req: AuthR
     addSSESubscriber(id, res);
     const deviceIds = (await prisma.device.findMany({ where: { coldCellId: id }, select: { id: true } })).map(d => d.id);
     let doorState = null;
-    let doorStatsToday = { opens: 0, closes: 0, totalOpenSeconds: 0 };
     if (deviceIds.length > 0) {
       const states = await prisma.deviceState.findMany({
         where: { deviceId: { in: deviceIds } },
         orderBy: { doorLastChangedAt: 'desc' },
       });
       doorState = states[0] || null;
-      const today = getLocalDateKey(new Date(), coldCell.location?.timezone ?? 'Europe/Brussels');
-      const dailyStats = await prisma.doorStatsDaily.findMany({
-        where: { deviceId: { in: deviceIds }, date: today },
-      });
-      doorStatsToday = {
-        opens: dailyStats.reduce((s, r) => s + r.opens, 0),
-        closes: dailyStats.reduce((s, r) => s + r.closes, 0),
-        totalOpenSeconds: dailyStats.reduce((s, r) => s + r.totalOpenSeconds, 0),
-      };
     }
     const payload = JSON.stringify({
       type: 'initial',
       coldCellId: id,
       doorState: doorState ? doorState.doorState : null,
       doorLastChangedAt: doorState?.doorLastChangedAt?.toISOString() ?? null,
-      doorStatsToday,
+      doorOpenCountTotal: doorState?.doorOpenCountTotal ?? 0,
+      doorCloseCountTotal: doorState?.doorCloseCountTotal ?? 0,
       timestamp: Date.now(),
     });
     res.write(`data: ${payload}\n\n`);
@@ -380,30 +361,21 @@ router.get('/:id/state', requireAuth, requireOwnership, async (req: AuthRequest,
     }
     const deviceIds = coldCell.devices.map(d => d.id);
     let doorState = null;
-    let doorStatsToday = { opens: 0, closes: 0, totalOpenSeconds: 0 };
     if (deviceIds.length > 0) {
       const states = await prisma.deviceState.findMany({
         where: { deviceId: { in: deviceIds } },
         orderBy: { doorLastChangedAt: 'desc' },
       });
       doorState = states[0] || null;
-      const today = getLocalDateKey(new Date(), coldCell.location?.timezone ?? 'Europe/Brussels');
-      const dailyStats = await prisma.doorStatsDaily.findMany({
-        where: { deviceId: { in: deviceIds }, date: today },
-      });
-      doorStatsToday = {
-        opens: dailyStats.reduce((s, r) => s + r.opens, 0),
-        closes: dailyStats.reduce((s, r) => s + r.closes, 0),
-        totalOpenSeconds: dailyStats.reduce((s, r) => s + r.totalOpenSeconds, 0),
-      };
     }
     res.json({
       coldCellId: id,
       doorState: doorState ? {
         doorState: doorState.doorState,
         doorLastChangedAt: doorState.doorLastChangedAt,
+        doorOpenCountTotal: doorState.doorOpenCountTotal,
+        doorCloseCountTotal: doorState.doorCloseCountTotal,
       } : null,
-      doorStatsToday,
     });
   } catch (error) {
     console.error('Get cold cell state error:', error);

@@ -2,18 +2,6 @@ import { Response } from 'express';
 import { prisma } from '../config/database';
 import { logger } from '../utils/logger';
 
-/** Bepaal lokale datum in gegeven timezone (voor DoorStatsDaily). */
-export function getLocalDateKey(date: Date, timezone: string): Date {
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-  const str = formatter.format(date);
-  return new Date(str + 'T12:00:00Z');
-}
-
 const doorEventSchema = {
   device_id: (v: unknown) => typeof v === 'string',
   state: (v: unknown) => v === 'OPEN' || v === 'CLOSED',
@@ -52,188 +40,108 @@ export function getSSESubscriberCount(coldCellId?: string): number {
   return Array.from(sseSubscribers.values()).reduce((sum, set) => sum + set.size, 0);
 }
 
-export async function processDoorEvent(
+/** Push DeviceState naar alle SSE-subscribers van deze cold cell */
+function pushDeviceStateToSSE(
+  coldCellId: string,
   deviceId: string,
-  payload: DoorEventPayload
-): Promise<{ success: boolean; duplicate?: boolean; doorEventId?: string; doorStatsDailyId?: string }> {
-  const { state, timestamp, seq } = payload;
-  // ESP32 stuurt millis() (uptime), geen Unix timestamp; gebruik servertijd voor datum
-  const isLikelyUptime = timestamp < 86400000 * 365; // < ~1 jaar in ms
-  const eventTime = isLikelyUptime ? new Date() : new Date(timestamp);
+  doorState: string,
+  doorLastChangedAt: string,
+  doorOpenCountTotal: number,
+  doorCloseCountTotal: number
+): void {
+  const subs = sseSubscribers.get(coldCellId);
+  if (!subs || subs.size === 0) return;
 
-  // Idempotency: (deviceId, seq) unique
-  const existing = await prisma.doorEvent.findUnique({
-    where: {
-      deviceId_seq: { deviceId, seq },
-    },
-  });
-  if (existing) {
-    logger.debug('Door event duplicate (already in DB)', { deviceId, seq });
-    return { success: true, duplicate: true };
-  }
-
-  const device = await prisma.device.findUnique({
-    where: { id: deviceId },
-    include: {
-      coldCell: {
-        include: {
-          location: true,
-        },
-      },
-    },
-  });
-  if (!device) {
-    throw new Error('Device not found');
-  }
-
-  const timezone = device.coldCell?.location?.timezone ?? 'Europe/Brussels';
-  const dateKey = getLocalDateKey(eventTime, timezone);
-
-  logger.info('Door event received', { deviceId, state, seq });
-
-  const isOpen = state === 'OPEN';
-
-  const doorEvent = await prisma.$transaction(async (tx) => {
-    const ev = await tx.doorEvent.create({
-      data: {
-        deviceId,
-        state,
-        timestamp: eventTime,
-        seq,
-      },
-    });
-
-    const currentState = await tx.deviceState.findUnique({
-      where: { deviceId },
-    });
-
-    let totalOpenSecondsIncrement = 0;
-    if (isOpen) {
-      // Door opened: record when
-      await tx.deviceState.upsert({
-        where: { deviceId },
-        create: {
-          deviceId,
-          doorState: state,
-          doorLastChangedAt: eventTime,
-          doorOpenedAt: eventTime,
-          doorOpenCountTotal: 1,
-          doorCloseCountTotal: 0,
-        },
-        update: {
-          doorState: state,
-          doorLastChangedAt: eventTime,
-          doorOpenedAt: eventTime,
-          doorOpenCountTotal: { increment: 1 },
-        },
-      });
-    } else {
-      // Door closed: add open duration to today's total_open_seconds
-      const openedAt = currentState?.doorOpenedAt;
-      if (openedAt) {
-        totalOpenSecondsIncrement = Math.max(0, Math.floor((eventTime.getTime() - openedAt.getTime()) / 1000));
-      }
-      await tx.deviceState.upsert({
-        where: { deviceId },
-        create: {
-          deviceId,
-          doorState: state,
-          doorLastChangedAt: eventTime,
-          doorOpenedAt: null,
-          doorOpenCountTotal: 0,
-          doorCloseCountTotal: 1,
-        },
-        update: {
-          doorState: state,
-          doorLastChangedAt: eventTime,
-          doorOpenedAt: null,
-          doorCloseCountTotal: { increment: 1 },
-        },
-      });
-    }
-
-    const daily = await tx.doorStatsDaily.upsert({
-      where: {
-        deviceId_date: {
-          deviceId,
-          date: dateKey,
-        },
-      },
-      create: {
-        deviceId,
-        date: dateKey,
-        opens: isOpen ? 1 : 0,
-        closes: isOpen ? 0 : 1,
-        totalOpenSeconds: totalOpenSecondsIncrement,
-      },
-      update: {
-        opens: { increment: isOpen ? 1 : 0 },
-        closes: { increment: isOpen ? 0 : 1 },
-        totalOpenSeconds: { increment: totalOpenSecondsIncrement },
-      },
-    });
-
-    return { ev, daily };
-  });
-
-  logger.info('Door event opgeslagen in DB', {
-    doorEventId: doorEvent.ev.id,
+  const payload = JSON.stringify({
+    type: 'door_state',
     deviceId,
-    state,
-    seq,
-    doorStatsDailyId: doorEvent.daily.id,
-    date: dateKey.toISOString().split('T')[0],
-    opens: doorEvent.daily.opens,
-    closes: doorEvent.daily.closes,
+    coldCellId,
+    doorState,
+    doorLastChangedAt,
+    doorOpenCountTotal,
+    doorCloseCountTotal,
+    timestamp: Date.now(),
   });
-
-  // Publish to SSE subscribers for this cold cell (doorStatsToday = vandaag, reset bij middernacht)
-  const subs = sseSubscribers.get(device.coldCellId);
-  if (subs && subs.size > 0) {
-    const allDevices = await prisma.device.findMany({
-      where: { coldCellId: device.coldCellId },
-      select: { id: true },
-    });
-    const deviceIds = allDevices.map((d) => d.id);
-    const today = getLocalDateKey(new Date(), timezone);
-    const dailyStats = await prisma.doorStatsDaily.findMany({
-      where: { deviceId: { in: deviceIds }, date: today },
-    });
-    const doorStatsToday = {
-      opens: dailyStats.reduce((s, r) => s + r.opens, 0),
-      closes: dailyStats.reduce((s, r) => s + r.closes, 0),
-      totalOpenSeconds: dailyStats.reduce((s, r) => s + r.totalOpenSeconds, 0),
-    };
-
-    const payload = JSON.stringify({
-      type: 'door_state',
-      deviceId,
-      coldCellId: device.coldCellId,
-      doorState: state,
-      doorLastChangedAt: eventTime.toISOString(),
-      doorStatsToday,
-      timestamp: Date.now(),
-    });
-    subs.forEach((res) => {
-      try {
-        res.write(`data: ${payload}\n\n`);
-        if (typeof (res as any).flush === 'function') (res as any).flush();
-      } catch (e) {
-        subs.delete(res);
-      }
-    });
-  }
-
-  return {
-    success: true,
-    doorEventId: doorEvent.ev.id,
-    doorStatsDailyId: doorEvent.daily.id,
-  };
+  subs.forEach((res) => {
+    try {
+      res.write(`data: ${payload}\n\n`);
+      if (typeof (res as any).flush === 'function') (res as any).flush();
+    } catch (e) {
+      subs.delete(res);
+    }
+  });
 }
 
 /**
- * Sync DeviceState from sensor reading (fallback when door-events fail).
- * Updates doorState/doorLastChangedAt only – counters stay from door-events.
+ * Verwerk deur-event: alleen DeviceState updaten (doorState, doorOpenCountTotal, doorCloseCountTotal).
+ * Direct push naar frontend via SSE.
+ */
+export async function processDoorEvent(
+  deviceId: string,
+  payload: DoorEventPayload
+): Promise<{ success: boolean; duplicate?: boolean }> {
+  const { state } = payload;
+  const eventTime = new Date();
+
+  const device = await prisma.device.findUnique({
+    where: { id: deviceId },
+    include: { coldCell: true },
+  });
+  if (!device || !device.coldCellId) {
+    throw new Error('Device not found');
+  }
+
+  const isOpen = state === 'OPEN';
+
+  const current = await prisma.deviceState.findUnique({
+    where: { deviceId },
+  });
+  if (current?.doorState === state) {
+    logger.debug('Door state unchanged, skip', { deviceId, state });
+    return { success: true, duplicate: true };
+  }
+
+  const updated = await prisma.deviceState.upsert({
+    where: { deviceId },
+    create: {
+      deviceId,
+      doorState: state,
+      doorLastChangedAt: eventTime,
+      doorOpenedAt: isOpen ? eventTime : null,
+      doorOpenCountTotal: isOpen ? 1 : 0,
+      doorCloseCountTotal: isOpen ? 0 : 1,
+    },
+    update: {
+      doorState: state,
+      doorLastChangedAt: eventTime,
+      doorOpenedAt: isOpen ? eventTime : null,
+      doorOpenCountTotal: isOpen ? { increment: 1 } : undefined,
+      doorCloseCountTotal: !isOpen ? { increment: 1 } : undefined,
+    },
+  });
+
+  logger.info('Door state opgeslagen in DeviceState', {
+    deviceId,
+    state,
+    opens: updated.doorOpenCountTotal,
+    closes: updated.doorCloseCountTotal,
+  });
+
+  pushDeviceStateToSSE(
+    device.coldCellId,
+    deviceId,
+    state,
+    updated.doorLastChangedAt.toISOString(),
+    updated.doorOpenCountTotal,
+    updated.doorCloseCountTotal
+  );
+
+  return { success: true };
+}
+
+/**
+ * Sync DeviceState from sensor reading (fallback wanneer door-events niet worden ontvangen).
+ * Alleen DeviceState –zelfde als processDoorEvent.
  */
 export async function syncDoorStateFromReading(
   deviceId: string,
@@ -242,11 +150,9 @@ export async function syncDoorStateFromReading(
   const state = doorStatus ? 'OPEN' : 'CLOSED';
   const device = await prisma.device.findUnique({
     where: { id: deviceId },
-    include: { coldCell: { include: { location: true } } },
+    include: { coldCell: true },
   });
   if (!device || !device.coldCellId) return;
-
-  const syncTimezone = device.coldCell?.location?.timezone ?? 'Europe/Brussels';
 
   const current = await prisma.deviceState.findUnique({
     where: { deviceId },
@@ -254,55 +160,37 @@ export async function syncDoorStateFromReading(
   if (current?.doorState === state) return;
 
   const eventTime = new Date();
-  await prisma.deviceState.upsert({
+  const isOpen = state === 'OPEN';
+
+  const updated = await prisma.deviceState.upsert({
     where: { deviceId },
     create: {
       deviceId,
       doorState: state,
       doorLastChangedAt: eventTime,
-      doorOpenCountTotal: 0,
-      doorCloseCountTotal: 0,
+      doorOpenedAt: isOpen ? eventTime : null,
+      doorOpenCountTotal: isOpen ? 1 : 0,
+      doorCloseCountTotal: isOpen ? 0 : 1,
     },
     update: {
       doorState: state,
       doorLastChangedAt: eventTime,
+      doorOpenedAt: isOpen ? eventTime : null,
+      doorOpenCountTotal: isOpen ? { increment: 1 } : undefined,
+      doorCloseCountTotal: !isOpen ? { increment: 1 } : undefined,
     },
   });
 
-  const subs = sseSubscribers.get(device.coldCellId);
-  if (subs && subs.size > 0) {
-    const allDevices = await prisma.device.findMany({
-      where: { coldCellId: device.coldCellId },
-      select: { id: true },
-    });
-    const deviceIds = allDevices.map((d) => d.id);
-    const today = getLocalDateKey(new Date(), syncTimezone);
-    const dailyStats = await prisma.doorStatsDaily.findMany({
-      where: { deviceId: { in: deviceIds }, date: today },
-    });
-    const doorStatsToday = {
-      opens: dailyStats.reduce((s, r) => s + r.opens, 0),
-      closes: dailyStats.reduce((s, r) => s + r.closes, 0),
-      totalOpenSeconds: dailyStats.reduce((s, r) => s + r.totalOpenSeconds, 0),
-    };
-    const payload = JSON.stringify({
-      type: 'door_state',
-      deviceId,
-      coldCellId: device.coldCellId,
-      doorState: state,
-      doorLastChangedAt: eventTime.toISOString(),
-      doorStatsToday,
-      timestamp: Date.now(),
-    });
-    subs.forEach((res) => {
-      try {
-        res.write(`data: ${payload}\n\n`);
-        if (typeof (res as any).flush === 'function') (res as any).flush();
-      } catch (e) {
-        subs.delete(res);
-      }
-    });
-  }
+  logger.info('Door state sync from reading (fallback)', { deviceId, state });
+
+  pushDeviceStateToSSE(
+    device.coldCellId,
+    deviceId,
+    state,
+    updated.doorLastChangedAt.toISOString(),
+    updated.doorOpenCountTotal,
+    updated.doorCloseCountTotal
+  );
 }
 
 export function validateDoorEventPayload(body: unknown): DoorEventPayload {

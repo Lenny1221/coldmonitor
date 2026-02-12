@@ -5,7 +5,6 @@ import { requireDeviceAuth, DeviceRequest } from '../../middleware/deviceAuth';
 import { prisma } from '../../config/database';
 import { generateApiKey } from '../../utils/crypto';
 import { CustomError } from '../../middleware/errorHandler';
-import { getLocalDateKey } from '../../services/doorEventService';
 
 const router = Router();
 
@@ -291,7 +290,7 @@ async function assertDeviceAccess(deviceId: string, req: AuthRequest): Promise<v
 
 /**
  * GET /devices/:id/state
- * Laatste deurstatus + last_changed_at + vandaag counts (device-level)
+ * Laatste deurstatus + doorOpenCountTotal + doorCloseCountTotal (alleen DeviceState)
  */
 router.get(
   '/:id/state',
@@ -302,33 +301,16 @@ router.get(
       const { id } = req.params;
       await assertDeviceAccess(id, req);
 
-      const device = await prisma.device.findUnique({
-        where: { id },
-        include: { coldCell: { include: { location: true } } },
-      });
-      const timezone = device?.coldCell?.location?.timezone ?? 'Europe/Brussels';
-
       const state = await prisma.deviceState.findUnique({
         where: { deviceId: id },
       });
-
-      const today = getLocalDateKey(new Date(), timezone);
-      const daily = await prisma.doorStatsDaily.findFirst({
-        where: { deviceId: id, date: today },
-      });
-
-      const doorStatsToday = {
-        opens: daily?.opens ?? 0,
-        closes: daily?.closes ?? 0,
-        totalOpenSeconds: daily?.totalOpenSeconds ?? 0,
-      };
 
       res.json({
         deviceId: id,
         doorState: state?.doorState ?? null,
         doorLastChangedAt: state?.doorLastChangedAt ?? null,
-        doorStatsToday,
-        date: today.toISOString().split('T')[0],
+        doorOpenCountTotal: state?.doorOpenCountTotal ?? 0,
+        doorCloseCountTotal: state?.doorCloseCountTotal ?? 0,
       });
     } catch (error) {
       next(error);
@@ -338,7 +320,7 @@ router.get(
 
 /**
  * GET /devices/:id/door-stats
- * Dagoverzicht opens/closes per kalenderdag (from/to)
+ * Retourneert alleen DeviceState totalen (geen per-dag; we gebruiken alleen DeviceState)
  */
 router.get(
   '/:id/door-stats',
@@ -347,45 +329,17 @@ router.get(
   async (req: AuthRequest, res, next) => {
     try {
       const { id } = req.params;
-      const { from, to } = req.query;
-
       await assertDeviceAccess(id, req);
 
-      const device = await prisma.device.findUnique({
-        where: { id },
-        include: { coldCell: { include: { location: true } } },
-      });
-      const timezone = device?.coldCell?.location?.timezone ?? 'Europe/Brussels';
-
-      const today = getLocalDateKey(new Date(), timezone);
-      const fromStr = (from as string) || today.toISOString().split('T')[0];
-      const toStr = (to as string) || fromStr;
-
-      const fromDate = new Date(fromStr + 'T12:00:00Z');
-      const toDate = new Date(toStr + 'T12:00:00Z');
-      if (fromDate > toDate) {
-        throw new CustomError('from must be <= to', 400, 'INVALID_INPUT');
-      }
-
-      const stats = await prisma.doorStatsDaily.findMany({
-        where: {
-          deviceId: id,
-          date: { gte: fromDate, lte: toDate },
-        },
-        orderBy: { date: 'asc' },
+      const state = await prisma.deviceState.findUnique({
+        where: { deviceId: id },
       });
 
       res.json({
         deviceId: id,
-        from: fromStr,
-        to: toStr,
-        timezone,
-        stats: stats.map((s) => ({
-          date: s.date.toISOString().split('T')[0],
-          opens: s.opens,
-          closes: s.closes,
-          totalOpenSeconds: s.totalOpenSeconds,
-        })),
+        doorState: state?.doorState ?? null,
+        doorOpenCountTotal: state?.doorOpenCountTotal ?? 0,
+        doorCloseCountTotal: state?.doorCloseCountTotal ?? 0,
       });
     } catch (error) {
       next(error);
