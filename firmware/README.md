@@ -23,7 +23,7 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 |-----|--------------|
 | `wifi_ssid` | WiFi SSID |
 | `wifi_pass` | WiFi wachtwoord |
-| `api_url` | Backend URL (bijv. `https://xxx.railway.app/api`) |
+| `api_url` | Backend URL (vast: `https://web-production-e67f4.up.railway.app/api`) |
 | `api_key` | Device API key (x-device-key) |
 | `device_serial` | Serienummer (zoals in app/database) |
 | `provisioned` | Boolean: configuratie compleet |
@@ -166,7 +166,7 @@ On first boot, the device creates a WiFi access point:
 
 Connect to this AP and configure:
 - WiFi credentials
-- API URL
+- API key
 - Device serial number
 - Reading intervals
 - Modbus settings (if enabled)
@@ -190,14 +190,14 @@ Om opnieuw een WiFi-netwerk te kiezen (bijv. ander netwerk of nieuw wachtwoord):
 6. De ESP32 herstart automatisch en opent het config-portal (**ColdMonitor-Setup**). Verbind met dat netwerk en kies opnieuw je WiFi + wachtwoord.
 
 **Let op:** 
-- Alleen de **WiFi-gegevens** (SSID/wachtwoord) worden gewist. API URL, API key en serienummer blijven bewaard (in de ColdMonitor-config).
+- Alleen de **WiFi-gegevens** (SSID/wachtwoord) worden gewist. API key en serienummer blijven bewaard (in de ColdMonitor-config).
 - Als je de knop loslaat vóór 3 seconden, wordt de reset geannuleerd en gaat de ESP32 normaal verder.
 
 ### Configuratie met QR-code (telefoon)
 
 Op de configuratiepagina (wanneer je verbonden bent met **ColdMonitor-Setup**) staat een **QR-code**. Scan die met je telefoon om:
 1. Automatisch te verbinden met het netwerk **ColdMonitor-Setup**
-2. De configuratiepagina te openen (API URL en API key staan al ingevuld)
+2. De configuratiepagina te openen (API key en serienummer staan al ingevuld)
 
 Je hoeft dan alleen nog je **WiFi-netwerk** te kiezen en het **wachtwoord** in te voeren.
 
@@ -208,7 +208,7 @@ In de ColdMonitor-app (bij “Logger toevoegen”) kun je ook twee QR-codes tone
 - **Device Serial**: Unique identifier for the device
 - **Reading Interval**: Seconds between temperature readings (default: 20s)
 - **Upload Interval**: Seconds between data uploads (default: 20s, elke lezing naar Supabase)
-- **API URL**: Backend API endpoint
+- **API URL**: Vast ingesteld (niet configureerbaar)
 - **API Key**: Device authentication key
 - **Modbus Enabled**: Enable/disable RS485 communication
 - **Deep Sleep**: Enable power-saving deep sleep mode
@@ -298,14 +298,14 @@ To update:
 ### Data Not Uploading
 
 - Verify WiFi connection
-- Check API URL configuration
+- API URL staat vast in firmware (geen configuratie nodig)
 - Verify API key is correct
 - Check serial logs for HTTP errors
 - Ensure backend is accessible
 
 **Upload failed: -2 (send header failed)**  
 De verbinding met de backend faalt vóór of tijdens het sturen van de request. Controleer:
-- **API URL** in de config: moet exact overeenkomen met je backend (bijv. `https://xxx.railway.app/api`), inclusief `https://` en `/api`.
+- API URL staat vast in de firmware (`https://web-production-e67f4.up.railway.app/api`). Geen configuratie nodig.
 - **Backend online**: open in de browser `https://JOUW-RAILWAY-URL/health` – moet `{"status":"ok"}` geven.
 - **WiFi**: signaalsterkte en of het netwerk internet toestaat.
 - **HTTPS**: als de backend alleen HTTPS accepteert, gebruik dan een URL die met `https://` begint.

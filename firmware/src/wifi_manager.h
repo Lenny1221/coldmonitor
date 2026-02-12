@@ -13,7 +13,6 @@ class WiFiManagerWrapper {
 private:
   ::WiFiManager wifiManager;
   bool connected;
-  WiFiManagerParameter* paramApiUrl;
   WiFiManagerParameter* paramApiKey;
   WiFiManagerParameter* paramDeviceSerial;
   void (*onSaveParamsCb)(const char* apiUrl, const char* apiKey, const char* deviceSerial);

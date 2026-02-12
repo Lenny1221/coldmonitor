@@ -86,6 +86,9 @@ bool APIClient::uploadReading(String jsonData) {
     else if (httpCode == -11) errMsg = "timeout";
     if (errMsg) {
       logger.warn("Upload failed: " + String(httpCode) + " " + String(errMsg));
+      if (httpCode == -1) {
+        logger.warn("TIP: Controleer API URL - gebruik https:// voor Railway, of je computer-IP (niet localhost) voor lokaal testen");
+      }
     } else {
       logger.warn("Upload failed: " + String(httpCode));
     }

@@ -167,6 +167,10 @@ void setup() {
   provisioning.logWiFiState();
   provisioning.logAPIState();
   
+  // Debug: log deviceId die voor uploads wordt gebruikt
+  String effSerial = getEffectiveDeviceSerial();
+  logger.info("NVS: deviceId voor uploads = " + (effSerial.length() > 0 ? effSerial : "(LEEG - gebruik DEFAULT)"));
+  
   // Set API client configuration from provisioning (preferred) or config manager (fallback)
   String apiUrl = provisioning.getAPIUrl();
   String apiKey = provisioning.getAPIKey();
@@ -691,15 +695,18 @@ static void onWifiParamsSaved(const char* apiUrl, const char* apiKey, const char
   logger.info("PORTAL: Instellingen opgeslagen");
   logger.info("========================================");
   
-  // Validate inputs
-  if (!apiUrl || strlen(apiUrl) == 0) {
-    logger.error("ERROR: API URL is empty or null!");
-    return;
-  }
-  
+  // API URL is vast (FIXED_API_URL), altijd geldig
   if (!apiKey || strlen(apiKey) == 0) {
     logger.error("ERROR: API Key is empty or null!");
     return;
+  }
+  
+  // Debug: log received serial (eerste 4 chars voor verificatie)
+  String serialStr = deviceSerial ? String(deviceSerial) : "";
+  if (serialStr.length() > 0) {
+    logger.info("PORTAL: Serienummer ontvangen: " + serialStr.substring(0, serialStr.length() > 4 ? 4 : serialStr.length()) + (serialStr.length() > 4 ? "****" : ""));
+  } else {
+    logger.warn("PORTAL: Serienummer LEEG - vul het veld in of scan de QR-code uit de app!");
   }
   
   // Get WiFi credentials from WiFiManager (they're saved internally)
@@ -713,8 +720,12 @@ static void onWifiParamsSaved(const char* apiUrl, const char* apiKey, const char
   
   // Save API credentials + serienummer naar provisioning manager
   success &= provisioning.setAPICredentials(String(apiUrl), String(apiKey));
-  if (deviceSerial && strlen(deviceSerial) > 0) {
-    success &= provisioning.setDeviceSerial(String(deviceSerial));
+  String serialTrimmed = deviceSerial ? String(deviceSerial) : "";
+  serialTrimmed.trim();
+  if (serialTrimmed.length() > 0) {
+    success &= provisioning.setDeviceSerial(serialTrimmed);
+  } else {
+    logger.warn("PORTAL: Serienummer niet opgeslagen (leeg) - uploads gebruiken mogelijk default!");
   }
   
   // Save WiFi SSID (password is handled by WiFiManager)
@@ -728,8 +739,8 @@ static void onWifiParamsSaved(const char* apiUrl, const char* apiKey, const char
   // Also save to config manager for backward compatibility
   config.setAPIUrl(String(apiUrl));
   config.setAPIKey(String(apiKey));
-  if (deviceSerial && strlen(deviceSerial) > 0) {
-    config.setDeviceSerial(String(deviceSerial));
+  if (serialTrimmed.length() > 0) {
+    config.setDeviceSerial(serialTrimmed);
   }
   config.save();
   
@@ -745,8 +756,8 @@ static void onWifiParamsSaved(const char* apiUrl, const char* apiKey, const char
     // Set API client for immediate use
     apiClient.setAPIUrl(String(apiUrl));
     apiClient.setAPIKey(String(apiKey));
-    if (deviceSerial && strlen(deviceSerial) > 0) {
-      apiClient.setSerialNumber(String(deviceSerial));
+    if (serialTrimmed.length() > 0) {
+      apiClient.setSerialNumber(serialTrimmed);
     }
     
     delay(2000);

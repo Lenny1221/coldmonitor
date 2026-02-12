@@ -1,4 +1,5 @@
 #include "wifi_manager.h"
+#include "config.h"
 #include "logger.h"
 #include <qrcode.h>
 
@@ -35,23 +36,22 @@ static String buildConfigPortalCustomHtml(const String& apName) {
     html += "</tr>";
   }
   html += "</tbody></table></div>";
-  // Pre-fill API URL, API key en serial uit query string (voor link/QR uit app)
-  html += "<script>(function(){var s=window.location.search;if(!s)return;var p=new URLSearchParams(s);"
-          "var u=p.get('apiurl');if(u){var e=document.querySelector('[name=\"apiurl\"]');if(e)e.value=decodeURIComponent(u);}"
+  // Pre-fill API key en serial uit query string (API URL is vast)
+  // setTimeout zodat form-elementen zeker gerenderd zijn
+  html += "<script>(function(){var s=window.location.search;if(!s)return;setTimeout(function(){var p=new URLSearchParams(s);"
           "var k=p.get('apikey');if(k){var e=document.querySelector('[name=\"apikey\"]');if(e)e.value=decodeURIComponent(k);}"
           "var r=p.get('serial');if(r){var e=document.querySelector('[name=\"serial\"]');if(e)e.value=decodeURIComponent(r);}"
-          "})();</script>";
+          "},150);})();</script>";
   return html;
 }
 
 static WiFiManagerWrapper* s_wifiWrapper = nullptr;
 
-WiFiManagerWrapper::WiFiManagerWrapper() : connected(false), paramApiUrl(nullptr), paramApiKey(nullptr), paramDeviceSerial(nullptr), onSaveParamsCb(nullptr) {
+WiFiManagerWrapper::WiFiManagerWrapper() : connected(false), paramApiKey(nullptr), paramDeviceSerial(nullptr), onSaveParamsCb(nullptr) {
   s_wifiWrapper = this;
 }
 
 WiFiManagerWrapper::~WiFiManagerWrapper() {
-  if (paramApiUrl) { delete paramApiUrl; paramApiUrl = nullptr; }
   if (paramApiKey) { delete paramApiKey; paramApiKey = nullptr; }
   if (paramDeviceSerial) { delete paramDeviceSerial; paramDeviceSerial = nullptr; }
 }
@@ -110,20 +110,17 @@ void WiFiManagerWrapper::setConnectTimeout(unsigned long seconds) {
 }
 
 void WiFiManagerWrapper::setupColdMonitorParams(const char* apiUrlDefault, const char* apiKeyDefault, const char* deviceSerialDefault) {
-  if (paramApiUrl) { delete paramApiUrl; }
+  (void)apiUrlDefault;  // API URL is vast, niet configureerbaar
   if (paramApiKey) { delete paramApiKey; }
   if (paramDeviceSerial) { delete paramDeviceSerial; }
-  paramApiUrl = new WiFiManagerParameter("apiurl", "API URL (bijv. https://xxx.railway.app/api)", apiUrlDefault, API_URL_LEN);
   paramApiKey = new WiFiManagerParameter("apikey", "API Key (uit ColdMonitor app)", apiKeyDefault, API_KEY_LEN);
   paramDeviceSerial = new WiFiManagerParameter("serial", "Serienummer (zoals in app)", deviceSerialDefault, DEVICE_SERIAL_LEN);
-  wifiManager.addParameter(paramApiUrl);
   wifiManager.addParameter(paramApiKey);
   wifiManager.addParameter(paramDeviceSerial);
 }
 
 void WiFiManagerWrapper::getColdMonitorParams(String& apiUrl, String& apiKey, String& deviceSerial) {
-  if (paramApiUrl) apiUrl = String(paramApiUrl->getValue());
-  else apiUrl = "";
+  apiUrl = FIXED_API_URL;  // Altijd dezelfde URL
   if (paramApiKey) apiKey = String(paramApiKey->getValue());
   else apiKey = "";
   if (paramDeviceSerial) deviceSerial = String(paramDeviceSerial->getValue());

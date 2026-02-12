@@ -3,8 +3,6 @@ import { XMarkIcon, SignalIcon, CheckCircleIcon } from '@heroicons/react/24/outl
 import { QRCodeSVG } from 'qrcode.react';
 import { devicesApi, getErrorMessage } from '../services/api';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/+$/, '');
-
 type Step = 'serial' | 'wifi' | 'waiting' | 'success' | 'error';
 
 interface AddLoggerModalProps {
@@ -26,27 +24,25 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const pollForConnection = useCallback(async () => {
+  const pollForConnection = useCallback(() => {
     const POLL_INTERVAL = 3000;
     const MAX_ATTEMPTS = 100; // 5 min
     let attempts = 0;
-    const check = async () => {
+    const run = async () => {
       try {
         const devices = await devicesApi.getByColdCell(coldCellId);
         const device = (devices as any[]).find((d: any) => d.serialNumber === serialNumber);
         if (device?.status === 'ONLINE' || device?.lastSeenAt) {
           setStep('success');
-          return true;
+          return; // Stop polling
         }
       } catch {
         // ignore poll errors
       }
       attempts++;
-      return attempts < MAX_ATTEMPTS;
-    };
-    const run = async () => {
-      const cont = await check();
-      if (cont) setTimeout(run, POLL_INTERVAL);
+      if (attempts < MAX_ATTEMPTS) {
+        setTimeout(run, POLL_INTERVAL);
+      }
     };
     run();
   }, [coldCellId, serialNumber]);
@@ -136,7 +132,7 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
                       <p className="text-xs font-medium text-blue-900 mb-2">Config openen met API-gegevens</p>
                       <div className="inline-block p-3 bg-white rounded-lg border-2 border-blue-300 shadow-sm">
                         <QRCodeSVG
-                          value={`http://192.168.4.1/?apiurl=${encodeURIComponent(API_BASE_URL)}&apikey=${encodeURIComponent(apiKey)}&serial=${encodeURIComponent(serialNumber)}`}
+                          value={`http://192.168.4.1/?apikey=${encodeURIComponent(apiKey)}&serial=${encodeURIComponent(serialNumber)}`}
                           size={180}
                           level="M"
                           includeMargin={true}
@@ -148,11 +144,10 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
                     </div>
                   </div>
                   <p className="text-xs text-blue-700 mt-3">
-                    Geen QR? Verbind handmatig met <strong>ColdMonitor-Setup</strong> en voer API URL, API key en serienummer in zoals hieronder.
+                    Geen QR? Verbind handmatig met <strong>ColdMonitor-Setup</strong> en voer API key en serienummer in (API URL staat automatisch ingesteld).
                   </p>
                   <ul className="mt-2 ml-4 space-y-1 text-sm text-blue-800 list-disc">
                     <li><strong>Serienummer:</strong> <code className="text-xs bg-blue-100 px-1 rounded">{serialNumber}</code></li>
-                    <li><strong>API URL:</strong> <code className="text-xs bg-blue-100 px-1 rounded break-all">{API_BASE_URL}</code></li>
                     <li><strong>API key:</strong> <code className="text-xs bg-blue-100 px-1 rounded break-all">{apiKey}</code></li>
                   </ul>
                 </div>
