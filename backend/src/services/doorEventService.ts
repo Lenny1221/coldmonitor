@@ -126,15 +126,26 @@ export async function processDoorEvent(
   // Publish to SSE subscribers for this cold cell (incl. counts for direct UI update)
   const subs = sseSubscribers.get(device.coldCellId);
   if (subs && subs.size > 0) {
-    const updated = await prisma.deviceState.findUnique({ where: { deviceId } });
     const today = new Date(eventTime);
     today.setHours(0, 0, 0, 0);
-    const statsRow = await prisma.doorStatsDaily.findUnique({
-      where: { deviceId_date: { deviceId, date: today } },
+    // Aggregeer over alle devices van deze cold cell (zoals state endpoint)
+    const allDevices = await prisma.device.findMany({
+      where: { coldCellId: device.coldCellId },
+      select: { id: true },
     });
-    const doorStatsToday = statsRow
-      ? { opens: statsRow.opens, closes: statsRow.closes, totalOpenSeconds: statsRow.totalOpenSeconds }
-      : { opens: 0, closes: 0, totalOpenSeconds: 0 };
+    const deviceIds = allDevices.map((d) => d.id);
+    const dailyRows = await prisma.doorStatsDaily.findMany({
+      where: { deviceId: { in: deviceIds }, date: today },
+    });
+    const doorStatsToday = {
+      opens: dailyRows.reduce((s, r) => s + r.opens, 0),
+      closes: dailyRows.reduce((s, r) => s + r.closes, 0),
+      totalOpenSeconds: dailyRows.reduce((s, r) => s + (r.totalOpenSeconds ?? 0), 0),
+    };
+    const deviceState = await prisma.deviceState.findFirst({
+      where: { deviceId: { in: deviceIds } },
+      orderBy: { doorLastChangedAt: 'desc' },
+    });
 
     const payload = JSON.stringify({
       type: 'door_state',
@@ -142,14 +153,15 @@ export async function processDoorEvent(
       coldCellId: device.coldCellId,
       doorState: state,
       doorLastChangedAt: eventTime.toISOString(),
-      doorOpenCountTotal: updated?.doorOpenCountTotal ?? 0,
-      doorCloseCountTotal: updated?.doorCloseCountTotal ?? 0,
+      doorOpenCountTotal: deviceState?.doorOpenCountTotal ?? 0,
+      doorCloseCountTotal: deviceState?.doorCloseCountTotal ?? 0,
       doorStatsToday,
       timestamp: Date.now(),
     });
     subs.forEach((res) => {
       try {
         res.write(`data: ${payload}\n\n`);
+        if (typeof (res as any).flush === 'function') (res as any).flush();
       } catch (e) {
         subs.delete(res);
       }

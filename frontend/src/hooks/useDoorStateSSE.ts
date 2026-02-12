@@ -118,6 +118,26 @@ export function useDoorStateSSE(coldCellId: string | undefined): UseDoorStateSSE
     };
   }, [connect]);
 
+  // Polling fallback elke 2s: zorgt dat deur + "Vandaag X× open" altijd up-to-date is
+  useEffect(() => {
+    if (!coldCellId) return;
+    const poll = async () => {
+      try {
+        const data = await coldCellStateApi.getState(coldCellId);
+        setDoorState((prev) => ({
+          doorState: data.doorState?.doorState ?? prev?.doorState ?? null,
+          doorLastChangedAt: data.doorState?.doorLastChangedAt ?? prev?.doorLastChangedAt ?? null,
+          doorOpenCountTotal: data.doorState?.doorOpenCountTotal ?? prev?.doorOpenCountTotal ?? 0,
+          doorCloseCountTotal: data.doorState?.doorCloseCountTotal ?? prev?.doorCloseCountTotal ?? 0,
+          doorStatsToday: data.doorStatsToday ?? prev?.doorStatsToday,
+        }));
+      } catch (_) {}
+    };
+    const iv = setInterval(poll, 2000);
+    poll(); // direct eerste keer
+    return () => clearInterval(iv);
+  }, [coldCellId]);
+
   return {
     doorState,
     isLive,

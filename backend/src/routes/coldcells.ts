@@ -338,6 +338,7 @@ router.get('/:id/state/stream', requireAuth, requireOwnership, async (req: AuthR
       doorStatsToday,
     });
     res.write(`data: ${payload}\n\n`);
+    if (typeof (res as any).flush === 'function') (res as any).flush();
 
     // Keepalive elke 30s (proxies sluiten anders idle verbindingen)
     const keepalive = setInterval(() => {
