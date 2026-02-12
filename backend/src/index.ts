@@ -24,6 +24,7 @@ import locationRoutes from './routes/locations';
 import coldCellRoutes from './routes/coldcells';
 import technicianRoutes from './routes/technicians';
 import invitationRoutes from './routes/invitations';
+import { jobs } from './jobs';
 
 dotenv.config();
 
@@ -93,9 +94,6 @@ app.use('/api/coldcells', coldCellRoutes);
 app.use('/api/technicians', technicianRoutes);
 app.use('/api/invitations', invitationRoutes);
 
-// Error handling (must be last)
-app.use(errorHandler);
-
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -104,12 +102,19 @@ app.use((req, res) => {
   });
 });
 
+// Error handler (must be last middleware)
+app.use(errorHandler);
+
 // Start server
 app.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`, {
     environment: config.nodeEnv,
     frontendUrl: config.frontendUrl,
   });
+
+  // Power-loss detection: run every 15s (threshold 30s = 3x heartbeat)
+  setInterval(() => jobs.checkDeviceOffline(), 15000);
+  logger.info('Device offline check job started (every 15s)');
 });
 
 // Graceful shutdown

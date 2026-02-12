@@ -2,6 +2,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { requireAuth, AuthRequest, requireRole, requireOwnership } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -11,6 +12,16 @@ const coldCellSchema = z.object({
   type: z.enum(['fridge', 'freezer']),
   temperatureMinThreshold: z.number(),
   temperatureMaxThreshold: z.number(),
+  doorAlarmDelaySeconds: z.number().int().min(1).max(3600).optional(), // 1s–1h
+});
+
+const settingsSchema = z.object({
+  min_temp: z.number().min(-40).max(20),
+  max_temp: z.number().min(-40).max(20),
+  door_alarm_delay_seconds: z.number().int().min(1).max(3600),
+}).refine((data) => data.min_temp < data.max_temp, {
+  message: 'Min temperatuur moet lager zijn dan max temperatuur',
+  path: ['max_temp'],
 });
 
 // Get all cold cells for a location
@@ -180,6 +191,52 @@ router.post('/', requireAuth, requireRole('CUSTOMER'), async (req: AuthRequest, 
     }
     console.error('Create cold cell error:', error);
     res.status(500).json({ error: 'Failed to create cold cell' });
+  }
+});
+
+// Update cold cell settings (alarm thresholds + door delay)
+router.put('/:id/settings', requireAuth, requireOwnership, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const data = settingsSchema.parse(req.body);
+
+    const coldCell = await prisma.coldCell.findUnique({
+      where: { id },
+      include: { location: true },
+    });
+
+    if (!coldCell) {
+      return res.status(404).json({ error: 'Cold cell not found' });
+    }
+
+    if (req.userRole === 'CUSTOMER' && coldCell.location.customerId !== req.customerId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const updated = await prisma.coldCell.update({
+      where: { id },
+      data: {
+        temperatureMinThreshold: data.min_temp,
+        temperatureMaxThreshold: data.max_temp,
+        doorAlarmDelaySeconds: data.door_alarm_delay_seconds,
+      },
+    });
+
+    logger.info('Cold cell settings updated', {
+      coldCellId: id,
+      userId: req.userId,
+      minTemp: data.min_temp,
+      maxTemp: data.max_temp,
+      doorAlarmDelaySeconds: data.door_alarm_delay_seconds,
+    });
+
+    res.json(updated);
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Update cold cell settings error:', error);
+    res.status(500).json({ error: 'Failed to update settings' });
   }
 });
 

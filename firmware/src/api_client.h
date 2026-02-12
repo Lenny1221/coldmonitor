@@ -27,6 +27,9 @@ public:
   // POST /devices/heartbeat - meldt device als ONLINE, met telemetrie
   bool apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const String& ip);
   
+  // GET /devices/settings - alarm thresholds (min/max temp, door delay)
+  bool fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAlarmDelaySeconds);
+  
   // Genereer JSON status voor app: connected_to_wifi, connected_to_api, last_error
   String publishStatusJson(bool connectedToWifi, bool connectedToApi, const String& lastError);
   

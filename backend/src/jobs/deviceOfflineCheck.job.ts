@@ -2,14 +2,12 @@ import { alertService } from '../services/alertService';
 import { logger } from '../utils/logger';
 
 /**
- * Background job to check for offline devices
- * Should be run periodically (e.g., every 15 minutes via cron)
+ * Background job to check for offline devices (power-loss detection)
+ * Runs every 15s via index.ts. Threshold = 30s (3× heartbeat interval).
  */
 export async function checkDeviceOfflineJob() {
   try {
-    logger.info('Running device offline check job');
     await alertService.checkDeviceOfflineStatus();
-    logger.info('Device offline check job completed');
   } catch (error) {
     logger.error('Error in device offline check job', error as Error);
   }

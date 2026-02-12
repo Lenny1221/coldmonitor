@@ -180,6 +180,37 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
   return success;
 }
 
+bool APIClient::fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAlarmDelaySeconds) {
+  if (!WiFi.isConnected() || apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) {
+    return false;
+  }
+  
+  String url = apiUrl + "/devices/settings";
+  http.begin(url);
+  http.addHeader("x-device-key", apiKey);
+  http.setConnectTimeout(10000);
+  http.setTimeout(5000);
+  
+  int httpCode = http.GET();
+  bool ok = false;
+  
+  if (httpCode == 200) {
+    String response = http.getString();
+    DynamicJsonDocument doc(256);
+    DeserializationError err = deserializeJson(doc, response);
+    if (!err && doc.containsKey("min_temp") && doc.containsKey("max_temp")) {
+      minTemp = doc["min_temp"].as<float>();
+      maxTemp = doc["max_temp"].as<float>();
+      doorAlarmDelaySeconds = doc["door_alarm_delay_seconds"] | 300;
+      ok = true;
+      logger.info("Settings fetched: min=" + String(minTemp, 1) + " max=" + String(maxTemp, 1) + " doorDelay=" + String(doorAlarmDelaySeconds) + "s");
+    }
+  }
+  
+  http.end();
+  return ok;
+}
+
 String APIClient::publishStatusJson(bool connectedToWifi, bool connectedToApi, const String& lastError) {
   DynamicJsonDocument doc(256);
   doc["connected_to_wifi"] = connectedToWifi;

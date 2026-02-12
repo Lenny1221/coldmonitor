@@ -305,8 +305,12 @@ void loop() {
   // Main loop handles system-level tasks
   static unsigned long lastHeartbeat = 0;
   static unsigned long lastApiHeartbeat = 0;
-  static unsigned long apiRetryBackoff = 60000;  // Start 60s, exponential backoff
+  static unsigned long apiRetryBackoff = 10000;  // 10s heartbeat interval (3x = 30s offline threshold)
   static unsigned long lastBatteryCheck = 0;
+  static unsigned long lastSettingsFetch = 0;
+  static float deviceMinTemp = -25.0f;
+  static float deviceMaxTemp = -15.0f;
+  static int deviceDoorAlarmDelaySec = 300;
   
   unsigned long now = millis();
   
@@ -327,9 +331,20 @@ void loop() {
       deviceStatus.uptimeMs = now;
       lastApiHeartbeat = now;
       if (apiOk) {
-        apiRetryBackoff = 60000;  // Reset naar 60s bij succes
+        apiRetryBackoff = 10000;  // 10s heartbeat interval
       } else {
         apiRetryBackoff = (apiRetryBackoff < 600000) ? apiRetryBackoff * 2 : 600000;  // Max 10 min
+      }
+    }
+    // Settings sync elke 60s (min/max temp, deur-alarm vertraging)
+    if (deviceStatus.connectedToApi && (lastSettingsFetch == 0 || (now - lastSettingsFetch >= 60000))) {
+      float mt, Mx;
+      int dd;
+      if (apiClient.fetchDeviceSettings(mt, Mx, dd)) {
+        deviceMinTemp = mt;
+        deviceMaxTemp = Mx;
+        deviceDoorAlarmDelaySec = dd;
+        lastSettingsFetch = now;
       }
     }
   } else {

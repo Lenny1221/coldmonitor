@@ -37,6 +37,7 @@ export const config = {
     10
   ), // Failed auth attempts per window (successful logins don't count)
 
-  // Device Offline Detection
-  deviceOfflineThresholdMinutes: parseInt(process.env.DEVICE_OFFLINE_THRESHOLD_MINUTES || '15', 10),
+  // Device Offline Detection (power-loss alarm)
+  // Threshold = 30s (3x heartbeat interval). Device offline => POWER_LOSS alert.
+  deviceOfflineThresholdSeconds: parseInt(process.env.DEVICE_OFFLINE_THRESHOLD_SECONDS || '30', 10),
 };

@@ -314,8 +314,17 @@ export const coldCellsApi = {
     type?: 'fridge' | 'freezer';
     temperatureMinThreshold?: number;
     temperatureMaxThreshold?: number;
+    doorAlarmDelaySeconds?: number;
   }) => {
     const response = await api.patch(`/coldcells/${id}`, data);
+    return response.data;
+  },
+  updateSettings: async (id: string, data: {
+    min_temp: number;
+    max_temp: number;
+    door_alarm_delay_seconds: number;
+  }) => {
+    const response = await api.put(`/coldcells/${id}/settings`, data);
     return response.data;
   },
   delete: async (id: string) => {

@@ -135,6 +135,7 @@ model ColdCell {
   type                  String   // "fridge" or "freezer"
   temperatureMinThreshold Float
   temperatureMaxThreshold Float
+  doorAlarmDelaySeconds  Int      @default(300) // Seconds door may be open before alarm (default 5 min)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -147,6 +148,7 @@ model ColdCell {
 
   @@index([locationId])
 }
+
 
 // Device model (IoT logger/sensor)
 model Device {

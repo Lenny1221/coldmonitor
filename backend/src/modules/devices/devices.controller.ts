@@ -91,6 +91,12 @@ router.post(
 
       const { firmwareVersion, ip, rssi, uptime } = req.body || {};
 
+      const device = await prisma.device.findUnique({
+        where: { id: req.deviceId },
+        select: { status: true, coldCellId: true },
+      });
+      const wasOffline = device?.status === 'OFFLINE';
+
       const updateData: { firmwareVersion?: string; lastSeenAt: Date; status: 'ONLINE' } = {
         lastSeenAt: new Date(),
         status: 'ONLINE',
@@ -104,7 +110,55 @@ router.post(
         data: updateData,
       });
 
+      // Power restored: resolve POWER_LOSS alerts
+      if (wasOffline && device?.coldCellId) {
+        const { alertService } = await import('../../services/alertService');
+        await alertService.resolvePowerLossAlerts(device.coldCellId);
+      }
+
       res.status(200).json({ success: true, status: 'ONLINE' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /devices/settings
+ * ESP32 fetches alarm thresholds (device auth via x-device-key)
+ */
+router.get(
+  '/settings',
+  requireDeviceAuth,
+  async (req: DeviceRequest, res, next) => {
+    try {
+      if (!req.deviceId) {
+        throw new CustomError('Device ID not found', 400, 'DEVICE_ID_MISSING');
+      }
+
+      const device = await prisma.device.findUnique({
+        where: { id: req.deviceId },
+        include: {
+          coldCell: {
+            select: {
+              temperatureMinThreshold: true,
+              temperatureMaxThreshold: true,
+              doorAlarmDelaySeconds: true,
+            },
+          },
+        },
+      });
+
+      if (!device?.coldCell) {
+        throw new CustomError('Device or cold cell not found', 404, 'NOT_FOUND');
+      }
+
+      const cc = device.coldCell;
+      res.json({
+        min_temp: cc.temperatureMinThreshold,
+        max_temp: cc.temperatureMaxThreshold,
+        door_alarm_delay_seconds: cc.doorAlarmDelaySeconds ?? 300,
+      });
     } catch (error) {
       next(error);
     }
@@ -442,7 +496,11 @@ router.get(
         },
       });
 
-      const rs485Temperature = latestTempCommand?.result?.temperature || null;
+      const result = latestTempCommand?.result;
+      const rs485Temperature =
+        result && typeof result === 'object' && 'temperature' in result
+          ? (result as { temperature?: number }).temperature ?? null
+          : null;
 
       res.json({
         rs485Temperature,

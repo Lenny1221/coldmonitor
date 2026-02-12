@@ -121,7 +121,7 @@ export class AlertService {
   }
 
   /**
-   * Check door status and create alert if door is open longer than 5 minutes
+   * Check door status and create alert if door is open longer than configured delay
    */
   async checkDoorStatus(
     coldCellId: string,
@@ -130,10 +130,16 @@ export class AlertService {
   ): Promise<void> {
     try {
       if (doorStatus) {
-        // Door is open - check if it's been open for more than 5 minutes
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-        
-        // Get readings from the last 10 minutes to find when door was opened
+        const coldCell = await prisma.coldCell.findUnique({
+          where: { id: coldCellId },
+          select: { doorAlarmDelaySeconds: true },
+        });
+        const delaySeconds = coldCell?.doorAlarmDelaySeconds ?? 300;
+        const thresholdMs = delaySeconds * 1000;
+        const thresholdTime = new Date(Date.now() - thresholdMs);
+
+        // Get readings from the last 2x delay to find when door was opened
+        const lookbackMs = Math.min(delaySeconds * 2, 600) * 1000; // max 10 min lookback
         const recentReadings = await prisma.sensorReading.findMany({
           where: {
             deviceId,
@@ -166,17 +172,16 @@ export class AlertService {
           }
         }
 
-        // If we couldn't find a transition, check if door has been open since before 5 minutes ago
+        // If we couldn't find a transition, check if door has been open since before threshold
         if (!doorOpenSince && recentReadings.length > 0) {
           const oldestReading = recentReadings[0];
-          if (oldestReading.doorStatus === true && oldestReading.recordedAt <= fiveMinutesAgo) {
-            // Door has been open since before 5 minutes ago
-            doorOpenSince = fiveMinutesAgo;
+          if (oldestReading.doorStatus === true && oldestReading.recordedAt <= thresholdTime) {
+            doorOpenSince = thresholdTime;
           }
         }
 
-        // If door has been open continuously for 5+ minutes, create alert
-        if (doorOpenSince && (Date.now() - doorOpenSince.getTime()) >= 5 * 60 * 1000) {
+        // If door has been open continuously for configured delay, create alert
+        if (doorOpenSince && (Date.now() - doorOpenSince.getTime()) >= thresholdMs) {
           // Check if alert already exists
           const existingAlert = await prisma.alert.findFirst({
             where: {
@@ -357,10 +362,10 @@ export class AlertService {
   async checkDeviceOfflineStatus(): Promise<void> {
     try {
       const { config } = await import('../config/env');
-      const thresholdMinutes = config.deviceOfflineThresholdMinutes;
-      const thresholdTime = new Date(Date.now() - thresholdMinutes * 60 * 1000);
+      const thresholdSeconds = config.deviceOfflineThresholdSeconds;
+      const thresholdTime = new Date(Date.now() - thresholdSeconds * 1000);
 
-      // Find devices that are marked ONLINE but haven't sent data recently
+      // Find devices that are marked ONLINE but haven't sent heartbeat recently
       const offlineDevices = await prisma.device.findMany({
         where: {
           status: 'ONLINE',
@@ -387,17 +392,17 @@ export class AlertService {
       });
 
       for (const device of offlineDevices) {
-        // Update device status
+        // Update device status: OFFLINE = stroom niet actief
         await prisma.device.update({
           where: { id: device.id },
           data: { status: 'OFFLINE' },
         });
 
-        // Check if alert already exists
+        // POWER_LOSS alarm: alleen bij state-change (geen bestaande actieve POWER_LOSS)
         const existingAlert = await prisma.alert.findFirst({
           where: {
             coldCellId: device.coldCellId,
-            type: 'SENSOR_ERROR',
+            type: 'POWER_LOSS',
             status: 'ACTIVE',
           },
         });
@@ -406,7 +411,7 @@ export class AlertService {
           const alert = await prisma.alert.create({
             data: {
               coldCellId: device.coldCellId,
-              type: 'SENSOR_ERROR',
+              type: 'POWER_LOSS',
               status: 'ACTIVE',
               triggeredAt: new Date(),
               lastTriggeredAt: new Date(),
@@ -428,10 +433,11 @@ export class AlertService {
             },
           });
 
-          logger.warn('Device offline alert created', {
+          logger.warn('Power loss alarm: device offline', {
             alertId: alert.id,
             deviceId: device.id,
             serialNumber: device.serialNumber,
+            lastSeenAt: device.lastSeenAt,
           });
 
           await this.notificationService.sendCustomerAlert(alert);
@@ -440,6 +446,31 @@ export class AlertService {
       }
     } catch (error) {
       logger.error('Error checking device offline status', error as Error);
+    }
+  }
+
+  /**
+   * Resolve POWER_LOSS alerts when device comes back online (heartbeat received).
+   */
+  async resolvePowerLossAlerts(coldCellId: string): Promise<void> {
+    try {
+      const resolved = await prisma.alert.updateMany({
+        where: {
+          coldCellId,
+          type: 'POWER_LOSS',
+          status: 'ACTIVE',
+        },
+        data: {
+          status: 'RESOLVED',
+          resolvedAt: new Date(),
+          resolutionNote: 'Stroom hersteld – device weer online',
+        },
+      });
+      if (resolved.count > 0) {
+        logger.info('Power loss alerts resolved (device back online)', { coldCellId, count: resolved.count });
+      }
+    } catch (error) {
+      logger.error('Error resolving power loss alerts', error as Error, { coldCellId });
     }
   }
 

@@ -27,8 +27,10 @@ import {
   CpuChipIcon,
   LinkIcon,
   PlusCircleIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { AddLoggerModal } from '../components/AddLoggerModal';
+import { ColdCellSettingsModal } from '../components/ColdCellSettingsModal';
 
 type TimeRange = '24h' | '7d' | '30d';
 
@@ -44,6 +46,7 @@ const ColdCellDetail: React.FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [showAddLogger, setShowAddLogger] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [doorEvents, setDoorEvents] = useState<{ eventsPerDay: Array<{ date: string; opens: number; closes: number; total: number }>; totalEvents: number } | null>(null);
   const [rs485Status, setRs485Status] = useState<{ rs485Temperature: number | null; deviceOnline: boolean; lastUpdate: string | null } | null>(null);
   const [defrostLoading, setDefrostLoading] = useState(false);
@@ -294,7 +297,29 @@ const ColdCellDetail: React.FC = () => {
             </div>
           )}
         </div>
+        <button
+          onClick={() => setShowSettings(true)}
+          className="p-2 hover:bg-gray-100 rounded-md text-gray-600 hover:text-gray-900"
+          aria-label="Alarminstellingen"
+          title="Alarminstellingen"
+        >
+          <Cog6ToothIcon className="h-6 w-6" />
+        </button>
       </div>
+
+      {showSettings && (
+        <ColdCellSettingsModal
+          coldCellId={id!}
+          coldCellName={coldCell.name}
+          minTemp={coldCell.temperatureMinThreshold ?? -25}
+          maxTemp={coldCell.temperatureMaxThreshold ?? -15}
+          doorAlarmDelaySeconds={coldCell.doorAlarmDelaySeconds ?? 300}
+          onClose={() => setShowSettings(false)}
+          onSuccess={() => {
+            fetchColdCell();
+          }}
+        />
+      )}
 
       {/* Technicus: klantinformatie */}
       {isTechnician && customer && (
@@ -468,13 +493,39 @@ const ColdCellDetail: React.FC = () => {
               <BoltIcon className="h-5 w-5 mr-2" />
               <span className="text-sm font-medium">Stroom</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-green-600 font-semibold">Actief</span>
-              <CheckCircleIcon className="h-5 w-5 text-green-500" />
-            </div>
+            {(() => {
+              const devices = coldCell?.devices || [];
+              const anyOnline = devices.some((d: any) => d.status === 'ONLINE');
+              const lastSeen = devices
+                .filter((d: any) => d.lastSeenAt)
+                .map((d: any) => new Date(d.lastSeenAt).getTime())
+                .sort((a: number, b: number) => b - a)[0];
+              return (
+                <>
+                  <div className="flex items-center gap-2">
+                    {anyOnline ? (
+                      <>
+                        <span className="text-green-600 font-semibold">Actief</span>
+                        <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-amber-600 font-semibold">Niet actief</span>
+                        <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
+                      </>
+                    )}
+                  </div>
+                  {lastSeen && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Laatst gezien: {format(new Date(lastSeen), 'dd/MM/yyyy HH:mm')}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="text-sm text-gray-500">
             <span className="font-medium text-gray-700">Ondergrens:</span>{' '}
             {coldCell.temperatureMinThreshold} °C
@@ -482,6 +533,12 @@ const ColdCellDetail: React.FC = () => {
           <div className="text-sm text-gray-500">
             <span className="font-medium text-gray-700">Bovengrens:</span>{' '}
             {coldCell.temperatureMaxThreshold} °C
+          </div>
+          <div className="text-sm text-gray-500">
+            <span className="font-medium text-gray-700">Deur open alarm:</span>{' '}
+            {(coldCell.doorAlarmDelaySeconds ?? 300) >= 60
+              ? `${Math.round((coldCell.doorAlarmDelaySeconds ?? 300) / 60)} min`
+              : `${coldCell.doorAlarmDelaySeconds ?? 300} s`}
           </div>
         </div>
         {latestReading?.recordedAt && (
@@ -506,14 +563,18 @@ const ColdCellDetail: React.FC = () => {
               >
                 <div>
                   <div className="font-semibold text-red-900">
-                    {alert.type?.replace('_', ' ') ?? 'Alarm'}
+                    {alert.type === 'POWER_LOSS'
+                      ? 'Stroomuitval'
+                      : alert.type?.replace('_', ' ') ?? 'Alarm'}
                   </div>
-                  {alert.value != null && (
+                  {alert.type === 'POWER_LOSS' ? (
+                    <div className="text-sm text-red-700">Device offline – stroom niet actief</div>
+                  ) : alert.value != null ? (
                     <div className="text-sm text-red-700">
                       Waarde: {alert.value} °C
                       {alert.threshold != null && ` (drempel: ${alert.threshold} °C)`}
                     </div>
-                  )}
+                  ) : null}
                   <div className="text-xs text-red-600 mt-1">
                     {new Date(alert.triggeredAt).toLocaleString()}
                   </div>
