@@ -270,6 +270,10 @@ bool APIClient::getPendingCommand(String& commandType, String& commandId, Dynami
   
   if (httpCode == 429) {
     logger.warn("Command poll 429: rate limit - commando's niet ontvangen");
+  } else if (httpCode == 401) {
+    logger.warn("Command poll 401: ongeldige API key - check device config");
+  } else if (httpCode > 0 && httpCode != 200) {
+    logger.warn("Command poll HTTP " + String(httpCode) + " - geen commando's ontvangen");
   }
   
   if (httpCode == 200) {

@@ -91,7 +91,7 @@ const ColdCellDetail: React.FC = () => {
     setDefrostLoading(true);
     try {
       await devicesApi.sendCommand(device.id, 'DEFROST_START');
-      alert('Ontdooiing gestart! De ESP32 zal het commando binnenkort uitvoeren.');
+      alert('Ontdooiing gestart! De ESP32 zal het commando binnen ca. 10 seconden uitvoeren. Open pio device monitor om te zien wat er gebeurt.');
       // Refresh RS485 status after a delay
       setTimeout(() => {
         fetchRS485Status();

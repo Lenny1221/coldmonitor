@@ -633,7 +633,7 @@ void commandTask(void *parameter) {
   logger.info("Command task started");
   
   unsigned long lastCheck = 0;
-  const unsigned long checkInterval = 30000; // Check every 30 seconds (was 10, te frequent - voorkomt herhaalde uitvoering)
+  const unsigned long checkInterval = 10000; // Check every 10 seconds (snellere feedback bij ontdooiing)
   unsigned long lastWatchdogFeed = 0;
   String lastExecutedCommandId = ""; // Track last executed command to prevent duplicates
   unsigned long lastCommandTime = 0;
@@ -652,6 +652,7 @@ void commandTask(void *parameter) {
     if (WiFi.isConnected() && config.getModbusEnabled() && config.getModbusWriteEnabled()) {
       if (now - lastCheck >= checkInterval) {
         lastCheck = now;
+        logger.info("Command task: polling for pending commands");
         
         // Check for pending commands with error handling
         String commandType, commandId;

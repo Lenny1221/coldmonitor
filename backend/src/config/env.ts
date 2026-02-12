@@ -24,12 +24,12 @@ export const config = {
 
   // Rate Limiting
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
-  // Voldoende hoog voor SPA: cold cell refresh elke 20s + dashboard + navigatie (~20+ req/min mogelijk)
+  // SPA: cold cell 5s + readings/alerts 20s + SSE + nav → ~25 req/min. 1500 = ~100/min marge
   rateLimitMax: parseInt(
     process.env.RATE_LIMIT_MAX || 
-    (process.env.NODE_ENV === 'development' ? '1000' : '500'), 
+    (process.env.NODE_ENV === 'development' ? '2000' : '1500'), 
     10
-  ), // Requests per window (500 per 15 min ≈ 33/min)
+  ), // Requests per window (1500 per 15 min ≈ 100/min)
   // Higher limit in development, lower in production
   authRateLimitMax: parseInt(
     process.env.AUTH_RATE_LIMIT_MAX || 
