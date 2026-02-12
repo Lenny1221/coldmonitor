@@ -149,7 +149,11 @@ router.post(
         return res.status(200).json({ success: true, duplicate: true });
       }
 
-      res.status(201).json({ success: true });
+      res.status(201).json({
+        success: true,
+        doorEventId: result.doorEventId,
+        doorStatsDailyId: result.doorStatsDailyId,
+      });
     } catch (error) {
       logger.error('Door event failed', error instanceof Error ? error : new Error(String(error)), {
         path: req.path,

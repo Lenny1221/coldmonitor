@@ -43,7 +43,7 @@ export function getSSESubscriberCount(coldCellId?: string): number {
 export async function processDoorEvent(
   deviceId: string,
   payload: DoorEventPayload
-): Promise<{ success: boolean; duplicate?: boolean }> {
+): Promise<{ success: boolean; duplicate?: boolean; doorEventId?: string; doorStatsDailyId?: string }> {
   const { state, timestamp, seq } = payload;
   // ESP32 stuurt millis() (uptime), geen Unix timestamp; gebruik servertijd voor datum
   const isLikelyUptime = timestamp < 86400000 * 365; // < ~1 jaar in ms
@@ -56,6 +56,7 @@ export async function processDoorEvent(
     },
   });
   if (existing) {
+    logger.debug('Door event duplicate (already in DB)', { deviceId, seq });
     return { success: true, duplicate: true };
   }
 
@@ -69,9 +70,12 @@ export async function processDoorEvent(
 
   logger.info('Door event received', { deviceId, state, seq });
 
-  await prisma.$transaction(async (tx) => {
-    // Create DoorEvent
-    await tx.doorEvent.create({
+  const isOpen = state === 'OPEN';
+  const dateKey = new Date(eventTime);
+  dateKey.setHours(0, 0, 0, 0);
+
+  const doorEvent = await prisma.$transaction(async (tx) => {
+    const ev = await tx.doorEvent.create({
       data: {
         deviceId,
         state,
@@ -79,15 +83,6 @@ export async function processDoorEvent(
         seq,
       },
     });
-
-    // Upsert DeviceState
-    const isOpen = state === 'OPEN';
-    const stateData = {
-      doorState: state,
-      doorLastChangedAt: eventTime,
-      doorOpenCountTotal: { increment: isOpen ? 1 : 0 },
-      doorCloseCountTotal: { increment: isOpen ? 0 : 1 },
-    };
 
     await tx.deviceState.upsert({
       where: { deviceId },
@@ -98,14 +93,15 @@ export async function processDoorEvent(
         doorOpenCountTotal: isOpen ? 1 : 0,
         doorCloseCountTotal: isOpen ? 0 : 1,
       },
-      update: stateData,
+      update: {
+        doorState: state,
+        doorLastChangedAt: eventTime,
+        doorOpenCountTotal: { increment: isOpen ? 1 : 0 },
+        doorCloseCountTotal: { increment: isOpen ? 0 : 1 },
+      },
     });
 
-    // Update DoorStatsDaily
-    const dateKey = new Date(eventTime);
-    dateKey.setHours(0, 0, 0, 0);
-
-    await tx.doorStatsDaily.upsert({
+    const daily = await tx.doorStatsDaily.upsert({
       where: {
         deviceId_date: {
           deviceId,
@@ -123,6 +119,19 @@ export async function processDoorEvent(
         closes: { increment: isOpen ? 0 : 1 },
       },
     });
+
+    return { ev, daily };
+  });
+
+  logger.info('Door event opgeslagen in DB', {
+    doorEventId: doorEvent.ev.id,
+    deviceId,
+    state,
+    seq,
+    doorStatsDailyId: doorEvent.daily.id,
+    date: dateKey.toISOString().split('T')[0],
+    opens: doorEvent.daily.opens,
+    closes: doorEvent.daily.closes,
   });
 
   // Publish to SSE subscribers for this cold cell (doorStatsToday = vandaag, reset bij middernacht)
@@ -163,7 +172,11 @@ export async function processDoorEvent(
     });
   }
 
-  return { success: true };
+  return {
+    success: true,
+    doorEventId: doorEvent.ev.id,
+    doorStatsDailyId: doorEvent.daily.id,
+  };
 }
 
 /**
