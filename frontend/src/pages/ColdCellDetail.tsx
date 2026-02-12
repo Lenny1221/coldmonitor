@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { coldCellsApi, readingsApi, alertsApi, devicesApi } from '../services/api';
+import { coldCellsApi, coldCellStateApi, readingsApi, alertsApi, devicesApi } from '../services/api';
 import { useDoorStateSSE } from '../hooks/useDoorStateSSE';
 import {
   Line,
@@ -175,9 +175,8 @@ const ColdCellDetail: React.FC = () => {
   const latestReading = coldCell?.latestReading;
   const displayDoorState = liveDoorState?.doorState ?? coldCell?.doorState?.doorState ?? (latestReading?.doorStatus === true ? 'OPEN' : latestReading?.doorStatus === false ? 'CLOSED' : null);
   const displayDoorChangedAt = liveDoorState?.doorLastChangedAt ?? coldCell?.doorState?.doorLastChangedAt ?? latestReading?.recordedAt;
-  const doorStatsToday = liveDoorState?.doorStatsToday ?? coldCell?.doorStatsToday ?? { opens: 0, closes: 0, totalOpenSeconds: 0 };
-  const todayOpens = doorStatsToday.opens ?? 0;
-  const todayCloses = doorStatsToday.closes ?? 0;
+  const doorOpenCountTotal = liveDoorState?.doorOpenCountTotal ?? coldCell?.doorState?.doorOpenCountTotal ?? 0;
+  const doorCloseCountTotal = liveDoorState?.doorCloseCountTotal ?? coldCell?.doorState?.doorCloseCountTotal ?? 0;
   const readingsData = readingsResult?.data || [];
   const minTh = coldCell?.temperatureMinThreshold ?? 0;
   const maxTh = coldCell?.temperatureMaxThreshold ?? 10;
