@@ -7,6 +7,7 @@ import { alertService } from '../../services/alertService';
 import {
   processDoorEvent,
   validateDoorEventPayload,
+  validateDoorEventBatchPayload,
 } from '../../services/doorEventService';
 import { CustomError } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
@@ -115,7 +116,7 @@ router.post(
 
 /**
  * POST /devices/:serialNumber/door-events
- * IoT endpoint: immediate door open/close event (with debounce on device)
+ * IoT endpoint: single event {device_id, state, timestamp, seq} OR batch {device_id, events: [...]}
  */
 router.post(
   '/devices/:serialNumber/door-events',
@@ -130,6 +131,15 @@ router.post(
         });
       }
 
+      const body = req.body as Record<string, unknown>;
+      if (body.events && Array.isArray(body.events)) {
+        const { events } = validateDoorEventBatchPayload(req.body);
+        for (const payload of events) {
+          await processDoorEvent(req.deviceId!, payload);
+        }
+        return res.status(201).json({ success: true, count: events.length });
+      }
+
       const payload = validateDoorEventPayload(req.body);
       const result = await processDoorEvent(req.deviceId!, payload);
 
@@ -139,6 +149,11 @@ router.post(
 
       res.status(201).json({ success: true });
     } catch (error) {
+      logger.error('Door event failed', error instanceof Error ? error : new Error(String(error)), {
+        path: req.path,
+        deviceId: req.deviceId,
+        bodyKeys: req.body && typeof req.body === 'object' ? Object.keys(req.body as object) : [],
+      });
       next(error);
     }
   }

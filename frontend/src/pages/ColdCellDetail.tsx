@@ -114,11 +114,12 @@ const ColdCellDetail: React.FC = () => {
     }
   };
 
-  // Automatisch vernieuwen: cold cell (incl. deur) elke 5s, rest elke 20s
+  // Automatisch vernieuwen: cold cell + deur-events elke 5s (live weergave), rest elke 20s
   useEffect(() => {
     if (!id) return;
     const fastInterval = setInterval(() => {
-      fetchColdCell(); // Deurstatus direct zichtbaar
+      fetchColdCell(); // Deurstatus + DeviceState
+      fetchDoorEvents(); // Teller "Vandaag X× open / Y× dicht"
     }, 5000);
     const slowInterval = setInterval(() => {
       fetchReadings();

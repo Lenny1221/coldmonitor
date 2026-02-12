@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define DOOR_DEBOUNCE_MS 50
+#define DOOR_DEBOUNCE_MS 30
 #define DOOR_EVENT_QUEUE_SIZE 32
 #define DOOR_MAX_EVENTS_PER_SECOND 5
 
@@ -27,6 +27,9 @@ public:
   
   // Get next event from queue (FIFO), returns false if empty
   bool dequeue(DoorEvent& out);
+  
+  // Dequeue multiple events into array, max N. Returns count.
+  int dequeueMany(DoorEvent* out, int maxCount);
   
   bool hasPending() const { return queueCount > 0; }
   int getQueueCount() const { return queueCount; }

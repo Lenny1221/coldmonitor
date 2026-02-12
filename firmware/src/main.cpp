@@ -389,27 +389,27 @@ void loop() {
   
   // Uploads (alle HTTP in loop = zelfde core als WiFi, voorkomt Invalid mbox crash)
   if (WiFi.isConnected() && provisioning.hasAPICredentials()) {
-    // Flush door events first (FIFO, immediate + offline queue)
-    static DoorEvent retryDoorEvent;
+    // DEUR EVENTS – single upload (batch endpoint gaf 500; single werkt stabiel)
+    static DoorEvent retryEv;
     static bool hasRetry = false;
     if (hasRetry) {
-      const char* state = retryDoorEvent.isOpen ? "OPEN" : "CLOSED";
-      if (apiClient.uploadDoorEvent(state, retryDoorEvent.seq, retryDoorEvent.timestamp, retryDoorEvent.rssi, retryDoorEvent.uptimeMs)) {
+      const char* st = retryEv.isOpen ? "OPEN" : "CLOSED";
+      if (apiClient.uploadDoorEvent(st, retryEv.seq, retryEv.timestamp, retryEv.rssi, retryEv.uptimeMs)) {
         hasRetry = false;
-        logger.info("Deur-event retry OK: " + String(state));
+        logger.info("Deur-event retry OK");
       }
     }
-    while (!hasRetry && doorEventManager.hasPending()) {
+    if (!hasRetry && doorEventManager.hasPending()) {
       DoorEvent ev;
-      doorEventManager.dequeue(ev);
-      const char* state = ev.isOpen ? "OPEN" : "CLOSED";
-      if (apiClient.uploadDoorEvent(state, ev.seq, ev.timestamp, ev.rssi, ev.uptimeMs)) {
-        logger.info("Deur-event verstuurd: " + String(state) + " (seq=" + String(ev.seq) + ")");
-      } else {
-        retryDoorEvent = ev;
-        hasRetry = true;
-        logger.warn("Deur-event upload mislukt, retry later");
-        break;
+      if (doorEventManager.dequeue(ev)) {
+        const char* st = ev.isOpen ? "OPEN" : "CLOSED";
+        if (apiClient.uploadDoorEvent(st, ev.seq, ev.timestamp, ev.rssi, ev.uptimeMs)) {
+          logger.info("Deur-event verstuurd");
+        } else {
+          retryEv = ev;
+          hasRetry = true;
+          logger.warn("Deur-event upload mislukt, retry later");
+        }
       }
     }
     int count = dataBuffer.getCount();
@@ -451,7 +451,8 @@ void loop() {
     deepSleepIfNeeded();
   }
   
-  delay(100);
+  // Snellere loop bij deur-events (50ms i.p.v. 100ms) voor directe respons
+  delay(doorEventManager.hasPending() ? 50 : 100);
 }
 
 void sensorTask(void *parameter) {
@@ -467,8 +468,8 @@ void sensorTask(void *parameter) {
   while (true) {
     unsigned long now = millis();
     
-    // Deur elke 50ms checken met debounce; bij state change event in queue
-    if (now - lastDoorCheck >= 50) {
+    // Deur elke 25ms checken met debounce; bij state change event in queue
+    if (now - lastDoorCheck >= 25) {
       bool doorOpen = sensors.readDoorOnly();
       if (doorEventManager.poll(doorOpen) && hasValidReading) {
         DoorEvent ev;

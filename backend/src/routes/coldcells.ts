@@ -307,20 +307,35 @@ router.get('/:id/state/stream', requireAuth, requireOwnership, async (req: AuthR
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
     addSSESubscriber(id, res);
     const deviceIds = (await prisma.device.findMany({ where: { coldCellId: id }, select: { id: true } })).map(d => d.id);
     let doorState = null;
+    let doorStatsToday = { opens: 0, closes: 0, totalOpenSeconds: 0 };
     if (deviceIds.length > 0) {
       doorState = await prisma.deviceState.findFirst({
         where: { deviceId: { in: deviceIds } },
         orderBy: { doorLastChangedAt: 'desc' },
       });
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dailyRows = await prisma.doorStatsDaily.findMany({
+        where: { deviceId: { in: deviceIds }, date: today },
+      });
+      doorStatsToday = {
+        opens: dailyRows.reduce((s, r) => s + r.opens, 0),
+        closes: dailyRows.reduce((s, r) => s + r.closes, 0),
+        totalOpenSeconds: dailyRows.reduce((s, r) => s + r.totalOpenSeconds, 0),
+      };
     }
     const payload = JSON.stringify({
       type: 'initial',
       coldCellId: id,
       doorState: doorState ? doorState.doorState : null,
       doorLastChangedAt: doorState?.doorLastChangedAt?.toISOString() ?? null,
+      doorOpenCountTotal: doorState?.doorOpenCountTotal ?? 0,
+      doorCloseCountTotal: doorState?.doorCloseCountTotal ?? 0,
+      doorStatsToday,
     });
     res.write(`data: ${payload}\n\n`);
   } catch (error) {
@@ -385,49 +400,6 @@ router.get('/:id/state', requireAuth, requireOwnership, async (req: AuthRequest,
   } catch (error) {
     console.error('Get cold cell state error:', error);
     res.status(500).json({ error: 'Failed to fetch state' });
-  }
-});
-
-// GET cold cell state stream (SSE) - realtime door updates
-router.get('/:id/state/stream', requireAuth, requireOwnership, async (req: AuthRequest, res) => {
-  try {
-    const { id } = req.params;
-    const coldCell = await prisma.coldCell.findUnique({
-      where: { id },
-      include: { location: true },
-    });
-    if (!coldCell) {
-      return res.status(404).json({ error: 'Cold cell not found' });
-    }
-    if (req.userRole === 'CUSTOMER' && coldCell.location.customerId !== req.customerId) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
-    res.flushHeaders();
-    addSSESubscriber(id, res);
-    // Send initial state
-    const deviceIds = (await prisma.device.findMany({ where: { coldCellId: id }, select: { id: true } })).map(d => d.id);
-    let doorState = null;
-    if (deviceIds.length > 0) {
-      doorState = await prisma.deviceState.findFirst({
-        where: { deviceId: { in: deviceIds } },
-        orderBy: { doorLastChangedAt: 'desc' },
-      });
-    }
-    const payload = JSON.stringify({
-      type: 'initial',
-      coldCellId: id,
-      doorState: doorState ? doorState.doorState : null,
-      doorLastChangedAt: doorState?.doorLastChangedAt?.toISOString() ?? null,
-    });
-    res.write(`data: ${payload}\n\n`);
-    // Keep connection open; client will receive updates via addSSESubscriber
-  } catch (error) {
-    console.error('SSE stream error:', error);
-    res.status(500).json({ error: 'Failed to open stream' });
   }
 });
 

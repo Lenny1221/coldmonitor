@@ -1,4 +1,5 @@
 #include "api_client.h"
+#include "door_events.h"
 #include "logger.h"
 #include "config.h"
 
@@ -375,6 +376,69 @@ bool APIClient::uploadDoorEvent(const char* state, uint32_t seq, unsigned long t
   
   if (!success) {
     logger.warn("Door event upload failed: " + String(httpCode));
+  }
+  return success;
+}
+
+bool APIClient::uploadDoorEventsBatch(const void* events, int count) {
+  if (!WiFi.isConnected() || apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0 || count <= 0) {
+    return false;
+  }
+  if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
+  
+  unsigned long now = millis();
+  unsigned long cooldown = 200;  // Korter voor deur-events (critical)
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < cooldown) {
+    delay(cooldown - (now - lastHttpEndMs));
+  }
+  
+  const DoorEvent* evs = (const DoorEvent*)events;
+  
+  DynamicJsonDocument doc(1024);
+  doc["device_id"] = serialNumber;
+  JsonArray arr = doc.createNestedArray("events");
+  for (int i = 0; i < count; i++) {
+    JsonObject o = arr.createNestedObject();
+    o["state"] = evs[i].isOpen ? "OPEN" : "CLOSED";
+    o["timestamp"] = evs[i].timestamp;
+    o["seq"] = evs[i].seq;
+    if (evs[i].rssi != 0) o["rssi"] = evs[i].rssi;
+    if (evs[i].uptimeMs > 0) o["uptime_ms"] = evs[i].uptimeMs;
+  }
+  
+  String jsonData;
+  serializeJson(doc, jsonData);
+  
+  String url = apiUrl + "/readings/devices/" + serialNumber + "/door-events";
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("x-device-key", apiKey);
+  http.setConnectTimeout(8000);
+  http.setTimeout(5000);
+  
+  int httpCode = http.POST(jsonData);
+  bool success = (httpCode == 200 || httpCode == 201);
+  
+  http.end();
+  lastHttpEndMs = millis();
+  xSemaphoreGive(httpMutex);
+  
+  if (!success) {
+    logger.warn("Door batch upload failed: " + String(httpCode));
+    // Fallback: bij 5xx (server error) probeer elk event apart - backward compatibility
+    if (httpCode >= 500 && httpCode < 600) {
+      int ok = 0;
+      for (int i = 0; i < count; i++) {
+        const char* st = evs[i].isOpen ? "OPEN" : "CLOSED";
+        if (uploadDoorEvent(st, evs[i].seq, evs[i].timestamp, evs[i].rssi, evs[i].uptimeMs)) {
+          ok++;
+        }
+      }
+      if (ok > 0) {
+        logger.info("Fallback: " + String(ok) + "/" + String(count) + " deur-events apart verstuurd");
+        return true;
+      }
+    }
   }
   return success;
 }

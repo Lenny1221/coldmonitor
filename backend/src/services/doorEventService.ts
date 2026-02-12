@@ -121,15 +121,28 @@ export async function processDoorEvent(
     });
   });
 
-  // Publish to SSE subscribers for this cold cell
+  // Publish to SSE subscribers for this cold cell (incl. counts for direct UI update)
   const subs = sseSubscribers.get(device.coldCellId);
   if (subs && subs.size > 0) {
+    const updated = await prisma.deviceState.findUnique({ where: { deviceId } });
+    const today = new Date(eventTime);
+    today.setHours(0, 0, 0, 0);
+    const statsRow = await prisma.doorStatsDaily.findUnique({
+      where: { deviceId_date: { deviceId, date: today } },
+    });
+    const doorStatsToday = statsRow
+      ? { opens: statsRow.opens, closes: statsRow.closes, totalOpenSeconds: statsRow.totalOpenSeconds }
+      : { opens: 0, closes: 0, totalOpenSeconds: 0 };
+
     const payload = JSON.stringify({
       type: 'door_state',
       deviceId,
       coldCellId: device.coldCellId,
       doorState: state,
       doorLastChangedAt: eventTime.toISOString(),
+      doorOpenCountTotal: updated?.doorOpenCountTotal ?? 0,
+      doorCloseCountTotal: updated?.doorCloseCountTotal ?? 0,
+      doorStatsToday,
       timestamp: Date.now(),
     });
     subs.forEach((res) => {
@@ -161,4 +174,34 @@ export function validateDoorEventPayload(body: unknown): DoorEventPayload {
     rssi: b.rssi as number | undefined,
     uptime_ms: b.uptime_ms as number | undefined,
   };
+}
+
+export function validateDoorEventBatchPayload(body: unknown): { device_id: string; events: DoorEventPayload[] } {
+  if (!body || typeof body !== 'object') {
+    throw new Error('Invalid body');
+  }
+  const b = body as Record<string, unknown>;
+  if (!doorEventSchema.device_id(b.device_id)) throw new Error('device_id required');
+  const events = b.events;
+  if (!Array.isArray(events) || events.length === 0 || events.length > 32) {
+    throw new Error('events must be non-empty array (max 32)');
+  }
+  const result: DoorEventPayload[] = [];
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i];
+    if (!e || typeof e !== 'object') throw new Error(`events[${i}] invalid`);
+    const ev = e as Record<string, unknown>;
+    if (!doorEventSchema.state(ev.state)) throw new Error(`events[${i}].state must be OPEN or CLOSED`);
+    if (!doorEventSchema.timestamp(ev.timestamp)) throw new Error(`events[${i}].timestamp required`);
+    if (!doorEventSchema.seq(ev.seq)) throw new Error(`events[${i}].seq required`);
+    result.push({
+      device_id: b.device_id as string,
+      state: ev.state as 'OPEN' | 'CLOSED',
+      timestamp: ev.timestamp as number,
+      seq: ev.seq as number,
+      rssi: ev.rssi as number | undefined,
+      uptime_ms: ev.uptime_ms as number | undefined,
+    });
+  }
+  return { device_id: b.device_id as string, events: result };
 }

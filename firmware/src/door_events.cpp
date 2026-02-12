@@ -51,3 +51,14 @@ bool DoorEventManager::dequeue(DoorEvent& out) {
   queueCount--;
   return true;
 }
+
+int DoorEventManager::dequeueMany(DoorEvent* out, int maxCount) {
+  int n = 0;
+  while (n < maxCount && queueCount > 0) {
+    out[n] = queue[queueHead];
+    queueHead = (queueHead + 1) % DOOR_EVENT_QUEUE_SIZE;
+    queueCount--;
+    n++;
+  }
+  return n;
+}

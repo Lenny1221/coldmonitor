@@ -81,9 +81,9 @@ export function useDoorStateSSE(coldCellId: string | undefined): UseDoorStateSSE
                     setDoorState((prev) => ({
                       doorState: payload.doorState ?? prev?.doorState ?? null,
                       doorLastChangedAt: payload.doorLastChangedAt ?? prev?.doorLastChangedAt ?? null,
-                      doorOpenCountTotal: prev?.doorOpenCountTotal ?? 0,
-                      doorCloseCountTotal: prev?.doorCloseCountTotal ?? 0,
-                      doorStatsToday: prev?.doorStatsToday,
+                      doorOpenCountTotal: payload.doorOpenCountTotal ?? prev?.doorOpenCountTotal ?? 0,
+                      doorCloseCountTotal: payload.doorCloseCountTotal ?? prev?.doorCloseCountTotal ?? 0,
+                      doorStatsToday: payload.doorStatsToday ?? prev?.doorStatsToday,
                     }));
                   }
                 } catch (_) {}
