@@ -32,7 +32,7 @@ if (config.googleClientId && config.googleClientSecret) {
           }
 
           const hashedPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
-          user = await prisma.user.create({
+          const newUser = await prisma.user.create({
             data: {
               email,
               password: hashedPassword,
@@ -42,7 +42,7 @@ if (config.googleClientId && config.googleClientSecret) {
 
           await prisma.customer.create({
             data: {
-              userId: user.id,
+              userId: newUser.id,
               companyName: name,
               contactName: name,
               email,
