@@ -133,9 +133,10 @@ router.post('/register', authRateLimiter, async (req, res, next) => {
       },
     });
 
-    await sendVerificationEmail(data.email, verificationToken, 'customer');
-
-    logger.info('Customer registered – verificatie-e-mail verzonden', { customerId: customer.id, email: customer.email });
+    // E-mail op achtergrond – blokkeer response niet (SMTP kan traag/timeout zijn)
+    sendVerificationEmail(data.email, verificationToken, 'customer')
+      .then(() => logger.info('Customer registered – verificatie-e-mail verzonden', { customerId: customer.id, email: customer.email }))
+      .catch((err) => logger.error('Verificatie-e-mail kon niet worden verzonden', err as Error, { customerId: customer.id }));
 
     res.status(201).json({
       message: 'Account aangemaakt. Controleer je e-mail om je account te bevestigen.',
@@ -186,9 +187,10 @@ router.post('/register/technician', authRateLimiter, async (req, res, next) => {
       },
     });
 
-    await sendVerificationEmail(data.email, verificationToken, 'technician');
-
-    logger.info('Technician registered – verificatie-e-mail verzonden', { technicianId: technician.id, email: technician.email });
+    // E-mail op achtergrond – blokkeer response niet (SMTP kan traag/timeout zijn)
+    sendVerificationEmail(data.email, verificationToken, 'technician')
+      .then(() => logger.info('Technician registered – verificatie-e-mail verzonden', { technicianId: technician.id, email: technician.email }))
+      .catch((err) => logger.error('Verificatie-e-mail kon niet worden verzonden', err as Error, { technicianId: technician.id }));
 
     res.status(201).json({
       message: 'Account aangemaakt. Controleer je e-mail om je account te bevestigen.',
