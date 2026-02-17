@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
+import VerifyEmailSent from './pages/VerifyEmailSent';
 import Dashboard from './pages/Dashboard';
 import Locations from './pages/Locations';
 import ColdCells from './pages/ColdCells';
@@ -36,7 +37,8 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+      <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+      <Route path="/verify-email-sent" element={!user ? <VerifyEmailSent /> : <Navigate to="/" />} />
       
       {/* Customer Routes */}
       <Route

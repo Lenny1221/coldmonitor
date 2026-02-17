@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { techniciansApi, getErrorMessage } from '../services/api';
 import { MagnifyingGlassIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
@@ -21,15 +21,12 @@ const Login: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { login, loginWithToken, registerCustomer, registerTechnician } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
-  const locationState = location.state as { message?: string } | null;
 
   // Berichten van e-mailverificatie of registratie
   const verifiedMsg = searchParams.get('verified') === '1' ? 'Je e-mail is bevestigd. Je kunt nu inloggen.' : null;
   const errorParam = searchParams.get('error');
   const errorMsg = errorParam === 'invalid_or_expired_token' ? 'De verificatielink is ongeldig of verlopen.' : errorParam === 'missing_token' ? 'Geen verificatietoken gevonden.' : errorParam === 'google_not_configured' ? 'Google-inloggen is niet geconfigureerd.' : null;
-  const registerSuccessMsg = locationState?.message ?? null;
 
   // OAuth callback: token uit URL halen en inloggen
   useEffect(() => {
@@ -124,7 +121,7 @@ const Login: React.FC = () => {
 
     try {
       await registerCustomer(data);
-      navigate('/login', { state: { message: 'Controleer je e-mail om je account te bevestigen.' } });
+      navigate('/verify-email-sent', { state: { email: data.email } });
     } catch (err: unknown) {
       const msg = (err as { safeMessage?: string })?.safeMessage ?? getErrorMessage(err, 'Registration failed');
       setError(typeof msg === 'string' ? msg : 'Registratie mislukt');
@@ -158,7 +155,7 @@ const Login: React.FC = () => {
 
     try {
       await registerTechnician(data);
-      navigate('/login', { state: { message: 'Controleer je e-mail om je account te bevestigen.' } });
+      navigate('/verify-email-sent', { state: { email: data.email } });
     } catch (err: unknown) {
       const msg = (err as { safeMessage?: string })?.safeMessage ?? getErrorMessage(err, 'Registration failed');
       setError(typeof msg === 'string' ? msg : 'Registratie mislukt');
@@ -181,9 +178,9 @@ const Login: React.FC = () => {
 
         {!showRegister ? (
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-            {(verifiedMsg || registerSuccessMsg) && (
+            {verifiedMsg && (
               <div className="rounded-md bg-green-50 p-4">
-                <div className="text-sm text-green-800">{verifiedMsg || registerSuccessMsg}</div>
+                <div className="text-sm text-green-800">{verifiedMsg}</div>
               </div>
             )}
             {errorMsg && (
