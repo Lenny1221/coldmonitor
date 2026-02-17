@@ -87,7 +87,12 @@ const Login: React.FC = () => {
       await login(email, password);
       navigate('/');
     } catch (err: unknown) {
-      const         msg = (err as { safeMessage?: string })?.safeMessage ?? getErrorMessage(err, 'Inloggen mislukt');
+      const ax = err as { response?: { data?: { code?: string } } };
+      if (ax.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        navigate('/verify-email-required', { state: { email } });
+        return;
+      }
+      const msg = (err as { safeMessage?: string })?.safeMessage ?? getErrorMessage(err, 'Inloggen mislukt');
       setError(typeof msg === 'string' ? msg : 'Inloggen mislukt');
     } finally {
       setLoading(false);

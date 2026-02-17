@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import VerifyEmailSent from './pages/VerifyEmailSent';
+import VerifyEmailRequired from './pages/VerifyEmailRequired';
 import Dashboard from './pages/Dashboard';
 import Locations from './pages/Locations';
 import ColdCells from './pages/ColdCells';
@@ -39,6 +40,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
       <Route path="/verify-email-sent" element={!user ? <VerifyEmailSent /> : <Navigate to="/" />} />
+      <Route path="/verify-email-required" element={!user ? <VerifyEmailRequired /> : <Navigate to="/" />} />
       
       {/* Customer Routes */}
       <Route

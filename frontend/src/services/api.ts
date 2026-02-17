@@ -117,8 +117,7 @@ api.interceptors.response.use(
           if (typeof window !== 'undefined') {
             const ax = refreshError as { response?: { data?: { code?: string } } };
             const code = ax.response?.data?.code;
-            const q = code === 'EMAIL_NOT_VERIFIED' ? '?error=email_not_verified' : '';
-            window.location.href = `/login${q}`;
+            window.location.href = code === 'EMAIL_NOT_VERIFIED' ? '/verify-email-required' : '/login';
           }
           return Promise.reject(refreshError);
         }
