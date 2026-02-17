@@ -81,7 +81,7 @@ const Dashboard: React.FC = () => {
   };
 
   const handleUnlinkTechnician = async () => {
-    if (!confirm('Are you sure you want to unlink from your technician? They will no longer have access to your cold cells.')) {
+    if (!confirm('Weet je zeker dat je de koppeling met je technicus wilt verbreken? Ze hebben dan geen toegang meer tot je koelcellen.')) {
       return;
     }
 
@@ -91,7 +91,7 @@ const Dashboard: React.FC = () => {
       await fetchDashboard();
       setShowUnlinkModal(false);
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to unlink technician');
+      alert(error.response?.data?.error || 'Ontkoppelen mislukt');
     }
   };
 
@@ -106,14 +106,14 @@ const Dashboard: React.FC = () => {
         navigate('/technician');
         return;
       } else {
-        setError('Unauthorized');
+        setError('Geen toegang');
         return;
       }
       setData(response);
     } catch (err: any) {
       if (!silent) {
         const msg = err.response?.data?.error ?? err.response?.data?.message;
-        setError(typeof msg === 'string' ? msg : 'Failed to load dashboard');
+        setError(typeof msg === 'string' ? msg : 'Dashboard laden mislukt');
       }
     } finally {
       if (!silent) setLoading(false);
@@ -149,7 +149,7 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading dashboard...</div>
+        <div className="text-lg">Dashboard laden...</div>
       </div>
     );
   }
@@ -173,7 +173,7 @@ const Dashboard: React.FC = () => {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
             <p className="mt-1 text-sm text-gray-600">
-              Welcome back, {data.customer?.contactName || 'Customer'}
+              Welkom terug, {data.customer?.contactName || 'Klant'}
             </p>
           </div>
           {pendingInvitationsCount > 0 && (
@@ -182,7 +182,7 @@ const Dashboard: React.FC = () => {
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
             >
               <BellIcon className="h-5 w-5 mr-2" />
-              {pendingInvitationsCount} Pending Invitation{pendingInvitationsCount !== 1 ? 's' : ''}
+              {pendingInvitationsCount} openstaande uitnodiging{pendingInvitationsCount !== 1 ? 'en' : ''}
             </Link>
           )}
         </div>
@@ -191,19 +191,19 @@ const Dashboard: React.FC = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm font-medium text-gray-500">Total Locations</div>
+          <div className="text-sm font-medium text-gray-500">Totaal locaties</div>
           <div className="mt-2 text-3xl font-bold text-gray-900">
             {data.summary?.totalLocations || 0}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm font-medium text-gray-500">Total Cold Cells</div>
+          <div className="text-sm font-medium text-gray-500">Totaal koelcellen</div>
           <div className="mt-2 text-3xl font-bold text-gray-900">
             {data.summary?.totalColdCells || 0}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm font-medium text-gray-500">Active Alarms</div>
+          <div className="text-sm font-medium text-gray-500">Actieve alarmen</div>
           <div className="mt-2 text-3xl font-bold text-red-600">
             {data.summary?.activeAlarms || 0}
           </div>
@@ -222,18 +222,18 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900">Your Technician</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Jouw technicus</h3>
                   <button
                     onClick={() => setShowUnlinkModal(true)}
                     className="text-red-600 hover:text-red-800 text-sm font-medium inline-flex items-center"
-                    title="Unlink technician"
+                    title="Technicus ontkoppelen"
                   >
                     <XMarkIcon className="h-4 w-4 mr-1" />
-                    Unlink
+                    Ontkoppelen
                   </button>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">
-                  Contact your assigned technician for support
+                  Neem contact op met je toegewezen technicus voor ondersteuning
                 </p>
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center text-sm text-gray-700">
@@ -291,13 +291,13 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="ml-3 flex-1">
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Unlink Technician
+                    Technicus ontkoppelen
                   </h3>
                   <p className="text-sm text-gray-500 mb-4">
-                    Are you sure you want to unlink from <span className="font-semibold text-gray-900">{data.customer?.linkedTechnician?.name}</span>?
+                    Weet je zeker dat je de koppeling wilt verbreken met <span className="font-semibold text-gray-900">{data.customer?.linkedTechnician?.name}</span>?
                   </p>
                   <p className="text-sm text-gray-500">
-                    They will no longer be able to see your locations, cold cells, and alerts. You can send them a new invitation later if needed.
+                    Ze hebben dan geen toegang meer tot je locaties, koelcellen en alarmen. Je kunt later eventueel een nieuwe uitnodiging sturen.
                   </p>
                 </div>
               </div>
@@ -307,14 +307,14 @@ const Dashboard: React.FC = () => {
                 onClick={() => setShowUnlinkModal(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Cancel
+                Annuleren
               </button>
               <button
                 onClick={handleUnlinkTechnician}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 inline-flex items-center"
               >
                 <XMarkIcon className="h-4 w-4 mr-2" />
-                Yes, Unlink
+                Ja, ontkoppelen
               </button>
             </div>
           </div>
@@ -323,7 +323,7 @@ const Dashboard: React.FC = () => {
 
       {/* Cold Cells Overview */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Cold Cells</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Koelcellen</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.summary?.coldCells?.map((cell: ColdCell) => (
             <div
@@ -379,7 +379,7 @@ const Dashboard: React.FC = () => {
           <div className="bg-white rounded-lg shadow p-12 text-center">
             <p className="text-gray-500">No cold cells configured yet.</p>
             <p className="text-sm text-gray-400 mt-2">
-              Add locations and cold cells to start monitoring.
+              Voeg locaties en koelcellen toe om te beginnen met monitoren.
             </p>
           </div>
         )}

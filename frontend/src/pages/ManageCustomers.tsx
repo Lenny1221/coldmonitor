@@ -216,7 +216,7 @@ const ManageCustomers: React.FC = () => {
 
       {/* Add Customer Section */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Add Customer</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Klant toevoegen</h2>
         <div className="relative" ref={dropdownRef}>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -232,7 +232,7 @@ const ManageCustomers: React.FC = () => {
                 }
               }}
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Search customers by company name, contact name, or email..."
+              placeholder="Zoek op bedrijfsnaam, contactpersoon of e-mail..."
             />
             {searching && (
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -434,7 +434,7 @@ const ManageCustomers: React.FC = () => {
           Linked Customers ({linkedCustomers.length})
         </h2>
         {loading ? (
-          <div className="text-center py-12 text-gray-500">Loading customers...</div>
+          <div className="text-center py-12 text-gray-500">Klanten laden...</div>
         ) : linkedCustomers.length > 0 ? (
           <div className="bg-white rounded-lg shadow overflow-x-auto table-scroll">
             <table className="min-w-full divide-y divide-gray-200">

@@ -101,7 +101,7 @@ const ColdCells: React.FC = () => {
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
-          Add Cold Cell
+          Koelcel toevoegen
         </button>
       </div>
 
@@ -120,7 +120,7 @@ const ColdCells: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading cold cells...</div>
+        <div className="text-center py-12 text-gray-500">Koelcellen laden...</div>
       ) : coldCells.length > 0 ? (
         <div className="bg-white rounded-lg shadow overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 min-w-[640px]">
@@ -188,7 +188,7 @@ const ColdCells: React.FC = () => {
         <div className="bg-white rounded-lg shadow p-12 text-center">
           <p className="text-gray-500">No cold cells found</p>
           <p className="text-sm text-gray-400 mt-2">
-            Create your first cold cell to start monitoring
+            Maak je eerste koelcel aan om te beginnen met monitoren
           </p>
         </div>
       )}
@@ -197,9 +197,9 @@ const ColdCells: React.FC = () => {
       {showCreateDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Create New Cold Cell</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Nieuwe koelcel aanmaken</h2>
             <p className="text-sm text-gray-600 mb-6">
-              Add a new refrigeration or freezer unit to monitor
+              Voeg een nieuwe koel- of vriescel toe om te monitoren
             </p>
             <form onSubmit={handleCreateColdCell} className="space-y-4">
               <div>
@@ -293,7 +293,7 @@ const ColdCells: React.FC = () => {
                   disabled={creating || !formData.locationId}
                   className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                 >
-                  {creating ? 'Creating...' : 'Create Cold Cell'}
+                  {creating ? 'Aanmaken...' : 'Koelcel aanmaken'}
                 </button>
               </div>
             </form>

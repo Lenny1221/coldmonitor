@@ -51,12 +51,14 @@ enum CommandStatus {
 
 // User accounts for authentication
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  role      UserRole @default(CUSTOMER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                         String    @id @default(cuid())
+  email                      String    @unique
+  password                   String
+  role                       UserRole  @default(CUSTOMER)
+  emailVerificationToken     String?
+  emailVerificationExpiresAt DateTime?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 
   // Relations
   technician Technician?
@@ -64,17 +66,19 @@ model User {
 
   @@index([email])
   @@index([role])
+  @@index([emailVerificationToken])
 }
 
 // Technician model
 model Technician {
-  id          String   @id @default(cuid())
-  name        String
-  email       String   @unique
-  phone       String?
-  companyName String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  phone         String?
+  companyName   String?
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   userId String @unique

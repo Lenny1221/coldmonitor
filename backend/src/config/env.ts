@@ -6,6 +6,7 @@ export const config = {
   // Server
   port: parseInt(process.env.PORT || '3001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
+  apiUrl: process.env.API_URL || process.env.BACKEND_URL || `http://localhost:3001`,
   // Comma-separated voor meerdere origins (bv. lokaal + Vercel)
   frontendUrls: (process.env.FRONTEND_URL || 'http://localhost:5173')
     .split(',')
@@ -40,4 +41,15 @@ export const config = {
   // Device Offline Detection (power-loss alarm)
   // Threshold = 30s (3x heartbeat interval). Device offline => POWER_LOSS alert.
   deviceOfflineThresholdSeconds: parseInt(process.env.DEVICE_OFFLINE_THRESHOLD_SECONDS || '30', 10),
+
+  // Google OAuth
+  googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+
+  // Email (voor verificatie)
+  smtpHost: process.env.SMTP_HOST || '',
+  smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
+  smtpUser: process.env.SMTP_USER || '',
+  smtpPass: process.env.SMTP_PASS || '',
+  emailFrom: process.env.EMAIL_FROM || 'noreply@coldmonitor.local',
 };

@@ -1,9 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import session from 'express-session';
+import passport from 'passport';
 import dotenv from 'dotenv';
 
 // Config
 import { config } from './config/env';
+import './config/passport';
 import { logger } from './utils/logger';
 
 // Middleware
@@ -54,6 +57,18 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Session (voor OAuth)
+app.use(
+  session({
+    secret: config.jwtSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: config.nodeEnv === 'production', maxAge: 10 * 60 * 1000 },
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Request logging
 app.use(requestLogger);
 
@@ -74,7 +89,7 @@ app.get('/api/health', (req, res) => {
 // Auth routes have their own rate limiter
 app.use('/api', (req, res, next) => {
   // Skip rate limiting for auth routes (they have their own limiter)
-  if (req.path.startsWith('/auth')) {
+  if (req.path.includes('/auth')) {
     return next();
   }
   apiRateLimiter(req, res, next);

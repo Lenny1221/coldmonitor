@@ -40,18 +40,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     user?.role === 'CUSTOMER'
       ? [
           { to: '/dashboard', label: 'Dashboard', icon: HomeIcon },
-          { to: '/locations', label: 'Locations', icon: MapPinIcon },
-          { to: '/coldcells', label: 'Cold Cells', icon: CubeIcon },
-          { to: '/invitations', label: 'Invitations', icon: EnvelopeIcon },
+          { to: '/locations', label: 'Locaties', icon: MapPinIcon },
+          { to: '/coldcells', label: 'Koelcellen', icon: CubeIcon },
+          { to: '/invitations', label: 'Uitnodigingen', icon: EnvelopeIcon },
         ]
       : user?.role === 'TECHNICIAN' || user?.role === 'ADMIN'
         ? [
             { to: '/technician', label: 'Dashboard', icon: HomeIcon },
-            { to: '/technician/customers', label: 'Manage Customers', icon: UserGroupIcon },
+            { to: '/technician/customers', label: 'Klanten beheren', icon: UserGroupIcon },
           ]
         : [];
 
-  const userDisplay = user?.profile?.contactName || user?.profile?.name || user?.email || 'User';
+  const userDisplay = user?.profile?.contactName || user?.profile?.name || user?.email || 'Gebruiker';
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -109,7 +109,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="text-xs text-gray-500 mb-2 truncate" title={userDisplay}>
               {userDisplay}
             </div>
-            <div className="text-xs text-gray-400 mb-3">{user?.role}</div>
+            <div className="text-xs text-gray-400 mb-3">
+              {user?.role === 'CUSTOMER' ? 'Klant' : user?.role === 'TECHNICIAN' ? 'Technicus' : user?.role === 'ADMIN' ? 'Beheerder' : user?.role}
+            </div>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700"

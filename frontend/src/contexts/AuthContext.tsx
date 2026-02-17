@@ -13,6 +13,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  loginWithToken: (token: string) => Promise<void>;
   registerCustomer: (data: {
     companyName: string;
     contactName: string;
@@ -131,6 +132,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.dispatchEvent(new Event('storage'));
   };
 
+  const loginWithToken = async (accessToken: string) => {
+    Cookies.set('token', accessToken, { expires: 7 });
+    authApi.setToken(accessToken);
+    setToken(accessToken);
+    tokenRef.current = accessToken;
+    await fetchUser(accessToken);
+    window.dispatchEvent(new Event('storage'));
+  };
+
   const registerCustomer = async (data: {
     companyName: string;
     contactName: string;
@@ -140,17 +150,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string;
     technicianId?: string;
   }) => {
-    const response = await authApi.registerCustomer(data);
-    const accessToken = response.accessToken || response.token;
-    Cookies.set('token', accessToken, { expires: 7 });
-    if (response.refreshToken) {
-      Cookies.set('refreshToken', response.refreshToken, { expires: 7 });
-    }
-    authApi.setToken(accessToken);
-    setToken(accessToken);
-    setUser(response.user);
-    // Trigger storage event for other tabs
-    window.dispatchEvent(new Event('storage'));
+    await authApi.registerCustomer(data);
+    // Geen tokens – gebruiker moet eerst e-mail bevestigen
   };
 
   const registerTechnician = async (data: {
@@ -160,17 +161,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     companyName?: string;
     password: string;
   }) => {
-    const response = await authApi.registerTechnician(data);
-    const accessToken = response.accessToken || response.token;
-    Cookies.set('token', accessToken, { expires: 7 });
-    if (response.refreshToken) {
-      Cookies.set('refreshToken', response.refreshToken, { expires: 7 });
-    }
-    authApi.setToken(accessToken);
-    setToken(accessToken);
-    setUser(response.user);
-    // Trigger storage event for other tabs
-    window.dispatchEvent(new Event('storage'));
+    await authApi.registerTechnician(data);
+    // Geen tokens – gebruiker moet eerst e-mail bevestigen
   };
 
   const logout = () => {
@@ -185,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, registerCustomer, registerTechnician, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, loginWithToken, registerCustomer, registerTechnician, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -5,6 +5,7 @@ import { requireDeviceAuth, DeviceRequest } from '../../middleware/deviceAuth';
 import { prisma } from '../../config/database';
 import { generateApiKey } from '../../utils/crypto';
 import { CustomError } from '../../middleware/errorHandler';
+import { getEffectiveDoorCountsToday } from '../../utils/dateUtils';
 
 const router = Router();
 

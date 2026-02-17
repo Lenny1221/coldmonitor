@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { prisma } from '../../config/database';
+import { config } from '../../config/env';
 import { requireAuth, AuthRequest, generateTokens, verifyRefreshToken } from '../../middleware/auth';
 import { authRateLimiter } from '../../middleware/rateLimiter';
 import { CustomError } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
+import { sendVerificationEmail } from '../../utils/email';
 
 const router = Router();
 
@@ -39,6 +42,45 @@ const refreshTokenSchema = z.object({
 });
 
 /**
+ * GET /auth/google
+ * Start Google OAuth flow
+ */
+router.get('/google', (req, res, next) => {
+  if (!config.googleClientId || !config.googleClientSecret) {
+    return (res as any).redirect(`${config.frontendUrl}/login?error=google_not_configured`);
+  }
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
+
+/**
+ * GET /auth/google/callback
+ * Google OAuth callback – redirect naar frontend met token
+ */
+router.get('/google/callback', (req: Request, res: Response, next: NextFunction) => {
+  const handler = passport.authenticate('google', (err: Error | null, authResult: { user: any } | null) => {
+    if (err) {
+      logger.error('Google OAuth error: ' + err.message);
+      return (res as any).redirect(`${config.frontendUrl}/login?error=oauth_failed`);
+    }
+    if (!authResult?.user) {
+      return (res as any).redirect(`${config.frontendUrl}/login?error=oauth_failed`);
+    }
+    const user = authResult.user;
+    const customerId = user.customer?.id;
+    const technicianId = user.technician?.id;
+    const tokens = generateTokens({
+      userId: user.id,
+      role: user.role,
+      customerId,
+      technicianId,
+    });
+    const token = tokens.accessToken || (tokens as any).token;
+    return (res as any).redirect(`${config.frontendUrl}/login?oauth=1&token=${token}`);
+  });
+  handler(req, res, next);
+});
+
+/**
  * POST /auth/register
  * Customer registration
  */
@@ -64,12 +106,16 @@ router.post('/register', authRateLimiter, async (req, res, next) => {
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 uur
 
     const user = await prisma.user.create({
       data: {
         email: data.email,
         password: hashedPassword,
         role: 'CUSTOMER',
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiresAt: expiresAt,
       },
     });
 
@@ -84,41 +130,14 @@ router.post('/register', authRateLimiter, async (req, res, next) => {
         linkedTechnicianId: data.technicianId || null,
         emailVerified: false,
       },
-      include: {
-        linkedTechnician: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            companyName: true,
-          },
-        },
-      },
     });
 
-    const tokens = generateTokens({
-      userId: user.id,
-      role: user.role,
-      customerId: customer.id,
-    });
+    await sendVerificationEmail(data.email, verificationToken, 'customer');
 
-    logger.info('Customer registered', { customerId: customer.id, email: customer.email });
+    logger.info('Customer registered – verificatie-e-mail verzonden', { customerId: customer.id, email: customer.email });
 
     res.status(201).json({
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      customer: {
-        id: customer.id,
-        companyName: customer.companyName,
-        contactName: customer.contactName,
-        email: customer.email,
-        linkedTechnician: customer.linkedTechnician,
-      },
-      ...tokens,
-      message: 'Registration successful. Please verify your email.',
+      message: 'Account aangemaakt. Controleer je e-mail om je account te bevestigen.',
     });
   } catch (error) {
     next(error);
@@ -142,12 +161,16 @@ router.post('/register/technician', authRateLimiter, async (req, res, next) => {
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 uur
 
     const user = await prisma.user.create({
       data: {
         email: data.email,
         password: hashedPassword,
         role: 'TECHNICIAN',
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiresAt: expiresAt,
       },
     });
 
@@ -158,31 +181,66 @@ router.post('/register/technician', authRateLimiter, async (req, res, next) => {
         email: data.email,
         phone: data.phone,
         companyName: data.companyName,
+        emailVerified: false,
       },
     });
 
-    const tokens = generateTokens({
-      userId: user.id,
-      role: user.role,
-      technicianId: technician.id,
-    });
+    await sendVerificationEmail(data.email, verificationToken, 'technician');
 
-    logger.info('Technician registered', { technicianId: technician.id, email: technician.email });
+    logger.info('Technician registered – verificatie-e-mail verzonden', { technicianId: technician.id, email: technician.email });
 
     res.status(201).json({
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      technician: {
-        id: technician.id,
-        name: technician.name,
-        email: technician.email,
-        companyName: technician.companyName,
-      },
-      ...tokens,
+      message: 'Account aangemaakt. Controleer je e-mail om je account te bevestigen.',
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /auth/verify-email
+ * Verifieer e-mailadres via token (link in e-mail)
+ */
+router.get('/verify-email', async (req, res, next) => {
+  try {
+    const token = req.query.token as string;
+    if (!token) {
+      return res.redirect(`${config.frontendUrl}/login?error=missing_token`);
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        emailVerificationToken: token,
+        emailVerificationExpiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      return res.redirect(`${config.frontendUrl}/login?error=invalid_or_expired_token`);
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: null,
+        emailVerificationExpiresAt: null,
+      },
+    });
+
+    if (user.role === 'CUSTOMER') {
+      await prisma.customer.updateMany({
+        where: { userId: user.id },
+        data: { emailVerified: true },
+      });
+    } else if (user.role === 'TECHNICIAN') {
+      await prisma.technician.updateMany({
+        where: { userId: user.id },
+        data: { emailVerified: true },
+      });
+    }
+
+    logger.info('E-mail geverifieerd', { userId: user.id });
+    return res.redirect(`${config.frontendUrl}/login?verified=1`);
   } catch (error) {
     next(error);
   }
@@ -206,6 +264,23 @@ router.post('/login', authRateLimiter, async (req, res, next) => {
     const isValid = await bcrypt.compare(data.password, user.password);
     if (!isValid) {
       throw new CustomError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
+    }
+
+    // Controleer e-mailverificatie
+    if (user.role === 'TECHNICIAN') {
+      const technician = await prisma.technician.findUnique({
+        where: { userId: user.id },
+      });
+      if (technician && !technician.emailVerified) {
+        throw new CustomError('Bevestig eerst je e-mailadres via de link in je inbox.', 403, 'EMAIL_NOT_VERIFIED');
+      }
+    } else if (user.role === 'CUSTOMER') {
+      const customer = await prisma.customer.findUnique({
+        where: { userId: user.id },
+      });
+      if (customer && !customer.emailVerified) {
+        throw new CustomError('Bevestig eerst je e-mailadres via de link in je inbox.', 403, 'EMAIL_NOT_VERIFIED');
+      }
     }
 
     // Get related entity IDs

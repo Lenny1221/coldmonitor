@@ -114,7 +114,7 @@ const Invitations: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading invitations...</div>
+        <div className="text-center py-12 text-gray-500">Uitnodigingen laden...</div>
       ) : (
         <>
           {/* Pending Invitations */}
