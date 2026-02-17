@@ -341,6 +341,23 @@ router.post('/refresh', async (req, res, next) => {
       throw new CustomError('User not found', 401, 'USER_NOT_FOUND');
     }
 
+    // Controleer e-mailverificatie (zelfde check als bij login)
+    if (user.role === 'TECHNICIAN') {
+      const technician = await prisma.technician.findUnique({
+        where: { userId: user.id },
+      });
+      if (technician && !technician.emailVerified) {
+        throw new CustomError('Bevestig eerst je e-mailadres via de link in je inbox.', 403, 'EMAIL_NOT_VERIFIED');
+      }
+    } else if (user.role === 'CUSTOMER') {
+      const customer = await prisma.customer.findUnique({
+        where: { userId: user.id },
+      });
+      if (customer && !customer.emailVerified) {
+        throw new CustomError('Bevestig eerst je e-mailadres via de link in je inbox.', 403, 'EMAIL_NOT_VERIFIED');
+      }
+    }
+
     // Get related entity IDs
     let technicianId: string | undefined;
     let customerId: string | undefined;

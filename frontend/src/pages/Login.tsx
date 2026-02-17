@@ -26,7 +26,7 @@ const Login: React.FC = () => {
   // Berichten van e-mailverificatie of registratie
   const verifiedMsg = searchParams.get('verified') === '1' ? 'Je e-mail is bevestigd. Je kunt nu inloggen.' : null;
   const errorParam = searchParams.get('error');
-  const errorMsg = errorParam === 'invalid_or_expired_token' ? 'De verificatielink is ongeldig of verlopen.' : errorParam === 'missing_token' ? 'Geen verificatietoken gevonden.' : errorParam === 'google_not_configured' ? 'Google-inloggen is niet geconfigureerd.' : null;
+  const errorMsg = errorParam === 'invalid_or_expired_token' ? 'De verificatielink is ongeldig of verlopen.' : errorParam === 'missing_token' ? 'Geen verificatietoken gevonden.' : errorParam === 'google_not_configured' ? 'Google-inloggen is niet geconfigureerd.' : errorParam === 'email_not_verified' ? 'Bevestig eerst je e-mailadres via de link in je inbox.' : null;
 
   // OAuth callback: token uit URL halen en inloggen
   useEffect(() => {

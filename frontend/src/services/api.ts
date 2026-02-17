@@ -115,7 +115,10 @@ api.interceptors.response.use(
           authToken = null;
           api.defaults.headers.common['Authorization'] = '';
           if (typeof window !== 'undefined') {
-            window.location.href = '/login';
+            const ax = refreshError as { response?: { data?: { code?: string } } };
+            const code = ax.response?.data?.code;
+            const q = code === 'EMAIL_NOT_VERIFIED' ? '?error=email_not_verified' : '';
+            window.location.href = `/login${q}`;
           }
           return Promise.reject(refreshError);
         }
