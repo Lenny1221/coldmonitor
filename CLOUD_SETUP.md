@@ -68,6 +68,20 @@ Controleer ook:
 
 ---
 
+## 5b. E-mailverificatie (Resend)
+
+Voor verificatie-e-mails bij registratie:
+
+1. Maak een account op [resend.com](https://resend.com) en kopieer je **API key** (begint met `re_`).
+2. Voeg op **Railway** → Variables toe:
+   - **`RESEND_API_KEY`** = je Resend API key  
+   - **`EMAIL_FROM`** = `onboarding@resend.dev` (Resend default, geen domein nodig)
+3. Geen SMTP-configuratie nodig – de backend gebruikt de Resend HTTP API.
+
+**Alternatief:** Als je al SMTP-variabelen voor Resend hebt (`SMTP_HOST=smtp.resend.com`, `SMTP_PASS=re_xxx`), wordt de API key automatisch herkend en gebruikt.
+
+---
+
 ## 6. Controleren
 
 ### Backend bereikbaar
@@ -274,3 +288,4 @@ Als de ESP32 **"Upload failed: -1 connection refused / DNS failed"** logt:
 | **Data niet in SensorReading** | Backend schrijft naar verkeerde DB of tabel ontbreekt | Zie sectie "Data komt niet in SensorReading (Supabase)" hierboven |
 | **RLS waarschuwing** | "Table SensorReading is public, but RLS has not been enabled" | Zie sectie "RLS inschakelen" hierboven - voer migratie uit |
 | **Upload failed: -1** | Connection refused / DNS failed (ESP32 → backend) | Zie sectie "Upload failed: -1" hieronder |
+| **Geen verificatie-e-mail** | SMTP niet bereikbaar of niet geconfigureerd | Gebruik Resend HTTP API: zet `RESEND_API_KEY` en `EMAIL_FROM` op Railway (zie sectie 5b) |

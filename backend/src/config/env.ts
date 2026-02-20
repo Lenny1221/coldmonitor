@@ -47,6 +47,12 @@ export const config = {
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
 
   // Email (voor verificatie)
+  // Resend HTTP API (aanbevolen – geen SMTP/poort nodig)
+  // Gebruikt SMTP_PASS als Resend API key wanneer SMTP_HOST=smtp.resend.com
+  resendApiKey: process.env.RESEND_API_KEY ||
+    (process.env.SMTP_HOST === 'smtp.resend.com' ? process.env.SMTP_PASS || '' : '') ||
+    '',
+  // SMTP (fallback als Resend API niet geconfigureerd)
   smtpHost: process.env.SMTP_HOST || '',
   smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
   smtpUser: process.env.SMTP_USER || '',
