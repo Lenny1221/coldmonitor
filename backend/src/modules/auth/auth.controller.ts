@@ -134,7 +134,7 @@ router.post('/register', authRateLimiter, async (req, res, next) => {
     });
 
     // E-mail op achtergrond – blokkeer response niet (SMTP kan traag/timeout zijn)
-    sendVerificationEmail(data.email, verificationToken, 'customer')
+    sendVerificationEmail(data.email, verificationToken, 'customer', data.contactName)
       .then(() => logger.info('Customer registered – verificatie-e-mail verzonden', { customerId: customer.id, email: customer.email }))
       .catch((err) => logger.error('Verificatie-e-mail kon niet worden verzonden', err as Error, { customerId: customer.id }));
 
@@ -188,7 +188,7 @@ router.post('/register/technician', authRateLimiter, async (req, res, next) => {
     });
 
     // E-mail op achtergrond – blokkeer response niet (SMTP kan traag/timeout zijn)
-    sendVerificationEmail(data.email, verificationToken, 'technician')
+    sendVerificationEmail(data.email, verificationToken, 'technician', data.name)
       .then(() => logger.info('Technician registered – verificatie-e-mail verzonden', { technicianId: technician.id, email: technician.email }))
       .catch((err) => logger.error('Verificatie-e-mail kon niet worden verzonden', err as Error, { technicianId: technician.id }));
 
