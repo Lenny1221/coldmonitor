@@ -43,6 +43,7 @@ router.get('/', requireAuth, requireRole('CUSTOMER'), async (req: AuthRequest, r
             id: true,
             name: true,
             type: true,
+            requireResolutionReason: true,
             location: {
               select: {
                 locationName: true,

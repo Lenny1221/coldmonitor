@@ -55,6 +55,7 @@ model User {
   email                      String    @unique
   password                   String
   role                       UserRole  @default(CUSTOMER)
+  emailVerified              Boolean   @default(false)
   emailVerificationToken     String?
   emailVerificationExpiresAt DateTime?
   createdAt                  DateTime  @default(now())
@@ -135,14 +136,15 @@ model Location {
 
 // Cold Cell model (refrigeration/freezer unit)
 model ColdCell {
-  id                    String   @id @default(cuid())
-  name                  String   // e.g., "Freezer 1", "Fridge 2"
-  type                  String   // "fridge" or "freezer"
-  temperatureMinThreshold Float
-  temperatureMaxThreshold Float
-  doorAlarmDelaySeconds  Int      @default(300) // Seconds door may be open before alarm (default 5 min)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  name                    String   // e.g., "Freezer 1", "Fridge 2"
+  type                    String   // "fridge" or "freezer"
+  temperatureMinThreshold  Float
+  temperatureMaxThreshold  Float
+  doorAlarmDelaySeconds    Int      @default(300) // Seconds door may be open before alarm (default 5 min)
+  requireResolutionReason  Boolean  @default(true) // Bij Oplossen: reden verplicht kiezen
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   // Relations
   locationId String

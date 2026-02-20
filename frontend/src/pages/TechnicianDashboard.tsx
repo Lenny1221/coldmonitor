@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dashboardApi, alertsApi } from '../services/api';
+import { ResolveAlertModal } from '../components/ResolveAlertModal';
 import { 
   ExclamationTriangleIcon,
   CheckCircleIcon,
@@ -10,6 +11,7 @@ import {
 const TechnicianDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
+  const [resolveAlert, setResolveAlert] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [alertFilter, setAlertFilter] = useState<'all' | 'active' | 'resolved'>('active');
@@ -256,9 +258,13 @@ const TechnicianDashboard: React.FC = () => {
                 </div>
                 {alert.status === 'ACTIVE' && (
                   <button
-                    onClick={async () => {
-                      await alertsApi.resolve(alert.id);
-                      fetchDashboard();
+                    onClick={() => {
+                      const requireReason = alert.coldCell?.requireResolutionReason !== false;
+                      if (requireReason) {
+                        setResolveAlert(alert);
+                      } else {
+                        alertsApi.resolve(alert.id).then(() => fetchDashboard());
+                      }
                     }}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
                   >
@@ -275,6 +281,23 @@ const TechnicianDashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {resolveAlert && (
+        <ResolveAlertModal
+          alertType={resolveAlert.type || 'HIGH_TEMP'}
+          alertTitle={
+            resolveAlert.type === 'POWER_LOSS'
+              ? 'Stroomuitval'
+              : resolveAlert.type?.replace('_', ' ') ?? 'Alarm'
+          }
+          onResolve={async (reason) => {
+            await alertsApi.resolve(resolveAlert.id, reason);
+            setResolveAlert(null);
+            fetchDashboard();
+          }}
+          onClose={() => setResolveAlert(null)}
+        />
+      )}
     </div>
   );
 };

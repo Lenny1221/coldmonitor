@@ -21,6 +21,7 @@ const settingsSchema = z.object({
   min_temp: z.number().min(-40).max(20),
   max_temp: z.number().min(-40).max(20),
   door_alarm_delay_seconds: z.number().int().min(1).max(3600),
+  require_resolution_reason: z.boolean().optional(),
 }).refine((data) => data.min_temp < data.max_temp, {
   message: 'Min temperatuur moet lager zijn dan max temperatuur',
   path: ['max_temp'],
@@ -237,13 +238,18 @@ router.put('/:id/settings', requireAuth, requireOwnership, async (req: AuthReque
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    const updateData: any = {
+      temperatureMinThreshold: data.min_temp,
+      temperatureMaxThreshold: data.max_temp,
+      doorAlarmDelaySeconds: data.door_alarm_delay_seconds,
+    };
+    if (data.require_resolution_reason !== undefined) {
+      updateData.requireResolutionReason = data.require_resolution_reason;
+    }
+
     const updated = await prisma.coldCell.update({
       where: { id },
-      data: {
-        temperatureMinThreshold: data.min_temp,
-        temperatureMaxThreshold: data.max_temp,
-        doorAlarmDelaySeconds: data.door_alarm_delay_seconds,
-      },
+      data: updateData,
     });
 
     logger.info('Cold cell settings updated', {

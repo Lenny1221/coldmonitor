@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "ColdCell" ADD COLUMN     "requireResolutionReason" BOOLEAN NOT NULL DEFAULT true;
+
+-- AlterTable
+ALTER TABLE "Invitation" ALTER COLUMN "expiresAt" SET DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days');

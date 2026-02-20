@@ -225,6 +225,7 @@ router.get('/verify-email', async (req, res, next) => {
     await prisma.user.update({
       where: { id: user.id },
       data: {
+        emailVerified: true,
         emailVerificationToken: null,
         emailVerificationExpiresAt: null,
       },
@@ -269,21 +270,9 @@ router.post('/login', authRateLimiter, async (req, res, next) => {
       throw new CustomError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
     }
 
-    // Controleer e-mailverificatie
-    if (user.role === 'TECHNICIAN') {
-      const technician = await prisma.technician.findUnique({
-        where: { userId: user.id },
-      });
-      if (technician && !technician.emailVerified) {
-        throw new CustomError('Bevestig eerst je e-mailadres via de link in je inbox.', 403, 'EMAIL_NOT_VERIFIED');
-      }
-    } else if (user.role === 'CUSTOMER') {
-      const customer = await prisma.customer.findUnique({
-        where: { userId: user.id },
-      });
-      if (customer && !customer.emailVerified) {
-        throw new CustomError('Bevestig eerst je e-mailadres via de link in je inbox.', 403, 'EMAIL_NOT_VERIFIED');
-      }
+    // Controleer e-mailverificatie (User.emailVerified, CUSTOMER en TECHNICIAN)
+    if ((user.role === 'TECHNICIAN' || user.role === 'CUSTOMER') && !user.emailVerified) {
+      throw new CustomError('Bevestig eerst je e-mailadres via de link in je inbox.', 403, 'EMAIL_NOT_VERIFIED');
     }
 
     // Get related entity IDs
@@ -337,7 +326,7 @@ router.post('/refresh', async (req, res, next) => {
     // Verify user still exists
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, role: true },
+      select: { id: true, role: true, emailVerified: true },
     });
 
     if (!user) {
@@ -345,20 +334,8 @@ router.post('/refresh', async (req, res, next) => {
     }
 
     // Controleer e-mailverificatie (zelfde check als bij login)
-    if (user.role === 'TECHNICIAN') {
-      const technician = await prisma.technician.findUnique({
-        where: { userId: user.id },
-      });
-      if (technician && !technician.emailVerified) {
-        throw new CustomError('Bevestig eerst je e-mailadres via de link in je inbox.', 403, 'EMAIL_NOT_VERIFIED');
-      }
-    } else if (user.role === 'CUSTOMER') {
-      const customer = await prisma.customer.findUnique({
-        where: { userId: user.id },
-      });
-      if (customer && !customer.emailVerified) {
-        throw new CustomError('Bevestig eerst je e-mailadres via de link in je inbox.', 403, 'EMAIL_NOT_VERIFIED');
-      }
+    if ((user.role === 'TECHNICIAN' || user.role === 'CUSTOMER') && !user.emailVerified) {
+      throw new CustomError('Bevestig eerst je e-mailadres via de link in je inbox.', 403, 'EMAIL_NOT_VERIFIED');
     }
 
     // Get related entity IDs

@@ -32,6 +32,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { AddLoggerModal } from '../components/AddLoggerModal';
 import { ColdCellSettingsModal } from '../components/ColdCellSettingsModal';
+import { ResolveAlertModal } from '../components/ResolveAlertModal';
 
 type TimeRange = '24h' | '7d' | '30d';
 
@@ -49,6 +50,7 @@ const ColdCellDetail: React.FC = () => {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [showAddLogger, setShowAddLogger] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [resolveAlert, setResolveAlert] = useState<any | null>(null);
   const [rs485Status, setRs485Status] = useState<{ rs485Temperature: number | null; deviceOnline: boolean; lastUpdate: string | null } | null>(null);
   const [defrostLoading, setDefrostLoading] = useState(false);
   const [pushDoorLoading, setPushDoorLoading] = useState(false);
@@ -312,10 +314,28 @@ const ColdCellDetail: React.FC = () => {
           minTemp={coldCell.temperatureMinThreshold ?? -25}
           maxTemp={coldCell.temperatureMaxThreshold ?? -15}
           doorAlarmDelaySeconds={coldCell.doorAlarmDelaySeconds ?? 300}
+          requireResolutionReason={coldCell.requireResolutionReason !== false}
           onClose={() => setShowSettings(false)}
           onSuccess={() => {
             fetchColdCell();
           }}
+        />
+      )}
+
+      {resolveAlert && (
+        <ResolveAlertModal
+          alertType={resolveAlert.type || 'HIGH_TEMP'}
+          alertTitle={
+            resolveAlert.type === 'POWER_LOSS'
+              ? 'Stroomuitval'
+              : resolveAlert.type?.replace('_', ' ') ?? 'Alarm'
+          }
+          onResolve={async (reason) => {
+            await alertsApi.resolve(resolveAlert.id, reason);
+            setResolveAlert(null);
+            fetchAlerts();
+          }}
+          onClose={() => setResolveAlert(null)}
         />
       )}
 
@@ -653,9 +673,13 @@ const ColdCellDetail: React.FC = () => {
                   </div>
                 </div>
                 <button
-                  onClick={async () => {
-                    await alertsApi.resolve(alert.id);
-                    fetchAlerts();
+                  onClick={() => {
+                    const requireReason = coldCell?.requireResolutionReason !== false;
+                    if (requireReason) {
+                      setResolveAlert(alert);
+                    } else {
+                      alertsApi.resolve(alert.id).then(() => fetchAlerts());
+                    }
                   }}
                   className="px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
                 >

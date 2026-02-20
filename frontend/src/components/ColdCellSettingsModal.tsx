@@ -13,6 +13,7 @@ interface ColdCellSettingsModalProps {
   minTemp: number;
   maxTemp: number;
   doorAlarmDelaySeconds: number;
+  requireResolutionReason?: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -23,6 +24,7 @@ export const ColdCellSettingsModal: React.FC<ColdCellSettingsModalProps> = ({
   minTemp,
   maxTemp,
   doorAlarmDelaySeconds,
+  requireResolutionReason = true,
   onClose,
   onSuccess,
 }) => {
@@ -32,6 +34,7 @@ export const ColdCellSettingsModal: React.FC<ColdCellSettingsModalProps> = ({
   const [doorDelayUnit, setDoorDelayUnit] = useState<'seconds' | 'minutes'>(
     doorAlarmDelaySeconds >= 60 ? 'minutes' : 'seconds'
   );
+  const [requireReason, setRequireReason] = useState(requireResolutionReason);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +44,8 @@ export const ColdCellSettingsModal: React.FC<ColdCellSettingsModalProps> = ({
     setMaxTempVal(String(maxTemp));
     setDoorDelayVal(String(doorAlarmDelaySeconds));
     setDoorDelayUnit(doorAlarmDelaySeconds >= 60 ? 'minutes' : 'seconds');
-  }, [minTemp, maxTemp, doorAlarmDelaySeconds]);
+    setRequireReason(requireResolutionReason);
+  }, [minTemp, maxTemp, doorAlarmDelaySeconds, requireResolutionReason]);
 
   const parseDoorDelaySeconds = (): number => {
     const num = parseFloat(doorDelayVal);
@@ -85,6 +89,7 @@ export const ColdCellSettingsModal: React.FC<ColdCellSettingsModalProps> = ({
         min_temp: min,
         max_temp: max,
         door_alarm_delay_seconds: doorSeconds,
+        require_resolution_reason: requireReason,
       });
       setSuccessMessage('Instellingen opgeslagen');
       setTimeout(() => {
@@ -166,6 +171,22 @@ export const ColdCellSettingsModal: React.FC<ColdCellSettingsModalProps> = ({
                 placeholder="-15"
               />
             </div>
+
+            <div className="flex items-center justify-between">
+              <label htmlFor="require-reason" className="block text-sm font-medium text-gray-700">
+                Reden verplicht bij oplossen alarm
+              </label>
+              <input
+                id="require-reason"
+                type="checkbox"
+                checked={requireReason}
+                onChange={(e) => setRequireReason(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+            </div>
+            <p className="text-xs text-gray-500 -mt-2">
+              Bij uit: alarm direct oplossen zonder reden te kiezen
+            </p>
 
             <div>
               <label htmlFor="door-delay" className="block text-sm font-medium text-gray-700 mb-1">

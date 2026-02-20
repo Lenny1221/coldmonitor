@@ -325,6 +325,7 @@ export const coldCellsApi = {
     min_temp: number;
     max_temp: number;
     door_alarm_delay_seconds: number;
+    require_resolution_reason?: boolean;
   }) => {
     const response = await api.put(`/coldcells/${id}/settings`, data);
     return response.data;
@@ -522,8 +523,8 @@ export const alertsApi = {
     const response = await api.get(`/alerts/${id}`);
     return response.data;
   },
-  resolve: async (id: string) => {
-    const response = await api.patch(`/alerts/${id}/resolve`);
+  resolve: async (id: string, resolutionNote?: string) => {
+    const response = await api.patch(`/alerts/${id}/resolve`, { resolutionNote });
     return response.data;
   },
 };
