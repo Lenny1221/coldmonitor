@@ -1,4 +1,4 @@
-# Railway deployment config voor ColdMonitor backend
+# Railway deployment config voor IntelliFrost backend
 # Zorg dat Root Directory = "backend" in Railway dashboard
 
 [build]

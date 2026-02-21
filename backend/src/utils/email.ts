@@ -40,11 +40,11 @@ export async function sendVerificationEmail(
 ): Promise<boolean> {
   const verifyUrl = `${config.apiUrl}/api/auth/verify-email?token=${token}`;
   const voornaam = getFirstName(contactName);
-  const subject = 'Bevestig je ColdMonitor-account';
+  const subject = 'Bevestig je IntelliFrost-account';
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.6; color: #333;">
       <p>Beste ${voornaam},</p>
-      <p>Welkom bij <strong>ColdMonitor</strong> — je account is bijna klaar om te gebruiken.</p>
+      <p>Welkom bij <strong>IntelliFrost</strong> — je account is bijna klaar om te gebruiken.</p>
       <p>Om je registratie te voltooien en je account te activeren, vragen we je om eerst je e-mailadres te bevestigen via onderstaande knop:</p>
       <p style="margin: 24px 0;">
         <a href="${verifyUrl}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Account bevestigen</a>
@@ -57,8 +57,8 @@ export async function sendVerificationEmail(
       </ul>
       <p><strong>Belangrijk:</strong> Deze bevestigingslink is tijdelijk geldig om de veiligheid van je account te garanderen.</p>
       <p>Heb je zelf geen account aangemaakt? Dan mag je deze mail gewoon negeren — er worden geen gegevens opgeslagen zonder bevestiging.</p>
-      <p>Heb je vragen of hulp nodig bij de opstart?<br>Contacteer ons gerust via <a href="mailto:support@coldmonitor.be">support@coldmonitor.be</a>.</p>
-      <p>Met vriendelijke groeten,<br><strong>Team ColdMonitor</strong><br>Realtime monitoring voor koel- en vriesinstallaties</p>
+      <p>Heb je vragen of hulp nodig bij de opstart?<br>Contacteer ons gerust via <a href="mailto:support@intellifrost.be">support@intellifrost.be</a>.</p>
+      <p>Met vriendelijke groeten,<br><strong>Team IntelliFrost</strong><br>Realtime monitoring voor koel- en vriesinstallaties</p>
     </div>
   `;
 
@@ -72,7 +72,7 @@ export async function sendVerificationEmail(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: `ColdMonitor <${config.emailFrom}>`,
+          from: `IntelliFrost <${config.emailFrom}>`,
           to: [to],
           subject,
           html,
@@ -99,7 +99,7 @@ export async function sendVerificationEmail(
   if (transport) {
     try {
       await transport.sendMail({
-        from: `ColdMonitor <${config.emailFrom}>`,
+        from: `IntelliFrost <${config.emailFrom}>`,
         to,
         subject,
         html,

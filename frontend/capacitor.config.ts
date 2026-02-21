@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'io.projectlogger.coldmonitor',
-  appName: 'ColdMonitor',
+  appName: 'IntelliFrost',
   webDir: 'dist',
   server: {
     // Voor development: uncomment om de live webapp te laden

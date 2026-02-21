@@ -1,10 +1,69 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { techniciansApi, getErrorMessage } from '../services/api';
-import { MagnifyingGlassIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PhoneIcon, EnvelopeIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 
 type RegisterType = 'customer' | 'technician';
+
+const IntelliFrostMark: React.FC = () => (
+  <div className="flex flex-col items-center gap-3 mb-2">
+    <svg width="56" height="56" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ filter: 'drop-shadow(0 0 14px rgba(0,200,255,0.55))' }}>
+      <defs>
+        <linearGradient id="lg-login" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#00e5ff" />
+          <stop offset="50%" stopColor="#0096ff" />
+          <stop offset="100%" stopColor="#00c8ff" />
+        </linearGradient>
+        <filter id="glow-login">
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+      <path d="M36 4 L62 19 L62 49 L36 64 L10 49 L10 19 Z" stroke="url(#lg-login)" strokeWidth="1.2" fill="none" opacity="0.5" />
+      <line x1="36" y1="8" x2="36" y2="64" stroke="url(#lg-login)" strokeWidth="2.2" strokeLinecap="round" filter="url(#glow-login)" />
+      <line x1="8" y1="36" x2="64" y2="36" stroke="url(#lg-login)" strokeWidth="2.2" strokeLinecap="round" filter="url(#glow-login)" />
+      <line x1="15" y1="15" x2="57" y2="57" stroke="url(#lg-login)" strokeWidth="1.6" strokeLinecap="round" opacity="0.7" />
+      <line x1="57" y1="15" x2="15" y2="57" stroke="url(#lg-login)" strokeWidth="1.6" strokeLinecap="round" opacity="0.7" />
+      <line x1="36" y1="8"  x2="30" y2="14" stroke="url(#lg-login)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="36" y1="8"  x2="42" y2="14" stroke="url(#lg-login)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="36" y1="64" x2="30" y2="58" stroke="url(#lg-login)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="36" y1="64" x2="42" y2="58" stroke="url(#lg-login)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="8"  y1="36" x2="14" y2="30" stroke="url(#lg-login)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="8"  y1="36" x2="14" y2="42" stroke="url(#lg-login)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="64" y1="36" x2="58" y2="30" stroke="url(#lg-login)" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="64" y1="36" x2="58" y2="42" stroke="url(#lg-login)" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="36" cy="22" r="2.5" fill="url(#lg-login)" />
+      <circle cx="36" cy="50" r="2.5" fill="url(#lg-login)" />
+      <circle cx="22" cy="36" r="2.5" fill="url(#lg-login)" />
+      <circle cx="50" cy="36" r="2.5" fill="url(#lg-login)" />
+      <circle cx="36" cy="36" r="5.5" fill="url(#lg-login)" opacity="0.9" />
+      <circle cx="36" cy="36" r="3" fill="#0a1520" />
+      <circle cx="36" cy="36" r="1.5" fill="url(#lg-login)" />
+    </svg>
+    <div className="text-center">
+      <div className="flex items-baseline justify-center gap-0">
+        <span className="font-['Exo_2'] font-light text-4xl tracking-tight text-gray-800 dark:text-[#e8f4ff]">Intelli</span>
+        <span
+          className="font-['Exo_2'] font-black text-4xl tracking-tight"
+          style={{
+            background: 'linear-gradient(135deg, #00c8ff 0%, #0080ff 60%, #00e5ff 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
+          Frost
+        </span>
+      </div>
+      <p className="mt-1 text-xs tracking-[4px] uppercase font-['Rajdhani'] text-[#5590bb] dark:text-[#3a7aaa]">
+        Smart Cold Intelligence
+      </p>
+    </div>
+  </div>
+);
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,6 +72,7 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [registerType, setRegisterType] = useState<RegisterType>('customer');
+  const { theme, toggleTheme } = useTheme();
   const [technicianSearch, setTechnicianSearch] = useState('');
   const [technicianResults, setTechnicianResults] = useState<any[]>([]);
   const [selectedTechnician, setSelectedTechnician] = useState<any | null>(null);
@@ -170,32 +230,43 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            ColdMonitor
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            IoT-koelmonitoringplatform
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-[#f0f7ff] dark:bg-[#080e1a] py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+      {/* Theme toggle top-right */}
+      <button
+        onClick={toggleTheme}
+        className="fixed top-4 right-4 p-2.5 rounded-xl border border-gray-200 dark:border-[rgba(100,200,255,0.15)] bg-white dark:bg-[#0d1b2e] text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-[rgba(0,150,255,0.08)] shadow-sm transition-all"
+        aria-label="Thema wisselen"
+      >
+        {theme === 'dark'
+          ? <SunIcon className="h-5 w-5 text-amber-400" />
+          : <MoonIcon className="h-5 w-5 text-[#0080ff]" />
+        }
+      </button>
+
+      <div className="max-w-md w-full space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <IntelliFrostMark />
         </div>
+
+        {/* Card wrapper */}
+        <div className="bg-white dark:bg-[#0d1b2e] rounded-2xl shadow-lg dark:shadow-[0_0_40px_rgba(0,100,200,0.12)] border border-gray-100 dark:border-[rgba(100,200,255,0.1)] p-8 space-y-6">
 
         {!showRegister ? (
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
             {verifiedMsg && (
-              <div className="rounded-md bg-green-50 p-4">
-                <div className="text-sm text-green-800">{verifiedMsg}</div>
+              <div className="rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4">
+                <div className="text-sm text-green-800 dark:text-green-300">{verifiedMsg}</div>
               </div>
             )}
             {errorMsg && (
-              <div className="rounded-md bg-amber-50 p-4">
-                <div className="text-sm text-amber-800">{errorMsg}</div>
+              <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4">
+                <div className="text-sm text-amber-800 dark:text-amber-300">{errorMsg}</div>
               </div>
             )}
             {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-800">{typeof error === 'string' ? error : 'Er is iets misgegaan'}</div>
+              <div className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
+                <div className="text-sm text-red-800 dark:text-red-300">{typeof error === 'string' ? error : 'Er is iets misgegaan'}</div>
               </div>
             )}
             <div className="rounded-md shadow-sm -space-y-px">
@@ -209,7 +280,7 @@ const Login: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-t-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] focus:z-10 sm:text-sm"
                   placeholder="E-mailadres"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -225,7 +296,7 @@ const Login: React.FC = () => {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-b-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] focus:z-10 sm:text-sm"
                   placeholder="Wachtwoord"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -237,7 +308,8 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-semibold rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                style={{ background: 'linear-gradient(135deg, #00c8ff 0%, #0080ff 100%)' }}
               >
                 {loading ? 'Bezig met inloggen...' : 'Inloggen'}
               </button>
@@ -248,14 +320,14 @@ const Login: React.FC = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">of</span>
+                <span className="px-2 bg-white dark:bg-[#0d1b2e] text-gray-400 dark:text-slate-500">of</span>
               </div>
             </div>
 
             <div>
               <a
                 href={`${(import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/+$/, '')}/auth/google`}
-                className="w-full flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                className="w-full flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-[#0a1520] hover:bg-gray-50 dark:hover:bg-[rgba(0,150,255,0.06)] transition-colors"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -271,7 +343,7 @@ const Login: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowRegister(true)}
-                className="text-sm text-blue-600 hover:text-blue-500"
+                className="text-sm text-[#0080ff] dark:text-[#00c8ff] hover:opacity-80 transition-opacity"
               >
                 Nog geen account? Registreren
               </button>
@@ -288,11 +360,12 @@ const Login: React.FC = () => {
                   setSelectedTechnician(null);
                   setTechnicianSearch('');
                 }}
-                className={`flex-1 py-2 px-4 text-sm font-medium rounded-l-md border ${
+                className={`flex-1 py-2 px-4 text-sm font-medium rounded-l-lg border transition-colors ${
                   registerType === 'customer'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    ? 'text-white border-transparent'
+                    : 'bg-white dark:bg-[#0a1520] text-gray-700 dark:text-slate-300 border-gray-300 dark:border-[rgba(100,200,255,0.15)] hover:bg-gray-50 dark:hover:bg-[rgba(0,150,255,0.06)]'
                 }`}
+                style={registerType === 'customer' ? { background: 'linear-gradient(135deg, #00c8ff, #0080ff)' } : {}}
               >
                 Klant
               </button>
@@ -303,26 +376,27 @@ const Login: React.FC = () => {
                   setSelectedTechnician(null);
                   setTechnicianSearch('');
                 }}
-                className={`flex-1 py-2 px-4 text-sm font-medium rounded-r-md border-t border-r border-b ${
+                className={`flex-1 py-2 px-4 text-sm font-medium rounded-r-lg border-t border-r border-b transition-colors ${
                   registerType === 'technician'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    ? 'text-white border-transparent'
+                    : 'bg-white dark:bg-[#0a1520] text-gray-700 dark:text-slate-300 border-gray-300 dark:border-[rgba(100,200,255,0.15)] hover:bg-gray-50 dark:hover:bg-[rgba(0,150,255,0.06)]'
                 }`}
+                style={registerType === 'technician' ? { background: 'linear-gradient(135deg, #00c8ff, #0080ff)' } : {}}
               >
                 Technicus
               </button>
             </div>
 
             {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-800">{typeof error === 'string' ? error : 'Er is iets misgegaan'}</div>
+              <div className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
+                <div className="text-sm text-red-800 dark:text-red-300">{typeof error === 'string' ? error : 'Er is iets misgegaan'}</div>
               </div>
             )}
 
             {registerType === 'customer' ? (
               <form className="space-y-4" onSubmit={handleCustomerRegister}>
                 <div>
-                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Bedrijfsnaam *
                   </label>
                   <input
@@ -330,12 +404,12 @@ const Login: React.FC = () => {
                     name="companyName"
                     type="text"
                     required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="Jouw bedrijf"
                   />
                 </div>
                 <div>
-                  <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="contactName" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Contactpersoon *
                   </label>
                   <input
@@ -343,12 +417,12 @@ const Login: React.FC = () => {
                     name="contactName"
                     type="text"
                     required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="Jouw naam"
                   />
                 </div>
                 <div>
-                  <label htmlFor="reg-email" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="reg-email" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     E-mail *
                   </label>
                   <input
@@ -356,12 +430,12 @@ const Login: React.FC = () => {
                     name="email"
                     type="email"
                     required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="email@example.com"
                   />
                 </div>
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Telefoon *
                   </label>
                   <input
@@ -369,12 +443,12 @@ const Login: React.FC = () => {
                     name="phone"
                     type="tel"
                     required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="+32 123 456 789"
                   />
                 </div>
                 <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Adres *
                   </label>
                   <input
@@ -382,12 +456,12 @@ const Login: React.FC = () => {
                     name="address"
                     type="text"
                     required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="Straat, postcode, stad"
                   />
                 </div>
                 <div>
-                  <label htmlFor="reg-password" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="reg-password" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Wachtwoord *
                   </label>
                   <input
@@ -396,12 +470,12 @@ const Login: React.FC = () => {
                     type="password"
                     required
                     minLength={6}
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="Minimaal 6 tekens"
                   />
                 </div>
                 <div>
-                  <label htmlFor="reg-password-confirm" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="reg-password-confirm" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Wachtwoord bevestigen *
                   </label>
                   <input
@@ -410,14 +484,14 @@ const Login: React.FC = () => {
                     type="password"
                     required
                     minLength={6}
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="Herhaal wachtwoord"
                   />
                 </div>
                 
                 {/* Technician Search */}
                 <div className="relative" ref={dropdownRef}>
-                  <label htmlFor="technicianSearch" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="technicianSearch" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Koppelen aan technicus (optioneel)
                   </label>
                   <div className="mt-1 relative">
@@ -439,14 +513,14 @@ const Login: React.FC = () => {
                           setShowTechnicianDropdown(true);
                         }
                       }}
-                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-md leading-5 bg-white dark:bg-[#0a1520] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] focus:outline-none focus:ring-1 focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                       placeholder="Zoek op naam, e-mail of bedrijf..."
                     />
                   </div>
                   
                   {/* Dropdown Results */}
                   {showTechnicianDropdown && technicianResults.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-[#0d1b2e] shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] max-h-60 rounded-md py-1 text-base ring-1 ring-black dark:ring-[rgba(100,200,255,0.15)] ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
                       {technicianResults.map((technician) => (
                         <div
                           key={technician.id}
@@ -455,15 +529,15 @@ const Login: React.FC = () => {
                             setTechnicianSearch(`${technician.name}${technician.companyName ? ` - ${technician.companyName}` : ''}`);
                             setShowTechnicianDropdown(false);
                           }}
-                          className="cursor-pointer hover:bg-blue-50 px-4 py-2"
+                          className="cursor-pointer hover:bg-[#e8f4ff] dark:hover:bg-[rgba(0,150,255,0.08)] px-4 py-2"
                         >
                           <div className="flex items-center">
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900">{technician.name}</div>
+                              <div className="font-medium text-gray-900 dark:text-[#e8f4ff]">{technician.name}</div>
                               {technician.companyName && (
-                                <div className="text-sm text-gray-500">{technician.companyName}</div>
+                                <div className="text-sm text-gray-500 dark:text-slate-400">{technician.companyName}</div>
                               )}
-                              <div className="text-sm text-gray-500">{technician.email}</div>
+                              <div className="text-sm text-gray-500 dark:text-slate-400">{technician.email}</div>
                             </div>
                           </div>
                         </div>
@@ -473,7 +547,7 @@ const Login: React.FC = () => {
                   
                   {/* Selected Technician Display */}
                   {selectedTechnician && (
-                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <div className="mt-2 p-3 bg-[#e8f4ff] dark:bg-[rgba(0,150,255,0.08)] border border-[#00c8ff]/30 dark:border-[rgba(0,200,255,0.2)] rounded-md">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
@@ -512,7 +586,7 @@ const Login: React.FC = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-semibold rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all" style={{ background: "linear-gradient(135deg, #00c8ff 0%, #0080ff 100%)" }}
                   >
                     {loading ? 'Account aanmaken...' : 'Klantaccount aanmaken'}
                   </button>
@@ -521,7 +595,7 @@ const Login: React.FC = () => {
             ) : (
               <form className="space-y-4" onSubmit={handleTechnicianRegister}>
                 <div>
-                  <label htmlFor="tech-name" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="tech-name" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Naam *
                   </label>
                   <input
@@ -529,12 +603,12 @@ const Login: React.FC = () => {
                     name="name"
                     type="text"
                     required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="Volledige naam"
                   />
                 </div>
                 <div>
-                  <label htmlFor="tech-email" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="tech-email" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     E-mail *
                   </label>
                   <input
@@ -542,12 +616,12 @@ const Login: React.FC = () => {
                     name="email"
                     type="email"
                     required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="email@example.com"
                   />
                 </div>
                 <div>
-                  <label htmlFor="tech-phone" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="tech-phone" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Telefoon *
                   </label>
                   <input
@@ -555,12 +629,12 @@ const Login: React.FC = () => {
                     name="phone"
                     type="tel"
                     required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="+32 123 456 789"
                   />
                 </div>
                 <div>
-                  <label htmlFor="tech-company" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="tech-company" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Bedrijfsnaam *
                   </label>
                   <input
@@ -568,12 +642,12 @@ const Login: React.FC = () => {
                     name="companyName"
                     type="text"
                     required
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="Jouw bedrijf"
                   />
                 </div>
                 <div>
-                  <label htmlFor="tech-password" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="tech-password" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Wachtwoord *
                   </label>
                   <input
@@ -582,12 +656,12 @@ const Login: React.FC = () => {
                     type="password"
                     required
                     minLength={6}
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="Minimaal 6 tekens"
                   />
                 </div>
                 <div>
-                  <label htmlFor="tech-password-confirm" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="tech-password-confirm" className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Wachtwoord bevestigen *
                   </label>
                   <input
@@ -596,7 +670,7 @@ const Login: React.FC = () => {
                     type="password"
                     required
                     minLength={6}
-                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] sm:text-sm"
                     placeholder="Herhaal wachtwoord"
                   />
                 </div>
@@ -605,7 +679,7 @@ const Login: React.FC = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-semibold rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all" style={{ background: "linear-gradient(135deg, #00c8ff 0%, #0080ff 100%)" }}
                   >
                     {loading ? 'Account aanmaken...' : 'Technicus account aanmaken'}
                   </button>
@@ -622,13 +696,18 @@ const Login: React.FC = () => {
                   setSelectedTechnician(null);
                   setTechnicianSearch('');
                 }}
-                className="text-sm text-blue-600 hover:text-blue-500"
+                className="text-sm text-[#0080ff] dark:text-[#00c8ff] hover:opacity-80 transition-opacity"
               >
                 Heb je al een account? Inloggen
               </button>
             </div>
           </div>
         )}
+        </div>{/* end card */}
+
+        <p className="text-center text-xs font-['Rajdhani'] tracking-widest uppercase text-gray-400 dark:text-[#3a7aaa]">
+          IntelliFrost &mdash; Smart Cold Intelligence
+        </p>
       </div>
     </div>
   );

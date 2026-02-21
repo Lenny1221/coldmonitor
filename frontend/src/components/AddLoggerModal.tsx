@@ -125,7 +125,7 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
                     WiFi-configuratie
                   </h3>
                   <p className="text-sm text-blue-800 mb-3">
-                    Scan deze QR-code met je telefoon om de configuratie te openen met API-gegevens al ingevuld. Verbind eerst handmatig met <strong>ColdMonitor-Setup</strong> (of gebruik de QR-code op de configpagina zelf).
+                    Scan deze QR-code met je telefoon om de configuratie te openen met API-gegevens al ingevuld. Verbind eerst handmatig met <strong>IntelliFrost-Setup</strong> (of gebruik de QR-code op de configpagina zelf).
                   </p>
                   <div className="flex justify-center">
                     <div className="text-center">
@@ -139,12 +139,12 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
                         />
                       </div>
                       <p className="text-xs text-blue-700 mt-2">
-                        Na verbinding met ColdMonitor-Setup: scan deze QR → config opent met API-gegevens ingevuld
+                        Na verbinding met IntelliFrost-Setup: scan deze QR → config opent met API-gegevens ingevuld
                       </p>
                     </div>
                   </div>
                   <p className="text-xs text-blue-700 mt-3">
-                    Geen QR? Verbind handmatig met <strong>ColdMonitor-Setup</strong> en voer API key en serienummer in (API URL staat automatisch ingesteld).
+                    Geen QR? Verbind handmatig met <strong>IntelliFrost-Setup</strong> en voer API key en serienummer in (API URL staat automatisch ingesteld).
                   </p>
                   <ul className="mt-2 ml-4 space-y-1 text-sm text-blue-800 list-disc">
                     <li><strong>Serienummer:</strong> <code className="text-xs bg-blue-100 px-1 rounded">{serialNumber}</code></li>
