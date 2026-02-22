@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { coldCellsApi, coldCellStateApi, readingsApi, alertsApi, devicesApi } from '../services/api';
+import { coldCellsApi, coldCellStateApi, readingsApi, alertsApi, devicesApi, getErrorMessage } from '../services/api';
 import { useDoorStateSSE } from '../hooks/useDoorStateSSE';
 import {
   Line,
@@ -105,10 +105,14 @@ const ColdCellDetail: React.FC = () => {
     setDefrostLoading(true);
     try {
       await devicesApi.sendCommand(device.id, 'DEFROST_START');
-      alert('Ontdooiing gestart! Het device voert het commando binnen ca. 10 seconden uit.');
-      setTimeout(() => fetchRS485Status(), 2000);
+      const msg = rs485Status?.deviceOnline
+        ? 'Ontdooiing gestart! Het device voert het commando binnen ca. 10 seconden uit.'
+        : 'Commando opgeslagen in de database. Wordt uitgevoerd zodra het device online is.';
+      alert(msg);
+      fetchRS485Status();
+      setTimeout(() => fetchRS485Status(), 3000);
     } catch (error: any) {
-      alert('Fout: ' + (error.response?.data?.error || error.message));
+      alert('Fout: ' + getErrorMessage(error, 'Kon commando niet versturen'));
     } finally {
       setDefrostLoading(false);
     }
@@ -123,10 +127,14 @@ const ColdCellDetail: React.FC = () => {
     setDefrostLoading(true);
     try {
       await devicesApi.sendCommand(device.id, 'DEFROST_STOP');
-      alert('Ontdooiing gestopt. Het device voert het commando binnen ca. 10 seconden uit.');
-      setTimeout(() => fetchRS485Status(), 2000);
+      const msg = rs485Status?.deviceOnline
+        ? 'Ontdooiing gestopt. Het device voert het commando binnen ca. 10 seconden uit.'
+        : 'Commando opgeslagen in de database. Wordt uitgevoerd zodra het device online is.';
+      alert(msg);
+      fetchRS485Status();
+      setTimeout(() => fetchRS485Status(), 3000);
     } catch (error: any) {
-      alert('Fout: ' + (error.response?.data?.error || error.message));
+      alert('Fout: ' + getErrorMessage(error, 'Kon commando niet versturen'));
     } finally {
       setDefrostLoading(false);
     }
@@ -142,10 +150,14 @@ const ColdCellDetail: React.FC = () => {
     try {
       await devicesApi.sendCommand(device.id, 'READ_TEMPERATURE');
       await devicesApi.sendCommand(device.id, 'READ_DEFROST_PARAMS');
-      alert('Temperatuur en parameters worden uitgelezen. Vernieuw over ca. 15 seconden.');
+      const msg = rs485Status?.deviceOnline
+        ? 'Temperatuur en parameters worden uitgelezen. Vernieuw over ca. 15 seconden.'
+        : 'Commando\'s opgeslagen. Worden uitgevoerd zodra het device online is.';
+      alert(msg);
+      fetchRS485Status();
       setTimeout(() => fetchRS485Status(), 15000);
     } catch (error: any) {
-      alert('Fout: ' + (error.response?.data?.error || error.message));
+      alert('Fout: ' + getErrorMessage(error, 'Kon commando niet versturen'));
     } finally {
       setParamsLoading(false);
     }
@@ -163,11 +175,15 @@ const ColdCellDetail: React.FC = () => {
       await devicesApi.sendCommand(device.id, 'SET_DEFROST_INTERVAL', { hours: interval });
       await devicesApi.sendCommand(device.id, 'SET_DEFROST_DURATION', { minutes: duration });
       await devicesApi.sendCommand(device.id, 'SET_DEFROST_TYPE', { type });
-      alert('Parameters verstuurd. Het device past ze binnen ca. 30 seconden aan.');
+      const msg = rs485Status?.deviceOnline
+        ? 'Parameters verstuurd. Het device past ze binnen ca. 30 seconden aan.'
+        : 'Commando\'s opgeslagen. Worden uitgevoerd zodra het device online is.';
+      alert(msg);
       setShowParamsModal(false);
+      fetchRS485Status();
       setTimeout(() => fetchRS485Status(), 35000);
     } catch (error: any) {
-      alert('Fout: ' + (error.response?.data?.error || error.message));
+      alert('Fout: ' + getErrorMessage(error, 'Kon commando niet versturen'));
     } finally {
       setParamsLoading(false);
     }
@@ -937,14 +953,14 @@ const ColdCellDetail: React.FC = () => {
             <div className="flex gap-2">
               <button
                 onClick={handleStartDefrost}
-                disabled={defrostLoading || !rs485Status?.deviceOnline}
+                disabled={defrostLoading}
                 className="px-4 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {defrostLoading ? 'Bezig...' : 'Start ontdooiing'}
               </button>
               <button
                 onClick={handleStopDefrost}
-                disabled={defrostLoading || !rs485Status?.deviceOnline}
+                disabled={defrostLoading}
                 className="px-4 py-2 rounded-lg text-sm font-medium bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Stop ontdooiing
@@ -959,7 +975,7 @@ const ColdCellDetail: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleRefreshParams}
-                  disabled={paramsLoading || !rs485Status?.deviceOnline}
+                  disabled={paramsLoading}
                   className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-200 dark:bg-frost-900 text-gray-700 dark:text-slate-300 hover:bg-gray-300 dark:hover:bg-[rgba(0,150,255,0.1)] disabled:opacity-50"
                 >
                   {paramsLoading ? 'Bezig...' : 'Vernieuw'}
@@ -973,7 +989,6 @@ const ColdCellDetail: React.FC = () => {
                     });
                     setShowParamsModal(true);
                   }}
-                  disabled={!rs485Status?.deviceOnline}
                   className="px-3 py-1.5 rounded-md text-xs font-medium bg-[#0080ff] text-white hover:opacity-90 disabled:opacity-50"
                 >
                   Parameters aanpassen
