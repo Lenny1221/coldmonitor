@@ -228,6 +228,17 @@ const Alarmeringen: React.FC = () => {
                           {alert.layer === 'LAYER_1' ? 'Laag 1' : alert.layer === 'LAYER_2' ? 'Laag 2' : 'Laag 3'}
                         </span>
                       )}
+                      {(alert.layer2At || alert.layer3At) && (
+                        <span className="text-xs text-gray-500 dark:text-slate-400">
+                          {alert.layer2At && (
+                            <>→ Laag 2 {format(parseISO(alert.layer2At), 'dd/MM HH:mm')}</>
+                          )}
+                          {alert.layer2At && alert.layer3At && ' · '}
+                          {alert.layer3At && (
+                            <>→ Laag 3 {format(parseISO(alert.layer3At), 'dd/MM HH:mm')}</>
+                          )}
+                        </span>
+                      )}
                       <span className="text-xs text-gray-500 dark:text-slate-400">
                         {alert.status === 'RESOLVED' && alert.resolvedAt
                           ? `Opgelost: ${format(parseISO(alert.resolvedAt), 'dd/MM/yyyy HH:mm')}`
@@ -248,9 +259,10 @@ const Alarmeringen: React.FC = () => {
                   {(alert.status === 'ACTIVE' || alert.status === 'ESCALATING') && (
                     <>
                       <button
-                        onClick={() =>
-                          alertsApi.acknowledge(alert.id).then(() => fetchAlerts())
-                        }
+                        onClick={async () => {
+                          await alertsApi.acknowledge(alert.id);
+                          fetchAlerts();
+                        }}
                         className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700"
                       >
                         Bevestigen

@@ -525,11 +525,11 @@ export const coldCellStateApi = {
 
 // Alerts API
 export const alertsApi = {
-  getAll: async (params?: { status?: string; type?: string }) => {
+  getAll: async (params?: { status?: 'active' | 'resolved' | string; type?: string }) => {
     const response = await api.get('/alerts', { params });
     return response.data;
   },
-  getTechnicianAlerts: async (params?: { status?: string; type?: string }) => {
+  getTechnicianAlerts: async (params?: { status?: 'active' | 'resolved' | string; type?: string }) => {
     const response = await api.get('/alerts/technician', { params });
     return response.data;
   },

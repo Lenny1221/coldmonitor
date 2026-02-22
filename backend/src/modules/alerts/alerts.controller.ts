@@ -28,7 +28,13 @@ router.get('/', requireAuth, requireRole('CUSTOMER'), async (req: AuthRequest, r
     };
 
     if (status) {
-      where.status = status;
+      if (status === 'active') {
+        where.status = { in: ['ACTIVE', 'ESCALATING'] };
+      } else if (status === 'resolved') {
+        where.status = 'RESOLVED';
+      } else {
+        where.status = status;
+      }
     }
 
     if (type) {
@@ -87,7 +93,13 @@ router.get(
       };
 
       if (status) {
-        where.status = status;
+        if (status === 'active') {
+          where.status = { in: ['ACTIVE', 'ESCALATING'] };
+        } else if (status === 'resolved') {
+          where.status = 'RESOLVED';
+        } else {
+          where.status = status;
+        }
       }
 
       if (type) {

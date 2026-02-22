@@ -72,12 +72,12 @@ export class AlertService {
       }
 
       if (alertType) {
-        // Check if alert already exists
+        // Check if alert already exists (ACTIVE of ESCALATING = geen duplicaat)
         const existingAlert = await prisma.alert.findFirst({
           where: {
             coldCellId,
             type: alertType,
-            status: 'ACTIVE',
+            status: { in: ['ACTIVE', 'ESCALATING'] },
           },
         });
 
@@ -213,12 +213,12 @@ export class AlertService {
 
         // If door has been open continuously for configured delay, create alert
         if (doorOpenSince && (Date.now() - doorOpenSince.getTime()) >= thresholdMs) {
-          // Check if alert already exists
+          // Check if alert already exists (geen duplicaat)
           const existingAlert = await prisma.alert.findFirst({
             where: {
               coldCellId,
               type: 'DOOR_OPEN',
-              status: 'ACTIVE',
+              status: { in: ['ACTIVE', 'ESCALATING'] },
             },
           });
 
@@ -286,7 +286,7 @@ export class AlertService {
           where: {
             coldCellId,
             type: 'DOOR_OPEN',
-            status: 'ACTIVE',
+            status: { in: ['ACTIVE', 'ESCALATING'] },
           },
           data: {
             status: 'RESOLVED',
@@ -310,12 +310,12 @@ export class AlertService {
   ): Promise<void> {
     try {
       if (!powerStatus) {
-        // Check if alert already exists
+        // Check if alert already exists (geen duplicaat)
         const existingAlert = await prisma.alert.findFirst({
           where: {
             coldCellId,
             type: 'POWER_LOSS',
-            status: 'ACTIVE',
+            status: { in: ['ACTIVE', 'ESCALATING'] },
           },
         });
 
@@ -378,7 +378,7 @@ export class AlertService {
           where: {
             coldCellId,
             type: 'POWER_LOSS',
-            status: 'ACTIVE',
+            status: { in: ['ACTIVE', 'ESCALATING'] },
           },
           data: {
             status: 'RESOLVED',
@@ -401,7 +401,7 @@ export class AlertService {
         where: {
           coldCellId,
           type: { in: ['HIGH_TEMP', 'LOW_TEMP'] },
-          status: 'ACTIVE',
+          status: { in: ['ACTIVE', 'ESCALATING'] },
         },
         data: {
           status: 'RESOLVED',
@@ -460,12 +460,12 @@ export class AlertService {
           data: { status: 'OFFLINE' },
         });
 
-        // POWER_LOSS alarm: alleen bij state-change (geen bestaande actieve POWER_LOSS)
+        // POWER_LOSS alarm: alleen bij state-change (geen duplicaat)
         const existingAlert = await prisma.alert.findFirst({
           where: {
             coldCellId: device.coldCellId,
             type: 'POWER_LOSS',
-            status: 'ACTIVE',
+            status: { in: ['ACTIVE', 'ESCALATING'] },
           },
         });
 
@@ -533,7 +533,7 @@ export class AlertService {
         where: {
           coldCellId,
           type: 'POWER_LOSS',
-          status: 'ACTIVE',
+          status: { in: ['ACTIVE', 'ESCALATING'] },
         },
         data: {
           status: 'RESOLVED',
