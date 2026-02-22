@@ -11,7 +11,7 @@ Stap-voor-stap om inloggen en registreren via de cloud (Vercel + Railway) te lat
 3. Open het tabblad **Settings**.
 4. Scroll naar **Networking** → **Public Networking**.
 5. Klik op **Generate Domain** als je nog geen domein hebt.
-6. Kopieer de URL (bv. `https://coldmonitor-production.up.railway.app`).
+6. Kopieer de URL (bv. `https://web-production-e67f4.up.railway.app`).
 
 ---
 
@@ -21,13 +21,14 @@ Stap-voor-stap om inloggen en registreren via de cloud (Vercel + Railway) te lat
 2. **Settings** → **Environment Variables**.
 3. Voeg toe:
    - **Name:** `VITE_API_URL`
-   - **Value:** `https://JOUW-RAILWAY-URL/api`  
-     (dus de volledige Railway URL + `/api`)
+   - **Value:** `https://www.intellifrost.be/api`  
+     (de `vercel.json` proxied `/api` naar Railway)
 4. Zorg dat **Production**, **Preview** en **Development** zijn aangevinkt.
 5. Klik **Save**.
 6. **Deployments** → open het menu (…) van de laatste deployment → **Redeploy**.
 
-> **Belangrijk:** Zonder `VITE_API_URL` probeert de app naar `localhost` te verbinden, wat in de cloud faalt.
+> **Belangrijk:** Zonder `VITE_API_URL` probeert de app naar `localhost` te verbinden, wat in de cloud faalt.  
+> **Let op:** De `vercel.json` in de frontend bevat een rewrite die `/api/*` proxied naar Railway. Zorg dat de Railway-URL in `vercel.json` overeenkomt met je backend.
 
 ---
 
@@ -50,12 +51,12 @@ Stap-voor-stap om inloggen en registreren via de cloud (Vercel + Railway) te lat
 
 1. Ga naar [railway.app](https://railway.app) en open je backend service.
 2. **Variables** (of **Settings** → **Variables**).
-3. Zorg dat **FRONTEND_URL** precies je Vercel URL is, bv.:
-   - `https://coldmonitor.vercel.app`
+3. Zorg dat **FRONTEND_URL** precies je frontend-URL is, bv.:
+   - `https://www.intellifrost.be`
    - Geen slash aan het eind.
 4. Voor meerdere origins (bv. lokaal én cloud):
    ```
-   https://coldmonitor.vercel.app,http://localhost:5173
+   https://www.intellifrost.be,http://localhost:5173
    ```
 
 ---
@@ -119,7 +120,7 @@ Als je **Network Error** krijgt op Vercel bij inloggen of account aanmaken:
 ### Stap C: CORS (FRONTEND_URL op Railway)
 
 1. **Railway** → je backend service → **Variables**
-2. **`FRONTEND_URL`** = exact je Vercel-URL, bv. `https://coldmonitor.vercel.app`
+2. **`FRONTEND_URL`** = exact je frontend-URL, bv. `https://www.intellifrost.be`
    - Geen slash aan het eind
    - Precies hetzelfde als in de adresbalk als je je app opent
 
@@ -136,13 +137,13 @@ Bij een **CORS error** of **Network Error, type: xhr** blokkeert de backend je f
 1. Ga naar **Railway** → je backend service → **Variables**.
 2. Voeg toe of pas aan:
    - **Name:** `FRONTEND_URL`
-   - **Value:** **exact** de URL van je Vercel-site, zoals in de adresbalk:
-     - `https://coldmonitor.vercel.app`  
+   - **Value:** **exact** de URL van je frontend-site, zoals in de adresbalk:
+     - `https://www.intellifrost.be`  
      of  
      - `https://jouw-project.vercel.app`
 3. **Regels:**
-   - Alleen **https** (niet http) voor Vercel.
-   - **Geen slash** aan het eind (dus niet `https://coldmonitor.vercel.app/`).
+   - Alleen **https** (niet http) voor productie.
+   - **Geen slash** aan het eind (dus niet `https://www.intellifrost.be/`).
    - Geen pad erachter (dus niet `https://coldmonitor.vercel.app/login`).
 4. **Opslaan** – Railway herstart de service automatisch.
 
@@ -151,7 +152,7 @@ Bij een **CORS error** of **Network Error, type: xhr** blokkeert de backend je f
 Als je ook lokaal tegen Railway wilt testen:
 
 ```
-https://coldmonitor.vercel.app,http://localhost:5173
+https://www.intellifrost.be,http://localhost:5173
 ```
 
 Geen spaties rond de komma.
@@ -222,7 +223,7 @@ Als de ESP32 **"Upload failed: -1 connection refused / DNS failed"** logt:
 
 ### 1. API URL controleren
 
-- **ESP32 config-portal** (ColdMonitor-Setup) → controleer **API URL**.
+- **ESP32 config-portal** (IntelliFrost-Setup) → controleer **API URL**.
 - Moet exact zijn: `https://JOUW-RAILWAY-URL/api` (met `https://` en `/api`).
 - Geen typfouten, geen extra slashes, geen spatie.
 
@@ -251,7 +252,7 @@ Als de ESP32 **"Upload failed: -1 connection refused / DNS failed"** logt:
 
 ### 1. API URL controleren
 
-- **ESP32 config-portal** (ColdMonitor-Setup) → controleer **API URL**.
+- **ESP32 config-portal** (IntelliFrost-Setup) → controleer **API URL**.
 - Moet exact zijn: `https://JOUW-RAILWAY-URL/api` (met `https://` en `/api`).
 - Geen typfouten, geen extra slashes, geen spatie.
 

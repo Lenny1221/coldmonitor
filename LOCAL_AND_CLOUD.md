@@ -8,7 +8,7 @@ Je kunt tegelijk lokaal aanpassingen doen én alles in de cloud laten draaien. *
 
 | | Lokaal | Cloud |
 |---|--------|-------|
-| **Frontend** | `localhost:5173` | Vercel (bv. coldmonitor.vercel.app) |
+| **Frontend** | `localhost:5173` | Vercel (bv. www.intellifrost.be) |
 | **Backend** | `localhost:3001` | Railway |
 | **Database** | Supabase (zelfde als cloud) | Supabase |
 | **Gebruik** | Ontwikkelen, testen | Live voor eindgebruikers |
@@ -56,16 +56,16 @@ Open **http://localhost:5173**. Je werkt dan tegen de lokale backend, die verbon
 ### Vercel (frontend)
 
 - **Environment Variables** (Settings → Environment Variables):
-  - `VITE_API_URL` = `https://jouw-backend.up.railway.app/api` (jouw Railway URL + `/api`)
+  - `VITE_API_URL` = `https://www.intellifrost.be/api`
 
 ### Railway (backend)
 
 - **Variables**:
   - `DATABASE_URL` = Supabase connection string
   - `JWT_SECRET` = sterke random string
-  - `FRONTEND_URL` = `https://coldmonitor.vercel.app` (of jouw Vercel URL)
+  - `FRONTEND_URL` = `https://www.intellifrost.be` (of jouw Vercel/custom domain URL)
   - Optioneel voor meerdere origins:  
-    `FRONTEND_URL="https://coldmonitor.vercel.app,http://localhost:5173"`
+    `FRONTEND_URL="https://www.intellifrost.be,http://localhost:5173"`
 
 ---
 
@@ -73,7 +73,7 @@ Open **http://localhost:5173**. Je werkt dan tegen de lokale backend, die verbon
 
 - **Lokaal ontwikkelen** → `frontend/.env`: `VITE_API_URL=http://localhost:3001/api`
 - **iOS-app (zelfde WiFi)** → `VITE_API_URL=http://192.168.1.208:3001/api` (Mac-IP)
-- **Cloud testen** → `VITE_API_URL=https://jouw-backend.up.railway.app/api`
+- **Cloud testen** → `VITE_API_URL=https://www.intellifrost.be/api`
 
 Na wijziging van `.env` de frontend herstarten (`npm run dev`).
 
@@ -96,6 +96,6 @@ Vercel en Railway deployen automatisch. Dezelfde code draait dan in de cloud.
 Zie **[CLOUD_SETUP.md](./CLOUD_SETUP.md)** voor een volledige handleiding.
 
 **Snel:**
-1. **Vercel** → `VITE_API_URL` = `https://jouw-railway-url/api`
-2. **Railway** → `FRONTEND_URL` = `https://coldmonitor.vercel.app`
+1. **Vercel** → `VITE_API_URL` = `https://www.intellifrost.be/api`
+2. **Railway** → `FRONTEND_URL` = `https://www.intellifrost.be`
 3. **Redeploy** op Vercel na wijziging van env vars

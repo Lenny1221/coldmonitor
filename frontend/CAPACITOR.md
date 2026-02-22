@@ -1,4 +1,4 @@
-# ColdMonitor – iOS app met Capacitor
+# IntelliFrost – iOS app met Capacitor
 
 De bestaande webapp is verpakt als native iOS-app via Capacitor. Dezelfde codebase draait op iPhone en iPad.
 
@@ -38,7 +38,7 @@ Op een **echt toestel** werkt `localhost` niet; de app moet naar je backend over
 ### Productie
 Gebruik je live backend-URL (HTTPS):
 ```bash
-VITE_API_URL=https://api.jouwdomein.com/api
+VITE_API_URL=https://www.intellifrost.be/api
 ```
 
 Daarna opnieuw bouwen: `npm run cap:sync`
