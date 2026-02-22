@@ -20,6 +20,7 @@ import readingsRoutes from './modules/readings/readings.controller';
 import alertsRoutes from './modules/alerts/alerts.controller';
 import dashboardRoutes from './modules/dashboard/dashboard.controller';
 import devicesRoutes from './modules/devices/devices.controller';
+import escalationRoutes from './modules/escalation/escalation.controller';
 
 // Legacy routes (to be migrated or kept for compatibility)
 import customerRoutes from './routes/customers';
@@ -130,6 +131,10 @@ app.listen(PORT, () => {
   // Power-loss detection: run every 15s (threshold 30s = 3x heartbeat)
   setInterval(() => jobs.checkDeviceOffline(), 15000);
   logger.info('Device offline check job started (every 15s)');
+
+  // Escalatie: run every minute (20 min L1→L2, 15 min L2→L3)
+  setInterval(() => jobs.escalateAlerts(), 60 * 1000);
+  logger.info('Escalatie-job gestart (elke minuut)');
 });
 
 // Graceful shutdown

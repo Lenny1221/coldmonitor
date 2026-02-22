@@ -61,6 +61,37 @@ router.get('/search', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (re
   }
 });
 
+/**
+ * PATCH /customers/me/settings
+ * Update customer settings: openingTime, closingTime, nightStart, backupPhone
+ */
+router.patch('/me/settings', requireAuth, requireRole('CUSTOMER'), async (req: AuthRequest, res) => {
+  try {
+    const customerId = req.customerId!;
+    const { openingTime, closingTime, nightStart, backupPhone } = req.body;
+
+    const data: Record<string, unknown> = {};
+    if (typeof openingTime === 'string' && /^\d{1,2}:\d{2}$/.test(openingTime)) data.openingTime = openingTime;
+    if (typeof closingTime === 'string' && /^\d{1,2}:\d{2}$/.test(closingTime)) data.closingTime = closingTime;
+    if (typeof nightStart === 'string' && /^\d{1,2}:\d{2}$/.test(nightStart)) data.nightStart = nightStart;
+    if (typeof backupPhone === 'string') data.backupPhone = backupPhone.trim() || null;
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'Geen geldige velden om bij te werken' });
+    }
+
+    const customer = await prisma.customer.update({
+      where: { id: customerId },
+      data,
+    });
+
+    res.json(customer);
+  } catch (error) {
+    console.error('Update customer settings error:', error);
+    res.status(500).json({ error: 'Instellingen bijwerken mislukt' });
+  }
+});
+
 // Get current customer's own data
 router.get('/me', requireAuth, requireRole('CUSTOMER'), async (req: AuthRequest, res) => {
   try {

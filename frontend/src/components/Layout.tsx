@@ -9,10 +9,12 @@ import {
   CubeIcon,
   UserGroupIcon,
   EnvelopeIcon,
+  BellIcon,
   Bars3Icon,
   XMarkIcon,
   SunIcon,
   MoonIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
 interface LayoutProps {
@@ -82,13 +84,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     user?.role === 'CUSTOMER'
       ? [
           { to: '/dashboard', label: 'Dashboard', icon: HomeIcon },
+          { to: '/alarmeringen', label: 'Alarmeringen', icon: BellIcon },
           { to: '/locations', label: 'Locaties', icon: MapPinIcon },
           { to: '/coldcells', label: 'Koelcellen', icon: CubeIcon },
           { to: '/invitations', label: 'Uitnodigingen', icon: EnvelopeIcon },
+          { to: '/settings', label: 'Instellingen', icon: Cog6ToothIcon },
         ]
       : user?.role === 'TECHNICIAN' || user?.role === 'ADMIN'
         ? [
             { to: '/technician', label: 'Dashboard', icon: HomeIcon },
+            { to: '/alarmeringen', label: 'Alarmeringen', icon: BellIcon },
             { to: '/technician/customers', label: 'Klanten beheren', icon: UserGroupIcon },
           ]
         : [];

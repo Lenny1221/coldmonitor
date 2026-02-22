@@ -1,13 +1,30 @@
 import { prisma } from '../config/database';
-import { AlertType, AlertStatus } from '@prisma/client';
+import { AlertType } from '@prisma/client';
 import { logger } from '../utils/logger';
 import { NotificationService } from './notificationService';
+import {
+  getInitialEscalationState,
+  executeLayer1,
+  executeLayer2,
+  executeLayer3,
+} from './escalationService';
 
 export class AlertService {
   private notificationService: NotificationService;
 
   constructor() {
     this.notificationService = new NotificationService();
+  }
+
+  private async triggerEscalationForNewAlert(alert: any): Promise<void> {
+    const layer = alert.layer;
+    if (layer === 'LAYER_1') {
+      await executeLayer1(alert);
+    } else if (layer === 'LAYER_2') {
+      await executeLayer2(alert);
+    } else if (layer === 'LAYER_3') {
+      await executeLayer3(alert);
+    }
   }
 
   /**
@@ -74,16 +91,22 @@ export class AlertService {
           });
           logger.debug('Updated existing alert', { alertId: existingAlert.id, alertType });
         } else {
-          // Create new alert
+          const customer = coldCell.location.customer;
+          const { timeSlot, layer } = getInitialEscalationState(customer);
+
           const alert = await prisma.alert.create({
             data: {
               coldCellId,
               type: alertType,
               value: temperature,
               threshold,
-              status: 'ACTIVE',
+              status: layer === 'LAYER_1' ? 'ACTIVE' : 'ESCALATING',
+              layer,
+              timeSlot,
               triggeredAt: new Date(),
               lastTriggeredAt: new Date(),
+              ...(layer === 'LAYER_2' && { layer2At: new Date() }),
+              ...(layer === 'LAYER_3' && { layer3At: new Date() }),
             },
             include: {
               coldCell: {
@@ -102,11 +125,15 @@ export class AlertService {
             },
           });
 
-          logger.info('New temperature alert created', { alertId: alert.id, alertType, temperature });
+          logger.info('New temperature alert created', {
+            alertId: alert.id,
+            alertType,
+            temperature,
+            layer,
+            timeSlot,
+          });
 
-          // Send notifications
-          await this.notificationService.sendCustomerAlert(alert);
-          await this.notificationService.sendTechnicianAlert(alert);
+          await this.triggerEscalationForNewAlert(alert);
         }
       } else {
         // Temperature is normal - resolve any active temperature alerts
@@ -208,13 +235,20 @@ export class AlertService {
             });
 
             if (coldCell) {
+              const customer = coldCell.location.customer;
+              const { timeSlot, layer } = getInitialEscalationState(customer);
+
               const alert = await prisma.alert.create({
                 data: {
                   coldCellId,
                   type: 'DOOR_OPEN',
-                  status: 'ACTIVE',
+                  status: layer === 'LAYER_1' ? 'ACTIVE' : 'ESCALATING',
+                  layer,
+                  timeSlot,
                   triggeredAt: new Date(),
                   lastTriggeredAt: new Date(),
+                  ...(layer === 'LAYER_2' && { layer2At: new Date() }),
+                  ...(layer === 'LAYER_3' && { layer3At: new Date() }),
                 },
                 include: {
                   coldCell: {
@@ -233,10 +267,9 @@ export class AlertService {
                 },
               });
 
-              logger.warn('Door open alert created', { alertId: alert.id, coldCellId });
+              logger.warn('Door open alert created', { alertId: alert.id, coldCellId, layer });
 
-              await this.notificationService.sendCustomerAlert(alert);
-              await this.notificationService.sendTechnicianAlert(alert);
+              await this.triggerEscalationForNewAlert(alert);
             }
           }
         }
@@ -280,35 +313,54 @@ export class AlertService {
         });
 
         if (!existingAlert) {
-          const alert = await prisma.alert.create({
-            data: {
-              coldCellId,
-              type: 'POWER_LOSS',
-              status: 'ACTIVE',
-              triggeredAt: new Date(),
-              lastTriggeredAt: new Date(),
-            },
+          const coldCell = await prisma.coldCell.findUnique({
+            where: { id: coldCellId },
             include: {
-              coldCell: {
+              location: {
                 include: {
-                  location: {
-                    include: {
-                      customer: {
-                        include: {
-                          linkedTechnician: true,
-                        },
-                      },
-                    },
+                  customer: {
+                    include: { linkedTechnician: true },
                   },
                 },
               },
             },
           });
 
-          logger.warn('Power loss alert created', { alertId: alert.id, coldCellId });
+          if (coldCell) {
+            const customer = coldCell.location.customer;
+            const { timeSlot, layer } = getInitialEscalationState(customer);
 
-          await this.notificationService.sendCustomerAlert(alert);
-          await this.notificationService.sendTechnicianAlert(alert);
+            const alert = await prisma.alert.create({
+              data: {
+                coldCellId,
+                type: 'POWER_LOSS',
+                status: layer === 'LAYER_1' ? 'ACTIVE' : 'ESCALATING',
+                layer,
+                timeSlot,
+                triggeredAt: new Date(),
+                lastTriggeredAt: new Date(),
+                ...(layer === 'LAYER_2' && { layer2At: new Date() }),
+                ...(layer === 'LAYER_3' && { layer3At: new Date() }),
+              },
+              include: {
+                coldCell: {
+                  include: {
+                    location: {
+                      include: {
+                        customer: {
+                          include: { linkedTechnician: true },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            });
+
+            logger.warn('Power loss alert created', { alertId: alert.id, coldCellId, layer });
+
+            await this.triggerEscalationForNewAlert(alert);
+          }
         }
       } else {
         // Power restored - resolve power loss alerts
@@ -408,13 +460,23 @@ export class AlertService {
         });
 
         if (!existingAlert) {
+          const coldCell = device.coldCell as any;
+          const customer = coldCell?.location?.customer;
+          const { timeSlot, layer } = customer
+            ? getInitialEscalationState(customer)
+            : { timeSlot: 'OPEN_HOURS' as const, layer: 'LAYER_1' as const };
+
           const alert = await prisma.alert.create({
             data: {
               coldCellId: device.coldCellId,
               type: 'POWER_LOSS',
-              status: 'ACTIVE',
+              status: layer === 'LAYER_1' ? 'ACTIVE' : 'ESCALATING',
+              layer,
+              timeSlot,
               triggeredAt: new Date(),
               lastTriggeredAt: new Date(),
+              ...(layer === 'LAYER_2' && { layer2At: new Date() }),
+              ...(layer === 'LAYER_3' && { layer3At: new Date() }),
             },
             include: {
               coldCell: {
@@ -438,10 +500,10 @@ export class AlertService {
             deviceId: device.id,
             serialNumber: device.serialNumber,
             lastSeenAt: device.lastSeenAt,
+            layer,
           });
 
-          await this.notificationService.sendCustomerAlert(alert);
-          await this.notificationService.sendTechnicianAlert(alert);
+          await this.triggerEscalationForNewAlert(alert);
         }
       }
     } catch (error) {

@@ -242,6 +242,15 @@ export const customersApi = {
     const response = await api.delete('/customers/me/unlink-technician');
     return response.data;
   },
+  updateSettings: async (data: {
+    openingTime?: string;
+    closingTime?: string;
+    nightStart?: string;
+    backupPhone?: string;
+  }) => {
+    const response = await api.patch('/customers/me/settings', data);
+    return response.data;
+  },
 };
 
 // Locations API
@@ -519,12 +528,20 @@ export const alertsApi = {
     const response = await api.get('/alerts/technician', { params });
     return response.data;
   },
+  getActive: async () => {
+    const response = await api.get('/alarms/active');
+    return response.data;
+  },
   getById: async (id: string) => {
     const response = await api.get(`/alerts/${id}`);
     return response.data;
   },
   resolve: async (id: string, resolutionNote?: string) => {
     const response = await api.patch(`/alerts/${id}/resolve`, { resolutionNote });
+    return response.data;
+  },
+  acknowledge: async (alarmId: string) => {
+    const response = await api.post('/alarm/acknowledge', { alarmId });
     return response.data;
   },
 };

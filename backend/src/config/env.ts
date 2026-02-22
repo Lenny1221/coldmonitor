@@ -46,16 +46,26 @@ export const config = {
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
 
-  // Email (voor verificatie)
-  // Resend HTTP API (aanbevolen – geen SMTP/poort nodig)
-  // Gebruikt SMTP_PASS als Resend API key wanneer SMTP_HOST=smtp.resend.com
+  // Email (voor verificatie + alarm)
   resendApiKey: process.env.RESEND_API_KEY ||
     (process.env.SMTP_HOST === 'smtp.resend.com' ? process.env.SMTP_PASS || '' : '') ||
     '',
-  // SMTP (fallback als Resend API niet geconfigureerd)
+  resendFromEmail: process.env.RESEND_FROM_EMAIL || 'alerts@intellifrost.be',
   smtpHost: process.env.SMTP_HOST || '',
   smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
   smtpUser: process.env.SMTP_USER || '',
   smtpPass: process.env.SMTP_PASS || '',
   emailFrom: process.env.EMAIL_FROM || 'noreply@intellifrost.local',
+
+  // Twilio (SMS + AI-telefoongesprekken)
+  twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || '',
+  twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || '',
+  twilioPhoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
+
+  // ElevenLabs (TTS voor AI-telefoonbot)
+  elevenLabsApiKey: process.env.ELEVENLABS_API_KEY || '',
+  elevenLabsVoiceId: process.env.ELEVENLABS_VOICE_ID || '',
+
+  // Cron secret voor /api/escalate endpoint
+  cronSecret: process.env.CRON_SECRET || process.env.API_CRON_KEY || '',
 };

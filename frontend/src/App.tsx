@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard';
 import Locations from './pages/Locations';
 import ColdCells from './pages/ColdCells';
 import ColdCellDetail from './pages/ColdCellDetail';
+import Alarmeringen from './pages/Alarmeringen';
+import Settings from './pages/Settings';
 import TechnicianDashboard from './pages/TechnicianDashboard';
 import ManageCustomers from './pages/ManageCustomers';
 import Invitations from './pages/Invitations';
@@ -90,6 +92,26 @@ function AppRoutes() {
           <PrivateRoute>
             <Layout>
               <Invitations />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/alarmeringen"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Alarmeringen />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Settings />
             </Layout>
           </PrivateRoute>
         }

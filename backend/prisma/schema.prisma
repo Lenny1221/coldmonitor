@@ -31,7 +31,32 @@ enum AlertType {
 
 enum AlertStatus {
   ACTIVE
+  ESCALATING
   RESOLVED
+}
+
+enum AlarmLayer {
+  LAYER_1
+  LAYER_2
+  LAYER_3
+}
+
+enum TimeSlot {
+  OPEN_HOURS   // opening_time → closing_time
+  AFTER_HOURS  // closing_time → night_start
+  NIGHT        // night_start → opening_time (volgende dag)
+}
+
+enum EscalationRecipient {
+  TECHNICIAN
+  CLIENT
+}
+
+enum EscalationChannel {
+  PUSH
+  EMAIL
+  SMS
+  PHONE
 }
 
 enum InvitationStatus {
@@ -98,7 +123,11 @@ model Customer {
   contactName   String
   email         String   @unique
   phone         String?
+  backupPhone   String?  // Vervangcontact voor escalatie
   address       String?
+  openingTime   String   @default("07:00")  // Openingstijd, bijv. 07:00
+  closingTime   String   @default("17:00")  // Sluitingstijd, bijv. 17:00
+  nightStart    String   @default("23:00")  // Start nacht, bijv. 23:00
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   emailVerified Boolean  @default(false)
@@ -273,26 +302,50 @@ model SensorReading {
 model Alert {
   id                String      @id @default(cuid())
   type              AlertType
-  value             Float?      // The value that triggered the alert
-  threshold         Float?      // The threshold that was exceeded
+  value             Float?      // De waarde die het alarm triggert
+  threshold         Float?      // De drempel die overschreden is
   status            AlertStatus @default(ACTIVE)
+  layer             AlarmLayer  @default(LAYER_1)  // Huidige escalatielaag
+  timeSlot          TimeSlot?   // Tijdslot bij trigger (OPEN_HOURS, AFTER_HOURS, NIGHT)
   triggeredAt       DateTime    @default(now())
-  lastTriggeredAt   DateTime?   // Updated when duplicate alert occurs
+  lastTriggeredAt   DateTime?   // Bijgewerkt bij duplicaat alarm
+  layer2At          DateTime?   // Wanneer naar layer 2 geëscaleerd
+  layer3At          DateTime?   // Wanneer naar layer 3 geëscaleerd
   resolvedAt        DateTime?
-  resolutionNote   String?     // Optional note when resolving
+  resolutionNote    String?
+  acknowledgedAt    DateTime?
+  acknowledgedBy    String?     // User/technician ID die bevestigde
   notifiedCustomer  Boolean     @default(false)
-  notifiedTechnician Boolean     @default(false)
+  notifiedTechnician Boolean    @default(false)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
   // Relations
   coldCellId String
   coldCell   ColdCell @relation(fields: [coldCellId], references: [id], onDelete: Cascade)
+  escalationLogs EscalationLog[]
 
   @@index([coldCellId, status])
   @@index([status])
   @@index([triggeredAt])
   @@index([type])
+  @@index([layer])
+}
+
+// Escalation log - elke escalatie-actie wordt gelogd
+model EscalationLog {
+  id             String   @id @default(cuid())
+  alarmId        String
+  alarm          Alert    @relation(fields: [alarmId], references: [id], onDelete: Cascade)
+  layer          AlarmLayer
+  action         String   // Beschrijving van de actie
+  recipientType  EscalationRecipient
+  channel        EscalationChannel
+  sentAt         DateTime @default(now())
+  responseAt     DateTime?
+
+  @@index([alarmId])
+  @@index([sentAt])
 }
 
 // Invitation model (for technician to customer linking)

@@ -1,48 +1,15 @@
 import { logger } from '../utils/logger';
-import { prisma } from '../config/database';
+import { runEscalationCron } from '../services/escalationService';
 
 /**
- * Background job to escalate unresolved alerts
- * Should be run periodically (e.g., every hour via cron)
+ * Background job: escalatie van actieve alarmen
+ * Controleert timers (20 min L1→L2, 15 min L2→L3) en voert notificaties uit.
+ * Wordt elke minuut uitgevoerd (via setInterval of externe cron).
  */
 export async function escalateAlertsJob() {
   try {
-    logger.info('Running alert escalation job');
-    
-    // Find alerts that have been active for more than 1 hour
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    
-    const escalatedAlerts = await prisma.alert.findMany({
-      where: {
-        status: 'ACTIVE',
-        triggeredAt: {
-          lt: oneHourAgo,
-        },
-        notifiedCustomer: false, // Only escalate if not yet notified
-      },
-      include: {
-        coldCell: {
-          include: {
-            location: {
-              include: {
-                customer: {
-                  include: {
-                    linkedTechnician: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    // TODO: Send escalation notifications
-    // - Send urgent email/SMS to customer
-    // - Send urgent notification to technician
-    // - Log escalation event
-
-    logger.info(`Alert escalation job completed - ${escalatedAlerts.length} alerts escalated`);
+    await runEscalationCron();
+    logger.debug('Escalatie-cron uitgevoerd');
   } catch (error) {
     logger.error('Error in alert escalation job', error as Error);
   }
