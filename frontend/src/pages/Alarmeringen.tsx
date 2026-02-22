@@ -9,9 +9,11 @@ import {
   XCircleIcon,
   CubeIcon,
   MapPinIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { format, parseISO } from 'date-fns';
 import LayerInfoCard from '../components/LayerInfoCard';
+import AlarmSettingsModal from '../components/AlarmSettingsModal';
 
 type AlertFilter = 'all' | 'active' | 'resolved';
 
@@ -22,6 +24,7 @@ const Alarmeringen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [alertFilter, setAlertFilter] = useState<AlertFilter>('active');
   const [resolveAlert, setResolveAlert] = useState<any | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const fetchAlerts = async () => {
     try {
@@ -102,19 +105,31 @@ const Alarmeringen: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-frost-100">
-          Alarmeringen
-        </h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
-          {user?.role === 'CUSTOMER'
-            ? 'Overzicht van alarmen voor jouw koelcellen'
-            : 'Overzicht van alarmen bij gekoppelde klanten'}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-frost-100">
+            Alarmeringen
+          </h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
+            {user?.role === 'CUSTOMER'
+              ? 'Overzicht van alarmen voor jouw koelcellen'
+              : 'Overzicht van alarmen bij gekoppelde klanten'}
+          </p>
+        </div>
+        {user?.role === 'CUSTOMER' && (
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-[rgba(100,200,255,0.2)] bg-white dark:bg-frost-800 hover:bg-gray-50 dark:hover:bg-frost-850 text-gray-700 dark:text-slate-300 transition-colors"
+            title="Instellingen alarmering"
+          >
+            <Cog6ToothIcon className="h-5 w-5 text-[#00c8ff]" />
+            <span className="hidden sm:inline">Instellingen</span>
+          </button>
+        )}
       </div>
 
       {/* Layer-uitleg */}
-      <LayerInfoCard showSettingsLink={user?.role === 'CUSTOMER'} />
+      <LayerInfoCard showSettingsLink={false} />
 
       {/* Samenvatting */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -304,6 +319,10 @@ const Alarmeringen: React.FC = () => {
           </div>
         )}
       </div>
+
+      {settingsOpen && (
+        <AlarmSettingsModal onClose={() => setSettingsOpen(false)} />
+      )}
 
       {resolveAlert && (
         <ResolveAlertModal

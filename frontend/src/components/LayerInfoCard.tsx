@@ -30,7 +30,7 @@ const LAYER_INFO = [
   },
 ];
 
-const LayerInfoCard: React.FC<{ showSettingsLink?: boolean }> = ({ showSettingsLink = true }) => {
+const LayerInfoCard: React.FC<{ showSettingsLink?: boolean }> = ({ showSettingsLink = false }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (

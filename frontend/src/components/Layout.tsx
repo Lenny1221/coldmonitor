@@ -14,7 +14,6 @@ import {
   XMarkIcon,
   SunIcon,
   MoonIcon,
-  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
 interface LayoutProps {
@@ -88,7 +87,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           { to: '/locations', label: 'Locaties', icon: MapPinIcon },
           { to: '/coldcells', label: 'Koelcellen', icon: CubeIcon },
           { to: '/invitations', label: 'Uitnodigingen', icon: EnvelopeIcon },
-          { to: '/settings', label: 'Instellingen', icon: Cog6ToothIcon },
         ]
       : user?.role === 'TECHNICIAN' || user?.role === 'ADMIN'
         ? [
