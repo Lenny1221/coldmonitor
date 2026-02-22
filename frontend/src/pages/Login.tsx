@@ -234,7 +234,7 @@ const Login: React.FC = () => {
       {/* Theme toggle top-right */}
       <button
         onClick={toggleTheme}
-        className="fixed top-4 right-4 p-2.5 rounded-xl border border-gray-200 dark:border-[rgba(100,200,255,0.15)] bg-white dark:bg-[#0d1b2e] text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-[rgba(0,150,255,0.08)] shadow-sm transition-all"
+        className="fixed top-4 right-4 p-2.5 rounded-xl border border-gray-200 dark:border-[rgba(100,200,255,0.15)] bg-white dark:bg-frost-800 text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850 shadow-sm transition-all"
         aria-label="Thema wisselen"
       >
         {theme === 'dark'
@@ -250,7 +250,7 @@ const Login: React.FC = () => {
         </div>
 
         {/* Card wrapper */}
-        <div className="bg-white dark:bg-[#0d1b2e] rounded-2xl shadow-lg dark:shadow-[0_0_40px_rgba(0,100,200,0.12)] border border-gray-100 dark:border-[rgba(100,200,255,0.1)] p-8 space-y-6">
+        <div className="bg-white dark:bg-frost-800 rounded-2xl shadow-lg dark:shadow-[0_0_40px_rgba(0,100,200,0.12)] border border-gray-100 dark:border-[rgba(100,200,255,0.1)] p-8 space-y-6">
 
         {!showRegister ? (
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
@@ -280,7 +280,7 @@ const Login: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-t-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-400 text-gray-900 dark:text-frost-100 bg-white dark:bg-frost-850 rounded-t-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] focus:z-10 sm:text-sm"
                   placeholder="E-mailadres"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -296,7 +296,7 @@ const Login: React.FC = () => {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-[#e8f4ff] bg-white dark:bg-[#0a1520] rounded-b-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-400 text-gray-900 dark:text-frost-100 bg-white dark:bg-frost-850 rounded-b-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] focus:z-10 sm:text-sm"
                   placeholder="Wachtwoord"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -320,14 +320,14 @@ const Login: React.FC = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-[#0d1b2e] text-gray-400 dark:text-slate-500">of</span>
+                <span className="px-2 bg-white dark:bg-frost-800 text-gray-400 dark:text-slate-400">of</span>
               </div>
             </div>
 
             <div>
               <a
                 href={`${(import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/+$/, '')}/auth/google`}
-                className="w-full flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-[#0a1520] hover:bg-gray-50 dark:hover:bg-[rgba(0,150,255,0.06)] transition-colors"
+                className="w-full flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-frost-850 hover:bg-gray-50 dark:hover:bg-[rgba(0,150,255,0.08)] transition-colors"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -520,7 +520,7 @@ const Login: React.FC = () => {
                   
                   {/* Dropdown Results */}
                   {showTechnicianDropdown && technicianResults.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-[#0d1b2e] shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] max-h-60 rounded-md py-1 text-base ring-1 ring-black dark:ring-[rgba(100,200,255,0.15)] ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-frost-800 shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] max-h-60 rounded-md py-1 text-base ring-1 ring-black dark:ring-[rgba(100,200,255,0.15)] ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
                       {technicianResults.map((technician) => (
                         <div
                           key={technician.id}

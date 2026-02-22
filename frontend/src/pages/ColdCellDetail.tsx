@@ -425,38 +425,38 @@ const ColdCellDetail: React.FC = () => {
 
       {/* Technicus: klantinformatie */}
       {isTechnician && customer && (
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-            <UserGroupIcon className="h-6 w-6 mr-2 text-blue-600" />
+        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border-l-4 border-blue-500 dark:border-blue-500/80">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4 flex items-center">
+            <UserGroupIcon className="h-6 w-6 mr-2 text-blue-600 dark:text-blue-400" />
             Klant
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Bedrijf</div>
-              <div className="text-lg font-semibold text-gray-900">{customer.companyName}</div>
+              <div className="text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wide">Bedrijf</div>
+              <div className="text-lg font-semibold text-gray-900 dark:text-frost-100">{customer.companyName}</div>
             </div>
             {customer.contactName && (
               <div>
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Contact</div>
-                <div className="text-gray-900">{customer.contactName}</div>
+                <div className="text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wide">Contact</div>
+                <div className="text-gray-900 dark:text-frost-100">{customer.contactName}</div>
               </div>
             )}
             {customer.email && (
               <div>
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">E-mail</div>
-                <div className="text-gray-900">{customer.email}</div>
+                <div className="text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wide">E-mail</div>
+                <div className="text-gray-900 dark:text-frost-100">{customer.email}</div>
               </div>
             )}
             {customer.phone && (
               <div>
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Telefoon</div>
-                <div className="text-gray-900">{customer.phone}</div>
+                <div className="text-gray-900 dark:text-frost-100">{customer.phone}</div>
               </div>
             )}
             {customer.address && (
               <div className="sm:col-span-2 lg:col-span-3">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Adres</div>
-                <div className="text-gray-900">{customer.address}</div>
+                <div className="text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wide">Adres</div>
+                <div className="text-gray-900 dark:text-frost-100">{customer.address}</div>
               </div>
             )}
           </div>
@@ -472,10 +472,10 @@ const ColdCellDetail: React.FC = () => {
       )}
 
       {/* Loggers in deze cel */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <CpuChipIcon className="h-6 w-6 mr-2 text-gray-600" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 flex items-center">
+            <CpuChipIcon className="h-6 w-6 mr-2 text-gray-600 dark:text-slate-300" />
             Loggers in deze cel
           </h2>
           <button
@@ -488,46 +488,46 @@ const ColdCellDetail: React.FC = () => {
         </div>
         {devices.length > 0 ? (
           <div className="overflow-x-auto table-scroll">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
               <thead>
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Serienummer</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Laatst gezien</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Firmware</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase">Serienummer</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase">Status</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase">Laatst gezien</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase">Firmware</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
                 {devices.map((device: any) => (
-                  <tr key={device.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-mono text-gray-900">{device.serialNumber}</td>
+                  <tr key={device.id} className="hover:bg-gray-50 dark:hover:bg-frost-850">
+                    <td className="px-4 py-3 text-sm font-mono text-gray-900 dark:text-frost-100">{device.serialNumber}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                           device.status === 'ONLINE'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
+                            ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300'
+                            : 'bg-gray-100 dark:bg-frost-850 text-gray-800 dark:text-slate-300'
                         }`}
                       >
                         {device.status === 'ONLINE' ? 'Online' : 'Offline'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-300">
                       {device.lastSeenAt
                         ? format(parseISO(device.lastSeenAt), 'dd/MM/yyyy HH:mm')
                         : '—'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{device.firmwareVersion ?? '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-300">{device.firmwareVersion ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="rounded-lg border-2 border-dashed border-gray-200 p-8 text-center">
-            <CpuChipIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-600">Nog geen loggers gekoppeld.</p>
-            <p className="text-xs text-gray-500 mt-1">Klik op &quot;Logger toevoegen&quot; om je eerste logger te koppelen.</p>
+          <div className="rounded-lg border-2 border-dashed border-gray-200 dark:border-[rgba(100,200,255,0.15)] p-8 text-center">
+            <CpuChipIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-slate-400" />
+            <p className="mt-2 text-sm text-gray-600 dark:text-slate-300">Nog geen loggers gekoppeld.</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Klik op &quot;Logger toevoegen&quot; om je eerste logger te koppelen.</p>
           </div>
         )}
       </div>
@@ -544,35 +544,35 @@ const ColdCellDetail: React.FC = () => {
       )}
 
       {/* Huidige status: alleen sensoren die data hebben, stroom altijd Actief */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Huidige status</h2>
+      <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Huidige status</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {latestReading?.temperature != null && (
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center text-gray-600 mb-1">
+            <div className="border border-gray-200 dark:border-[rgba(100,200,255,0.12)] rounded-lg p-4">
+              <div className="flex items-center text-gray-600 dark:text-slate-300 mb-1">
                 <FireIcon className="h-5 w-5 mr-2" />
                 <span className="text-sm font-medium">Temperatuur</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-gray-900 dark:text-frost-100">
                 {Number(latestReading.temperature).toFixed(1)} °C
               </div>
             </div>
           )}
           {latestReading?.humidity != null && (
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center text-gray-600 mb-1">
+            <div className="border border-gray-200 dark:border-[rgba(100,200,255,0.12)] rounded-lg p-4">
+              <div className="flex items-center text-gray-600 dark:text-slate-300 mb-1">
                 <CloudIcon className="h-5 w-5 mr-2" />
                 <span className="text-sm font-medium">Luchtvochtigheid</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-gray-900 dark:text-frost-100">
                 {Number(latestReading.humidity).toFixed(0)} %
               </div>
             </div>
           )}
           {/* Deur altijd tonen wanneer er devices zijn (live-deur); anders alleen als er data is */}
           {(coldCell?.devices?.length > 0 || displayDoorState != null || latestReading?.doorStatus != null) && (
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between text-gray-600 mb-1">
+            <div className="border border-gray-200 dark:border-[rgba(100,200,255,0.12)] rounded-lg p-4">
+              <div className="flex items-center justify-between text-gray-600 dark:text-slate-300 mb-1">
                 <div className="flex items-center">
                   <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
                   <span className="text-sm font-medium">Deur</span>
@@ -612,7 +612,7 @@ const ColdCellDetail: React.FC = () => {
                 )}
               </div>
               {displayDoorChangedAt && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                   Laatste wijziging: {format(parseISO(displayDoorChangedAt), 'dd/MM HH:mm')}
                 </p>
               )}
@@ -719,7 +719,7 @@ const ColdCellDetail: React.FC = () => {
           </div>
         </div>
         {latestReading?.recordedAt && (
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-gray-400 dark:text-slate-400 mt-2">
             Laatste meting: {format(parseISO(latestReading.recordedAt), 'dd/MM/yyyy HH:mm')}
           </p>
         )}
@@ -727,32 +727,32 @@ const ColdCellDetail: React.FC = () => {
 
       {/* Actieve alarmen - bovenaan */}
       {alerts.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-            <ExclamationTriangleIcon className="h-6 w-6 mr-2 text-red-600" />
+        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border-l-4 border-red-500 dark:border-red-500/80 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4 flex items-center">
+            <ExclamationTriangleIcon className="h-6 w-6 mr-2 text-red-600 dark:text-red-400" />
             Actieve alarmen
           </h2>
           <div className="space-y-2">
             {alerts.map((alert: any) => (
               <div
                 key={alert.id}
-                className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between flex-wrap gap-2"
+                className="bg-red-50 dark:bg-red-900/25 border border-red-200 dark:border-red-800/50 rounded-lg p-4 flex items-center justify-between flex-wrap gap-2"
               >
                 <div>
-                  <div className="font-semibold text-red-900">
+                  <div className="font-semibold text-red-900 dark:text-red-200">
                     {alert.type === 'POWER_LOSS'
                       ? 'Stroomuitval'
                       : alert.type?.replace('_', ' ') ?? 'Alarm'}
                   </div>
                   {alert.type === 'POWER_LOSS' ? (
-                    <div className="text-sm text-red-700">Device offline – stroom niet actief</div>
+                    <div className="text-sm text-red-700 dark:text-red-300">Device offline – stroom niet actief</div>
                   ) : alert.value != null ? (
-                    <div className="text-sm text-red-700">
+                    <div className="text-sm text-red-700 dark:text-red-300">
                       Waarde: {alert.value} °C
                       {alert.threshold != null && ` (drempel: ${alert.threshold} °C)`}
                     </div>
-                  ) : null}
-                  <div className="text-xs text-red-600 mt-1">
+                  )                   : null}
+                  <div className="text-xs text-red-600 dark:text-red-400 mt-1">
                     {new Date(alert.triggeredAt).toLocaleString()}
                   </div>
                 </div>
@@ -776,10 +776,10 @@ const ColdCellDetail: React.FC = () => {
       )}
 
       {/* Temperatuurgrafiek */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Temperatuur per cel</h2>
-          <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-50">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100">Temperatuur per cel</h2>
+          <div className="flex rounded-lg border border-gray-300 dark:border-[rgba(100,200,255,0.15)] p-1 bg-gray-50 dark:bg-frost-850">
             {(['24h', '7d', '30d'] as const).map((range) => (
               <button
                 key={range}
@@ -787,7 +787,7 @@ const ColdCellDetail: React.FC = () => {
                 className={`px-4 py-2 rounded-md text-sm font-medium ${
                   timeRange === range
                     ? 'bg-blue-600 text-white shadow'
-                    : 'text-gray-700 hover:bg-gray-200'
+                    : 'text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-frost-900'
                 }`}
               >
                 {range === '24h' ? 'Laatste 24 u' : range === '7d' ? '7 dagen' : '30 dagen'}
@@ -855,12 +855,12 @@ const ColdCellDetail: React.FC = () => {
                 />
               </ComposedChart>
             </ResponsiveContainer>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
               Rode punten = overschrijding van onder- of bovengrens.
             </p>
           </>
         ) : (
-          <div className="py-12 text-center text-gray-500">
+          <div className="py-12 text-center text-gray-500 dark:text-slate-400">
             Geen temperatuurdata voor deze periode.
           </div>
         )}
@@ -868,10 +868,10 @@ const ColdCellDetail: React.FC = () => {
 
       {/* Luchtvochtigheidsgrafiek */}
       {chartData.some((d: any) => d.humidity != null) && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Luchtvochtigheid per cel</h2>
-            <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-50">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100">Luchtvochtigheid per cel</h2>
+            <div className="flex rounded-lg border border-gray-300 dark:border-[rgba(100,200,255,0.15)] p-1 bg-gray-50 dark:bg-frost-850">
               {(['24h', '7d', '30d'] as const).map((range) => (
                 <button
                   key={range}
@@ -879,7 +879,7 @@ const ColdCellDetail: React.FC = () => {
                   className={`px-4 py-2 rounded-md text-sm font-medium ${
                     timeRange === range
                       ? 'bg-blue-600 text-white shadow'
-                      : 'text-gray-700 hover:bg-gray-200'
+                      : 'text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-frost-900'
                   }`}
                 >
                   {range === '24h' ? 'Laatste 24 u' : range === '7d' ? '7 dagen' : '30 dagen'}
@@ -928,7 +928,7 @@ const ColdCellDetail: React.FC = () => {
               </ResponsiveContainer>
             </>
           ) : (
-            <div className="py-12 text-center text-gray-500">
+            <div className="py-12 text-center text-gray-500 dark:text-slate-400">
               Geen luchtvochtigheidsdata voor deze periode.
             </div>
           )}
@@ -936,14 +936,14 @@ const ColdCellDetail: React.FC = () => {
       )}
 
       {/* RS485 / Carel PJEZ Besturing */}
-      <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.3)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.1)]">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-50 mb-4">RS485 / Carel PJEZ Besturing</h2>
+      <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">RS485 / Carel PJEZ Besturing</h2>
         <div className="space-y-4">
           {/* Temperatuur + Defrost knoppen */}
-          <div className="flex flex-wrap items-center gap-4 p-4 rounded-lg bg-gray-50 dark:bg-frost-900/50">
+          <div className="flex flex-wrap items-center gap-4 p-4 rounded-lg bg-gray-50 dark:bg-frost-850">
             <div>
-              <div className="text-sm font-medium text-gray-500 dark:text-slate-400">RS485 Temperatuur</div>
-              <div className="text-lg font-semibold text-gray-900 dark:text-frost-50">
+              <div className="text-sm font-medium text-gray-500 dark:text-slate-300">RS485 Temperatuur</div>
+              <div className="text-lg font-semibold text-gray-900 dark:text-frost-100">
                 {rs485Status?.rs485Temperature != null
                   ? `${rs485Status.rs485Temperature.toFixed(1)} °C`
                   : '—'}
@@ -969,14 +969,14 @@ const ColdCellDetail: React.FC = () => {
           </div>
 
           {/* Defrost parameters */}
-          <div className="p-4 rounded-lg border border-gray-200 dark:border-[rgba(100,200,255,0.1)]">
+          <div className="p-4 rounded-lg border border-gray-200 dark:border-[rgba(100,200,255,0.12)]">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-slate-300">Defrost parameters</h3>
+              <h3 className="text-sm font-medium text-gray-700 dark:text-slate-200">Defrost parameters</h3>
               <div className="flex gap-2">
                 <button
                   onClick={handleRefreshParams}
                   disabled={paramsLoading}
-                  className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-200 dark:bg-frost-900 text-gray-700 dark:text-slate-300 hover:bg-gray-300 dark:hover:bg-[rgba(0,150,255,0.1)] disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-200 dark:bg-frost-850 text-gray-700 dark:text-slate-200 hover:bg-gray-300 dark:hover:bg-[rgba(0,150,255,0.12)] disabled:opacity-50"
                 >
                   {paramsLoading ? 'Bezig...' : 'Vernieuw'}
                 </button>
@@ -1005,20 +1005,20 @@ const ColdCellDetail: React.FC = () => {
                 </div>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-slate-400">Interval</span>
-                <div className="font-medium text-gray-900 dark:text-frost-50">
+                <span className="text-gray-500 dark:text-slate-300">Interval</span>
+                <div className="font-medium text-gray-900 dark:text-frost-100">
                   {rs485Status?.defrostInterval != null ? `${rs485Status.defrostInterval} uur` : '—'}
                 </div>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-slate-400">Max duur</span>
-                <div className="font-medium text-gray-900 dark:text-frost-50">
+                <span className="text-gray-500 dark:text-slate-300">Max duur</span>
+                <div className="font-medium text-gray-900 dark:text-frost-100">
                   {rs485Status?.defrostDuration != null ? `${rs485Status.defrostDuration} min` : '—'}
                 </div>
               </div>
             </div>
             {rs485Status?.lastUpdate && (
-              <div className="mt-2 text-xs text-gray-500 dark:text-slate-500">
+              <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">
                 Laatste update: {format(parseISO(rs485Status.lastUpdate), 'dd/MM HH:mm')}
                 {rs485Status.deviceOnline ? (
                   <span className="ml-2 text-green-600 dark:text-green-400">· Device online</span>
@@ -1033,37 +1033,37 @@ const ColdCellDetail: React.FC = () => {
         {/* Parameters aanpassen modal */}
         {showParamsModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowParamsModal(false)}>
-            <div className="bg-white dark:bg-frost-800 rounded-xl shadow-xl p-6 w-full max-w-md border border-gray-200 dark:border-[rgba(100,200,255,0.1)]" onClick={e => e.stopPropagation()}>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-50 mb-4">Defrost parameters aanpassen</h3>
+            <div className="bg-white dark:bg-frost-800 rounded-xl shadow-xl dark:shadow-[0_0_24px_rgba(0,0,0,0.25)] p-6 w-full max-w-md border border-gray-200 dark:border-[rgba(100,200,255,0.12)]" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">Defrost parameters aanpassen</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Interval (uur)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Interval (uur)</label>
                   <input
                     type="number"
                     min={0}
                     max={199}
                     value={paramsForm.interval}
                     onChange={e => setParamsForm(f => ({ ...f, interval: parseInt(e.target.value, 10) || 0 }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg bg-white dark:bg-frost-900 text-gray-900 dark:text-frost-50"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Max duur (minuten)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Max duur (minuten)</label>
                   <input
                     type="number"
                     min={1}
                     max={199}
                     value={paramsForm.duration}
                     onChange={e => setParamsForm(f => ({ ...f, duration: parseInt(e.target.value, 10) || 1 }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg bg-white dark:bg-frost-900 text-gray-900 dark:text-frost-50"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Type (0–4)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Type (0–4)</label>
                   <select
                     value={paramsForm.type}
                     onChange={e => setParamsForm(f => ({ ...f, type: parseInt(e.target.value, 10) }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg bg-white dark:bg-frost-900 text-gray-900 dark:text-frost-50"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                   >
                     <option value={0}>0 – Temperatuur</option>
                     <option value={1}>1 – Temperatuur</option>
@@ -1074,7 +1074,7 @@ const ColdCellDetail: React.FC = () => {
                 </div>
               </div>
               <div className="mt-6 flex gap-3 justify-end">
-                <button onClick={() => setShowParamsModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-frost-900 text-gray-700 dark:text-slate-300">
+                <button onClick={() => setShowParamsModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-frost-850 text-gray-700 dark:text-slate-200">
                   Annuleren
                 </button>
                 <button onClick={handleSetDefrostParams} disabled={paramsLoading} className="px-4 py-2 rounded-lg text-sm font-medium bg-[#0080ff] text-white hover:opacity-90 disabled:opacity-50">

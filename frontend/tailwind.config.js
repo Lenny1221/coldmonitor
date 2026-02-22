@@ -16,7 +16,8 @@ export default {
           500: '#0096ff',
           600: '#0080ff',
           700: '#0060cc',
-          800: '#0d1b2e',
+          800: '#0c1725',   // Donkere kaarten – zachter contrast met achtergrond
+          850: '#0a1320',   // Nested blokken
           900: '#0a1520',
           950: '#080e1a',
         },

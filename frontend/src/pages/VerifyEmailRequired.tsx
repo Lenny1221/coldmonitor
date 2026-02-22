@@ -10,11 +10,11 @@ const VerifyEmailRequired: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f0f7ff] dark:bg-[#080e1a] py-12 px-4 sm:px-6 lg:px-8 transition-colors">
       <div className="max-w-md w-full">
-        <div className="bg-white dark:bg-[#0d1b2e] rounded-2xl shadow-lg dark:shadow-[0_0_40px_rgba(0,100,200,0.12)] border border-gray-100 dark:border-[rgba(100,200,255,0.1)] p-8 text-center">
+        <div className="bg-white dark:bg-frost-800 rounded-2xl shadow-lg dark:shadow-[0_0_40px_rgba(0,100,200,0.12)] border border-gray-100 dark:border-[rgba(100,200,255,0.1)] p-8 text-center">
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-100 dark:bg-amber-900/20 mb-6">
             <EnvelopeIcon className="h-8 w-8 text-amber-600 dark:text-amber-400" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-[#e8f4ff] mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-frost-100 mb-4">
             Bevestig je e-mailadres
           </h1>
           <p className="text-gray-600 dark:text-slate-400 mb-6">
@@ -22,10 +22,10 @@ const VerifyEmailRequired: React.FC = () => {
           </p>
           {email && (
             <p className="text-gray-600 dark:text-slate-400 mb-6">
-              Controleer de e-mail die we hebben gestuurd naar <strong className="text-gray-900 dark:text-[#e8f4ff]">{email}</strong>.
+              Controleer de e-mail die we hebben gestuurd naar <strong className="text-gray-900 dark:text-frost-100">{email}</strong>.
             </p>
           )}
-          <p className="text-sm text-gray-500 dark:text-slate-500 mb-8">
+          <p className="text-sm text-gray-500 dark:text-slate-400 mb-8">
             Geen e-mail ontvangen? Controleer je spam-map. De link is 24 uur geldig.
           </p>
           <Link

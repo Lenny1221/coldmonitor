@@ -122,7 +122,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <IntelliFrostLogo size={32} />
             <div className="leading-none">
               <div className="flex items-baseline">
-                <span className="font-['Exo_2'] font-light text-lg text-gray-800 dark:text-frost-50 tracking-tight">Intelli</span>
+                <span className="font-['Exo_2'] font-light text-lg text-gray-800 dark:text-frost-100 tracking-tight">Intelli</span>
                 <span
                   className="font-['Exo_2'] font-black text-lg tracking-tight"
                   style={{
@@ -139,7 +139,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-md text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-frost-900"
+            className="lg:hidden p-2 rounded-md text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850"
             aria-label="Menu sluiten"
           >
             <XMarkIcon className="h-5 w-5" />
@@ -158,7 +158,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150
                   ${active
                     ? 'bg-gradient-to-r from-[#00c8ff]/10 to-[#0080ff]/10 dark:from-[#00c8ff]/15 dark:to-[#0080ff]/15 text-[#0080ff] dark:text-[#00c8ff] border border-[#00c8ff]/20 dark:border-[rgba(0,200,255,0.25)]'
-                    : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-frost-900 hover:text-gray-900 dark:hover:text-frost-50'
+                    : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850 hover:text-gray-900 dark:hover:text-frost-100'
                   }
                 `}
               >
@@ -173,10 +173,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="border-t border-gray-200 dark:border-[rgba(100,200,255,0.1)] p-4 shrink-0 space-y-3">
           {/* User info */}
           <div>
-            <div className="text-xs font-medium text-gray-700 dark:text-frost-50 truncate" title={userDisplay}>
+            <div className="text-xs font-medium text-gray-700 dark:text-frost-100 truncate" title={userDisplay}>
               {userDisplay}
             </div>
-            <div className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
+            <div className="text-xs text-gray-400 dark:text-slate-400 mt-0.5">
               {user?.role === 'CUSTOMER' ? 'Klant' : user?.role === 'TECHNICIAN' ? 'Technicus' : user?.role === 'ADMIN' ? 'Beheerder' : user?.role}
             </div>
           </div>
@@ -185,8 +185,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <button
             onClick={toggleTheme}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150
-              text-gray-600 dark:text-slate-300
-              bg-gray-100 dark:bg-frost-900
+              text-gray-600 dark:text-slate-200
+              bg-gray-100 dark:bg-frost-850
               hover:bg-gray-200 dark:hover:bg-[rgba(0,150,255,0.1)]
               border border-gray-200 dark:border-[rgba(100,200,255,0.12)]"
             aria-label="Thema wisselen"
@@ -232,7 +232,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="ml-3 flex items-center gap-2">
             <IntelliFrostLogo size={22} />
             <div className="flex items-baseline">
-              <span className="font-['Exo_2'] font-light text-base text-gray-800 dark:text-frost-50">Intelli</span>
+              <span className="font-['Exo_2'] font-light text-base text-gray-800 dark:text-frost-100">Intelli</span>
               <span
                 className="font-['Exo_2'] font-black text-base"
                 style={{
@@ -249,7 +249,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-md text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-frost-900"
+              className="p-2 rounded-md text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850"
               aria-label="Thema wisselen"
             >
               {theme === 'dark'
