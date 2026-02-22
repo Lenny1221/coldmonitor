@@ -61,9 +61,10 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({ onClose }) => {
         setContactName(data.contactName ?? '');
         if (Array.isArray(data.backupContacts) && data.backupContacts.length > 0) {
           setBackupContacts(
-            data.backupContacts.map((c: { name?: string; phone?: string }) => ({
+            data.backupContacts.map((c: { name?: string; phone?: string; addedBy?: string }) => ({
               name: c.name ?? '',
               phone: c.phone ?? '',
+              addedBy: c.addedBy,
             }))
           );
         } else if (data.backupPhone) {
@@ -179,11 +180,20 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({ onClose }) => {
                     </div>
                   ))}
                 </div>
+                <p className="text-sm text-gray-600 dark:text-slate-300 mt-4 font-medium">Vaste flow per tijdslot (niet aanpasbaar):</p>
+                <ul className="text-sm text-gray-600 dark:text-slate-300 list-disc list-inside mt-2 space-y-1">
+                  <li><strong>Open</strong> (opening → sluiting): Laag 1 eerst, daarna escalatie naar 2 en 3</li>
+                  <li><strong>Na sluiting</strong> (sluiting → nacht): direct Laag 2</li>
+                  <li><strong>Nacht</strong> (nacht → opening): direct Laag 3 (AI-telefoon)</li>
+                </ul>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
+                  U kunt alleen de uren aanpassen; de escalatielagen zijn vast.
+                </p>
               </div>
 
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">
-                  Tijdsloten voor escalatie
+                  Tijdsloten
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
                   Bepaal wanneer uw bedrijf open is:
