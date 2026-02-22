@@ -115,7 +115,7 @@ export function useDoorStateSSE(coldCellId: string | undefined): UseDoorStateSSE
     };
   }, [connect]);
 
-  // Polling elke 500ms: snelle update, ook als SSE even vertraagd is
+  // Polling elke 1s als fallback (SSE geeft live updates).
   useEffect(() => {
     if (!coldCellId) return;
     const poll = async () => {
@@ -129,7 +129,7 @@ export function useDoorStateSSE(coldCellId: string | undefined): UseDoorStateSSE
         }));
       } catch (_) {}
     };
-    const iv = setInterval(poll, 500);
+    const iv = setInterval(poll, 1000);
     poll(); // direct eerste keer
     return () => clearInterval(iv);
   }, [coldCellId]);

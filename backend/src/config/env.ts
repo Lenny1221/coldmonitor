@@ -28,9 +28,9 @@ export const config = {
   // SPA: cold cell 5s + readings/alerts 20s + SSE + nav → ~25 req/min. 1500 = ~100/min marge
   rateLimitMax: parseInt(
     process.env.RATE_LIMIT_MAX || 
-    (process.env.NODE_ENV === 'development' ? '2000' : '1500'), 
+    (process.env.NODE_ENV === 'development' ? '2000' : '3000'), 
     10
-  ), // Requests per window (1500 per 15 min ≈ 100/min)
+  ), // Requests per window (3000 per 15 min ≈ 200/min)
   // Higher limit in development, lower in production
   authRateLimitMax: parseInt(
     process.env.AUTH_RATE_LIMIT_MAX || 

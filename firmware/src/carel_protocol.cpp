@@ -28,7 +28,8 @@ uint8_t CarelProtocol::carelCRC(uint8_t* data, int len) {
 }
 
 void CarelProtocol::txMode() {
-  digitalWrite(dePin, HIGH);
+  // Sommige RS485-modules: actief-laag (LOW = zenden)
+  digitalWrite(dePin, LOW);
   delayMicroseconds(100);
 }
 
@@ -36,8 +37,10 @@ void CarelProtocol::rxMode() {
   if (serial) {
     serial->flush();
   }
-  delayMicroseconds(100);
-  digitalWrite(dePin, LOW);
+  // 7 bytes @ 1200 baud ≈ 65ms. Wacht tot transmissie volledig weg is (voorkom eigen echo).
+  delay(80);
+  // Sommige RS485-modules: actief-laag (HIGH = ontvangen)
+  digitalWrite(dePin, HIGH);
 }
 
 void CarelProtocol::flushRx() {
@@ -49,7 +52,7 @@ void CarelProtocol::flushRx() {
 bool CarelProtocol::init(uint8_t rxPin, uint8_t txPin, uint8_t de) {
   dePin = de;
   pinMode(dePin, OUTPUT);
-  digitalWrite(dePin, LOW);
+  digitalWrite(dePin, HIGH);  // Start in ontvangstmodus (actief-laag module)
 
   serial = &Serial2;
   // Carel: 1200 baud, 8 databits, no parity, 2 stopbits
