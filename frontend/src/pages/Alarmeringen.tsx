@@ -11,6 +11,7 @@ import {
   MapPinIcon,
 } from '@heroicons/react/24/outline';
 import { format, parseISO } from 'date-fns';
+import LayerInfoCard from '../components/LayerInfoCard';
 
 type AlertFilter = 'all' | 'active' | 'resolved';
 
@@ -90,7 +91,7 @@ const Alarmeringen: React.FC = () => {
     }
   };
 
-  const activeCount = alerts.filter((a: any) => a.status === 'ACTIVE').length;
+  const activeCount = alerts.filter((a: any) => a.status === 'ACTIVE' || a.status === 'ESCALATING').length;
   const resolvedCount = alerts.filter((a: any) => a.status === 'RESOLVED').length;
   const filteredAlerts =
     alertFilter === 'all'
@@ -111,6 +112,9 @@ const Alarmeringen: React.FC = () => {
             : 'Overzicht van alarmen bij gekoppelde klanten'}
         </p>
       </div>
+
+      {/* Layer-uitleg */}
+      <LayerInfoCard showSettingsLink={user?.role === 'CUSTOMER'} />
 
       {/* Samenvatting */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -205,11 +209,22 @@ const Alarmeringen: React.FC = () => {
                     ) : null}
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {alert.layer && (alert.status === 'ACTIVE' || alert.status === 'ESCALATING') && (
-                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                          alert.layer === 'LAYER_3' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' :
-                          alert.layer === 'LAYER_2' ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300' :
-                          'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
-                        }`}>
+                        <span
+                          title={
+                            alert.layer === 'LAYER_1'
+                              ? 'Laag 1: E-mail + push'
+                              : alert.layer === 'LAYER_2'
+                                ? 'Laag 2: SMS + backup contact'
+                                : 'Laag 3: AI-telefoon + technicus'
+                          }
+                          className={`text-xs px-2.5 py-1 rounded font-semibold ${
+                            alert.layer === 'LAYER_3'
+                              ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                              : alert.layer === 'LAYER_2'
+                                ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
+                                : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                          }`}
+                        >
                           {alert.layer === 'LAYER_1' ? 'Laag 1' : alert.layer === 'LAYER_2' ? 'Laag 2' : 'Laag 3'}
                         </span>
                       )}

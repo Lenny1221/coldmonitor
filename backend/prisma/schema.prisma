@@ -128,6 +128,7 @@ model Customer {
   openingTime   String   @default("07:00")  // Openingstijd, bijv. 07:00
   closingTime   String   @default("17:00")  // Sluitingstijd, bijv. 17:00
   nightStart    String   @default("23:00")  // Start nacht, bijv. 23:00
+  escalationConfig Json? // Per tijdslot: welke lagen actief { OPEN_HOURS: {layer1, layer2, layer3}, ... }
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   emailVerified Boolean  @default(false)

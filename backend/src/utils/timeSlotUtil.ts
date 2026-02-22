@@ -52,21 +52,47 @@ export function getTimeSlot(settings: CustomerTimeSettings): TimeSlot {
   return 'NIGHT';
 }
 
+export interface LayerConfig {
+  layer1?: boolean;
+  layer2?: boolean;
+  layer3?: boolean;
+}
+
+export interface EscalationConfig {
+  OPEN_HOURS?: LayerConfig;
+  AFTER_HOURS?: LayerConfig;
+  NIGHT?: LayerConfig;
+}
+
+const DEFAULT_LAYER_CONFIG: Record<TimeSlot, LayerConfig> = {
+  OPEN_HOURS: { layer1: true, layer2: true, layer3: true },
+  AFTER_HOURS: { layer1: false, layer2: true, layer3: true },
+  NIGHT: { layer1: false, layer2: false, layer3: true },
+};
+
 /**
- * Bepaal de initiële escalatielaag op basis van tijdslot
- * - OPEN_HOURS: Layer 1
- * - AFTER_HOURS: Layer 2 (skip layer 1)
- * - NIGHT: Layer 3 (skip layer 1 en 2)
+ * Bepaal de initiële escalatielaag op basis van tijdslot en klantconfig
+ * Eerste ingeschakelde laag wordt gebruikt
  */
-export function getInitialLayerForTimeSlot(timeSlot: TimeSlot): 'LAYER_1' | 'LAYER_2' | 'LAYER_3' {
-  switch (timeSlot) {
-    case 'OPEN_HOURS':
-      return 'LAYER_1';
-    case 'AFTER_HOURS':
-      return 'LAYER_2';
-    case 'NIGHT':
-      return 'LAYER_3';
-    default:
-      return 'LAYER_1';
-  }
+export function getInitialLayerForTimeSlot(
+  timeSlot: TimeSlot,
+  config?: EscalationConfig | null
+): 'LAYER_1' | 'LAYER_2' | 'LAYER_3' {
+  const slotConfig = config?.[timeSlot] ?? DEFAULT_LAYER_CONFIG[timeSlot];
+  if (slotConfig?.layer1 !== false) return 'LAYER_1';
+  if (slotConfig?.layer2 !== false) return 'LAYER_2';
+  return 'LAYER_3';
+}
+
+/**
+ * Check of een laag actief is voor dit tijdslot (voor escalatie naar volgende laag)
+ */
+export function isLayerEnabled(
+  timeSlot: TimeSlot,
+  layer: 'LAYER_1' | 'LAYER_2' | 'LAYER_3',
+  config?: EscalationConfig | null
+): boolean {
+  const slotConfig = config?.[timeSlot] ?? DEFAULT_LAYER_CONFIG[timeSlot];
+  const key = layer === 'LAYER_1' ? 'layer1' : layer === 'LAYER_2' ? 'layer2' : 'layer3';
+  return slotConfig?.[key] !== false;
 }

@@ -8,6 +8,7 @@ import {
   executeLayer2,
   executeLayer3,
 } from './escalationService';
+import type { EscalationConfig } from '../utils/timeSlotUtil';
 
 export class AlertService {
   private notificationService: NotificationService;
@@ -92,7 +93,10 @@ export class AlertService {
           logger.debug('Updated existing alert', { alertId: existingAlert.id, alertType });
         } else {
           const customer = coldCell.location.customer;
-          const { timeSlot, layer } = getInitialEscalationState(customer);
+          const { timeSlot, layer } = getInitialEscalationState({
+            ...customer,
+            escalationConfig: customer.escalationConfig as EscalationConfig | null,
+          });
 
           const alert = await prisma.alert.create({
             data: {
@@ -236,7 +240,10 @@ export class AlertService {
 
             if (coldCell) {
               const customer = coldCell.location.customer;
-              const { timeSlot, layer } = getInitialEscalationState(customer);
+              const { timeSlot, layer } = getInitialEscalationState({
+                ...customer,
+                escalationConfig: customer.escalationConfig as EscalationConfig | null,
+              });
 
               const alert = await prisma.alert.create({
                 data: {
@@ -328,7 +335,10 @@ export class AlertService {
 
           if (coldCell) {
             const customer = coldCell.location.customer;
-            const { timeSlot, layer } = getInitialEscalationState(customer);
+            const { timeSlot, layer } = getInitialEscalationState({
+              ...customer,
+              escalationConfig: customer.escalationConfig as EscalationConfig | null,
+            });
 
             const alert = await prisma.alert.create({
               data: {
@@ -463,7 +473,10 @@ export class AlertService {
           const coldCell = device.coldCell as any;
           const customer = coldCell?.location?.customer;
           const { timeSlot, layer } = customer
-            ? getInitialEscalationState(customer)
+            ? getInitialEscalationState({
+                ...customer,
+                escalationConfig: customer.escalationConfig as EscalationConfig | null,
+              })
             : { timeSlot: 'OPEN_HOURS' as const, layer: 'LAYER_1' as const };
 
           const alert = await prisma.alert.create({

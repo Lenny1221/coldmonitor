@@ -12,7 +12,7 @@ import {
   EscalationRecipient,
   TimeSlot,
 } from '@prisma/client';
-import { getTimeSlot, getInitialLayerForTimeSlot } from '../utils/timeSlotUtil';
+import { getTimeSlot, getInitialLayerForTimeSlot, isLayerEnabled, type EscalationConfig } from '../utils/timeSlotUtil';
 import { sendLayer1Notifications } from './notifications/layer1';
 import { sendLayer2Notifications } from './notifications/layer2';
 import { sendLayer3Notifications } from './notifications/layer3';
@@ -38,6 +38,7 @@ export type AlertWithRelations = Awaited<
         openingTime: string;
         closingTime: string;
         nightStart: string;
+        escalationConfig?: EscalationConfig | null;
         linkedTechnician: {
           id: string;
           name: string;
@@ -131,15 +132,16 @@ export async function runEscalationCron(): Promise<void> {
 
       const timeSlot = (alert.timeSlot ?? getTimeSlot(customer)) as TimeSlot;
 
-      if (alert.layer === 'LAYER_1') {
+      const config = customer.escalationConfig as EscalationConfig | null | undefined;
+
+      if (alert.layer === 'LAYER_1' && isLayerEnabled(timeSlot, 'LAYER_2', config)) {
         const elapsed = now.getTime() - alert.triggeredAt.getTime();
         if (timeSlot === 'OPEN_HOURS' && elapsed >= ESCALATION_WAIT_MS.LAYER_1_TO_2) {
           await escalateToLayer2(alert);
         } else if (timeSlot !== 'OPEN_HOURS') {
-          // AFTER_HOURS of NIGHT: Layer 1 zou niet moeten bestaan, maar voor de zekerheid
           await escalateToLayer2(alert);
         }
-      } else if (alert.layer === 'LAYER_2') {
+      } else if (alert.layer === 'LAYER_2' && isLayerEnabled(timeSlot, 'LAYER_3', config)) {
         const layer2Start = alert.layer2At ?? alert.triggeredAt;
         const elapsed = now.getTime() - layer2Start.getTime();
         if (elapsed >= ESCALATION_WAIT_MS.LAYER_2_TO_3) {
@@ -206,8 +208,9 @@ export function getInitialEscalationState(customer: {
   openingTime: string;
   closingTime: string;
   nightStart: string;
+  escalationConfig?: EscalationConfig | null;
 }): { timeSlot: TimeSlot; layer: 'LAYER_1' | 'LAYER_2' | 'LAYER_3' } {
   const timeSlot = getTimeSlot(customer);
-  const layer = getInitialLayerForTimeSlot(timeSlot);
+  const layer = getInitialLayerForTimeSlot(timeSlot, customer.escalationConfig);
   return { timeSlot, layer };
 }

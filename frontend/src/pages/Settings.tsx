@@ -15,6 +15,15 @@ const Settings: React.FC = () => {
   const [closingTime, setClosingTime] = useState('17:00');
   const [nightStart, setNightStart] = useState('23:00');
   const [backupPhone, setBackupPhone] = useState('');
+  const [escalationConfig, setEscalationConfig] = useState<{
+    OPEN_HOURS?: { layer1?: boolean; layer2?: boolean; layer3?: boolean };
+    AFTER_HOURS?: { layer1?: boolean; layer2?: boolean; layer3?: boolean };
+    NIGHT?: { layer1?: boolean; layer2?: boolean; layer3?: boolean };
+  }>({
+    OPEN_HOURS: { layer1: true, layer2: true, layer3: true },
+    AFTER_HOURS: { layer1: false, layer2: true, layer3: true },
+    NIGHT: { layer1: false, layer2: false, layer3: true },
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -25,6 +34,11 @@ const Settings: React.FC = () => {
         setClosingTime(data.closingTime ?? '17:00');
         setNightStart(data.nightStart ?? '23:00');
         setBackupPhone(data.backupPhone ?? '');
+        setEscalationConfig(data.escalationConfig ?? {
+          OPEN_HOURS: { layer1: true, layer2: true, layer3: true },
+          AFTER_HOURS: { layer1: false, layer2: true, layer3: true },
+          NIGHT: { layer1: false, layer2: false, layer3: true },
+        });
       } catch (err) {
         setError(getErrorMessage(err, 'Kon instellingen niet laden'));
       } finally {
@@ -45,6 +59,7 @@ const Settings: React.FC = () => {
         closingTime,
         nightStart,
         backupPhone: backupPhone.trim() || undefined,
+        escalationConfig,
       });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -143,6 +158,65 @@ const Settings: React.FC = () => {
                   className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[rgba(100,200,255,0.2)] bg-white dark:bg-frost-900 text-gray-900 dark:text-frost-100"
                 />
               </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-3 mt-6">
+              Escalatie-flow per tijdslot
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
+              Kies welke lagen actief zijn per tijdslot. De eerste ingeschakelde laag is de startlaag.
+            </p>
+            <div className="space-y-4">
+              {(['OPEN_HOURS', 'AFTER_HOURS', 'NIGHT'] as const).map((slot) => {
+                const labels = {
+                  OPEN_HOURS: 'Open (opening → sluiting)',
+                  AFTER_HOURS: 'Na sluiting (sluiting → nacht)',
+                  NIGHT: 'Nacht (nacht → opening)',
+                };
+                const cfg = escalationConfig[slot] ?? {};
+                return (
+                  <div
+                    key={slot}
+                    className="p-4 rounded-lg bg-gray-50 dark:bg-frost-850 border border-gray-200 dark:border-[rgba(100,200,255,0.12)]"
+                  >
+                    <div className="font-medium text-gray-900 dark:text-frost-100 mb-3">
+                      {labels[slot]}
+                    </div>
+                    <div className="flex flex-wrap gap-4">
+                      {([1, 2, 3] as const).map((n) => {
+                        const key = `layer${n}` as 'layer1' | 'layer2' | 'layer3';
+                        const checked = cfg[key] !== false;
+                        return (
+                          <label
+                            key={n}
+                            className="flex items-center gap-2 cursor-pointer text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                setEscalationConfig((prev) => ({
+                                  ...prev,
+                                  [slot]: {
+                                    ...prev[slot],
+                                    [key]: e.target.checked,
+                                  },
+                                }));
+                              }}
+                              className="rounded border-gray-300 dark:border-slate-500"
+                            />
+                            <span className="text-gray-700 dark:text-slate-300">
+                              Laag {n}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

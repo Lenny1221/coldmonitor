@@ -247,6 +247,11 @@ export const customersApi = {
     closingTime?: string;
     nightStart?: string;
     backupPhone?: string;
+    escalationConfig?: {
+      OPEN_HOURS?: { layer1?: boolean; layer2?: boolean; layer3?: boolean };
+      AFTER_HOURS?: { layer1?: boolean; layer2?: boolean; layer3?: boolean };
+      NIGHT?: { layer1?: boolean; layer2?: boolean; layer3?: boolean };
+    };
   }) => {
     const response = await api.patch('/customers/me/settings', data);
     return response.data;

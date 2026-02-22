@@ -68,13 +68,16 @@ router.get('/search', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (re
 router.patch('/me/settings', requireAuth, requireRole('CUSTOMER'), async (req: AuthRequest, res) => {
   try {
     const customerId = req.customerId!;
-    const { openingTime, closingTime, nightStart, backupPhone } = req.body;
+    const { openingTime, closingTime, nightStart, backupPhone, escalationConfig } = req.body;
 
     const data: Record<string, unknown> = {};
     if (typeof openingTime === 'string' && /^\d{1,2}:\d{2}$/.test(openingTime)) data.openingTime = openingTime;
     if (typeof closingTime === 'string' && /^\d{1,2}:\d{2}$/.test(closingTime)) data.closingTime = closingTime;
     if (typeof nightStart === 'string' && /^\d{1,2}:\d{2}$/.test(nightStart)) data.nightStart = nightStart;
     if (typeof backupPhone === 'string') data.backupPhone = backupPhone.trim() || null;
+    if (escalationConfig && typeof escalationConfig === 'object') {
+      data.escalationConfig = escalationConfig;
+    }
 
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ error: 'Geen geldige velden om bij te werken' });
