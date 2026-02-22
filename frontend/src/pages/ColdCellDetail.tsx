@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { coldCellsApi, coldCellStateApi, readingsApi, alertsApi, devicesApi, getErrorMessage } from '../services/api';
 import { useDoorStateSSE } from '../hooks/useDoorStateSSE';
 import {
@@ -40,6 +41,8 @@ const ColdCellDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const chartGridStroke = theme === 'dark' ? 'rgba(100,200,255,0.06)' : '#e5e7eb';
   const isTechnician = user?.role === 'TECHNICIAN' || user?.role === 'ADMIN';
   const [coldCell, setColdCell] = useState<any>(null);
   const { doorState: liveDoorState, isLive: doorStateLive, error: doorStateError, reconnect: doorStateReconnect } = useDoorStateSSE(id ?? undefined);
@@ -354,7 +357,7 @@ const ColdCellDetail: React.FC = () => {
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-100 rounded-md"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-frost-850 rounded-md text-gray-900 dark:text-frost-100"
             aria-label="Terug"
           >
             <ArrowLeftIcon className="h-6 w-6" />
@@ -371,10 +374,10 @@ const ColdCellDetail: React.FC = () => {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{coldCell.name}</h1>
-          <p className="text-sm text-gray-600 capitalize">{coldCell.type}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-frost-100 break-words">{coldCell.name}</h1>
+          <p className="text-sm text-gray-600 dark:text-slate-200 capitalize">{coldCell.type}</p>
           {coldCell.location && (
-            <div className="flex items-center text-sm text-gray-500 mt-1">
+            <div className="flex items-center text-sm text-gray-500 dark:text-slate-300 mt-1">
               <MapPinIcon className="h-4 w-4 mr-1.5 flex-shrink-0" />
               {coldCell.location.locationName}
               {coldCell.location.address && ` · ${coldCell.location.address}`}
@@ -383,7 +386,7 @@ const ColdCellDetail: React.FC = () => {
         </div>
         <button
           onClick={() => setShowSettings(true)}
-          className="p-2 hover:bg-gray-100 rounded-md text-gray-600 hover:text-gray-900"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-frost-850 rounded-md text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-frost-100"
           aria-label="Alarminstellingen"
           title="Alarminstellingen"
         >
@@ -800,7 +803,7 @@ const ColdCellDetail: React.FC = () => {
           <>
             <ResponsiveContainer width="100%" height={340}>
               <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 30 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
                 <XAxis
                   dataKey="timeLabel"
                   tick={{ fontSize: 11 }}
@@ -892,7 +895,7 @@ const ColdCellDetail: React.FC = () => {
             <>
               <ResponsiveContainer width="100%" height={340}>
                 <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
                   <XAxis
                     dataKey="timeLabel"
                     tick={{ fontSize: 11 }}

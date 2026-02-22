@@ -90,6 +90,10 @@ bool CarelProtocol::writeDigital(int varIndex, uint8_t value) {
         logger.info("Carel RX: ACK (OK)");
         return true;
       }
+      if (r == 0x00) {
+        logger.info("Carel RX: 0x00 (OK, sommige PJEZ-varianten)");
+        return true;
+      }
       if (r == 0x15) {
         logger.warn("Carel RX: NAK (fout)");
         return false;
@@ -128,6 +132,10 @@ bool CarelProtocol::writeInteger(int varIndex, int value) {
       uint8_t r = serial->read();
       if (r == 0x06) {
         logger.info("Carel RX: ACK (OK)");
+        return true;
+      }
+      if (r == 0x00) {
+        logger.info("Carel RX: 0x00 (OK, sommige PJEZ-varianten)");
         return true;
       }
       if (r == 0x15) {
