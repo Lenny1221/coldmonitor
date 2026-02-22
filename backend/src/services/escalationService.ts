@@ -29,12 +29,13 @@ export type AlertWithRelations = Awaited<
     id: string;
     name: string;
     location: {
-      customer: {
+        customer: {
         id: string;
         companyName: string;
         email: string;
         phone: string | null;
         backupPhone: string | null;
+        backupContacts?: Array<{ name?: string; phone: string; addedBy?: string }> | null;
         openingTime: string;
         closingTime: string;
         nightStart: string;
