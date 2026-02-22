@@ -2,7 +2,22 @@
 #include "logger.h"
 #include <HardwareSerial.h>
 
+extern Logger logger;
+
 #define RESPONSE_TIMEOUT_MS 500
+#define CAREL_DEBUG 1  // Zet op 0 om debug uit te zetten
+
+static void logHex(const char* prefix, uint8_t* data, int len) {
+#if CAREL_DEBUG
+  String s = String(prefix);
+  for (int i = 0; i < len; i++) {
+    if (data[i] < 16) s += "0";
+    s += String(data[i], HEX);
+    s += " ";
+  }
+  logger.info(s);
+#endif
+}
 
 CarelProtocol::CarelProtocol() : serial(nullptr), dePin(0), address(1), initialized(false) {}
 
@@ -56,19 +71,30 @@ bool CarelProtocol::writeDigital(int varIndex, uint8_t value) {
   msg[6] = value;
   msg[7] = carelCRC(msg, 7);
 
+  logger.info("Carel TX (WriteD var " + String(varIndex) + "):");
+  logHex("  ", msg, 8);
   flushRx();
   txMode();
   serial->write(msg, 8);
+  serial->flush();
   rxMode();
 
   unsigned long t = millis();
   while (millis() - t < RESPONSE_TIMEOUT_MS) {
     if (serial->available()) {
       uint8_t r = serial->read();
-      if (r == 0x06) return true;
-      if (r == 0x15) return false;
+      if (r == 0x06) {
+        logger.info("Carel RX: ACK (OK)");
+        return true;
+      }
+      if (r == 0x15) {
+        logger.warn("Carel RX: NAK (fout)");
+        return false;
+      }
+      logger.info("Carel RX: onbekend byte 0x" + String(r, HEX));
     }
   }
+  logger.warn("Carel RX: TIMEOUT - geen antwoord (check A/B bekabeling)");
   return false;
 }
 
@@ -85,19 +111,30 @@ bool CarelProtocol::writeInteger(int varIndex, int value) {
   msg[7] = value & 0xFF;
   msg[8] = carelCRC(msg, 8);
 
+  logger.info("Carel TX (WriteI var " + String(varIndex) + "=" + String(value) + "):");
+  logHex("  ", msg, 9);
   flushRx();
   txMode();
   serial->write(msg, 9);
+  serial->flush();
   rxMode();
 
   unsigned long t = millis();
   while (millis() - t < RESPONSE_TIMEOUT_MS) {
     if (serial->available()) {
       uint8_t r = serial->read();
-      if (r == 0x06) return true;
-      if (r == 0x15) return false;
+      if (r == 0x06) {
+        logger.info("Carel RX: ACK (OK)");
+        return true;
+      }
+      if (r == 0x15) {
+        logger.warn("Carel RX: NAK (fout)");
+        return false;
+      }
+      logger.info("Carel RX: onbekend byte 0x" + String(r, HEX));
     }
   }
+  logger.warn("Carel RX: TIMEOUT - geen antwoord (check A/B bekabeling)");
   return false;
 }
 
@@ -112,9 +149,12 @@ int CarelProtocol::readInteger(int varIndex) {
   msg[5] = varIndex & 0xFF;
   msg[6] = carelCRC(msg, 6);
 
+  logger.info("Carel TX (ReadI var " + String(varIndex) + "):");
+  logHex("  ", msg, 7);
   flushRx();
   txMode();
   serial->write(msg, 7);
+  serial->flush();
   rxMode();
 
   uint8_t response[5];
@@ -125,9 +165,18 @@ int CarelProtocol::readInteger(int varIndex) {
       response[received++] = serial->read();
     }
   }
-  if (received < 5) return INT_MIN;
-  if (carelCRC(response, 4) != response[4]) return INT_MIN;
-  return (int16_t)((response[2] << 8) | response[3]);
+  if (received < 5) {
+    logger.warn("Carel RX: TIMEOUT - " + String(received) + " bytes (verwacht 5). Check A/B bekabeling.");
+    return INT_MIN;
+  }
+  logHex("Carel RX: ", response, 5);
+  if (carelCRC(response, 4) != response[4]) {
+    logger.warn("Carel RX: CRC fout");
+    return INT_MIN;
+  }
+  int val = (int16_t)((response[2] << 8) | response[3]);
+  logger.info("Carel: var " + String(varIndex) + " = " + String(val));
+  return val;
 }
 
 float CarelProtocol::readTemperature() {

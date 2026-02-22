@@ -347,6 +347,26 @@ void loop() {
     lastHeartbeat = now;
   }
   
+  // Eenmalige Carel connectietest ~8s na boot (voor Serial Monitor debug)
+  static bool carelTestDone = false;
+  if (!carelTestDone && now > 8000 && config.getCarelProtocolEnabled()) {
+    carelTestDone = true;
+    logger.info("=== CAREL CONNECTIETEST ===");
+    float t = carel.readTemperature();
+    if (!isnan(t)) {
+      logger.info("Carel OK: temperatuur = " + String(t) + " °C");
+    } else {
+      logger.warn("Carel FOUT: geen antwoord. Check A/B bekabeling (probeer groen/wit omwisselen).");
+    }
+    int ty, iv, du;
+    if (carel.readDefrostParams(ty, iv, du)) {
+      logger.info("Carel OK: type=" + String(ty) + " interval=" + String(iv) + "h duur=" + String(du) + "min");
+    } else {
+      logger.warn("Carel FOUT: defrost params niet leesbaar.");
+    }
+    logger.info("=== EINDE CONNECTIETEST ===");
+  }
+  
   // Periodieke API heartbeat (exponentiële backoff bij failure)
   if (WiFi.isConnected() && provisioning.hasAPICredentials()) {
     if (lastApiHeartbeat == 0 || (now - lastApiHeartbeat >= apiRetryBackoff)) {
