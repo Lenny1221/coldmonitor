@@ -35,7 +35,6 @@ export type AlertWithRelations = Awaited<
         email: string;
         phone: string | null;
         backupPhone: string | null;
-        backupContacts?: Array<{ name: string; phone: string }> | null;
         openingTime: string;
         closingTime: string;
         nightStart: string;

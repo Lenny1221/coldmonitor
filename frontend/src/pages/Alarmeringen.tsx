@@ -9,6 +9,7 @@ import {
   XCircleIcon,
   CubeIcon,
   MapPinIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { format, parseISO } from 'date-fns';
 import AlarmSettingsModal from '../components/AlarmSettingsModal';

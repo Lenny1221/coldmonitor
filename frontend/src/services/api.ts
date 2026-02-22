@@ -246,7 +246,8 @@ export const customersApi = {
     openingTime?: string;
     closingTime?: string;
     nightStart?: string;
-    backupContacts?: Array<{ name: string; phone: string }>;
+    backupPhone?: string;
+    backupContacts?: { name: string; phone: string; addedBy?: string }[];
   }) => {
     const response = await api.patch('/customers/me/settings', data);
     return response.data;

@@ -68,18 +68,19 @@ router.get('/search', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (re
 router.patch('/me/settings', requireAuth, requireRole('CUSTOMER'), async (req: AuthRequest, res) => {
   try {
     const customerId = req.customerId!;
-    const { openingTime, closingTime, nightStart, backupContacts } = req.body;
+    const { openingTime, closingTime, nightStart, backupPhone, backupContacts } = req.body;
 
     const data: Record<string, unknown> = {};
     if (typeof openingTime === 'string' && /^\d{1,2}:\d{2}$/.test(openingTime)) data.openingTime = openingTime;
     if (typeof closingTime === 'string' && /^\d{1,2}:\d{2}$/.test(closingTime)) data.closingTime = closingTime;
     if (typeof nightStart === 'string' && /^\d{1,2}:\d{2}$/.test(nightStart)) data.nightStart = nightStart;
+    if (typeof backupPhone === 'string') data.backupPhone = backupPhone.trim() || null;
     if (Array.isArray(backupContacts)) {
-      const valid = backupContacts.filter(
-        (c: any) => c && typeof c.phone === 'string' && c.phone.trim()
-      ).map((c: any) => ({ name: String(c.name || '').trim(), phone: String(c.phone).trim() }));
-      data.backupContacts = valid;
-      data.backupPhone = valid[0]?.phone || null;
+      data.backupContacts = backupContacts.map((c: { name?: string; phone?: string; addedBy?: string }) => ({
+        name: typeof c.name === 'string' ? c.name.trim() : '',
+        phone: typeof c.phone === 'string' ? c.phone.trim() : '',
+        addedBy: typeof c.addedBy === 'string' ? c.addedBy.trim() : undefined,
+      })).filter((c: { phone: string }) => c.phone);
     }
 
     if (Object.keys(data).length === 0) {

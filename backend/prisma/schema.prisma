@@ -123,8 +123,8 @@ model Customer {
   contactName   String
   email         String   @unique
   phone         String?
-  backupPhone   String?  // Legacy: eerste backup (wordt gesynchroniseerd met backupContacts)
-  backupContacts Json?   // [{ name, phone }, ...] - lijst backup contacten
+  backupPhone   String?  // Vervangcontact voor escalatie (legacy)
+  backupContacts Json?  // [{ name, phone, addedBy }] - lijst backup contacten met wie ze toevoegde
   address       String?
   openingTime   String   @default("07:00")  // Openingstijd, bijv. 07:00
   closingTime   String   @default("17:00")  // Sluitingstijd, bijv. 17:00

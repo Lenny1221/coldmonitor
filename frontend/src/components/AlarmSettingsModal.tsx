@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PlusIcon, TrashIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { customersApi } from '../services/api';
 import { getErrorMessage } from '../services/api';
 
@@ -30,6 +30,7 @@ const LAYER_INFO = [
 interface BackupContact {
   name: string;
   phone: string;
+  addedBy?: string;
 }
 
 interface AlarmSettingsModalProps {
@@ -57,6 +58,7 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({ onClose }) => {
         setOpeningTime(data.openingTime ?? '07:00');
         setClosingTime(data.closingTime ?? '17:00');
         setNightStart(data.nightStart ?? '23:00');
+        setContactName(data.contactName ?? '');
         if (Array.isArray(data.backupContacts) && data.backupContacts.length > 0) {
           setBackupContacts(
             data.backupContacts.map((c: { name?: string; phone?: string }) => ({
@@ -78,13 +80,7 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({ onClose }) => {
     load();
   }, []);
 
-  const handleAddBackup = () => {
-    const phone = newPhone.trim();
-    if (!phone) return;
-    setBackupContacts((prev) => [...prev, { name: newName.trim(), phone }]);
-    setNewName('');
-    setNewPhone('');
-  };
+  const [contactName, setContactName] = useState('');
 
   const handleRemoveBackup = (index: number) => {
     setBackupContacts((prev) => prev.filter((_, i) => i !== index));
@@ -100,7 +96,11 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({ onClose }) => {
         openingTime,
         closingTime,
         nightStart,
-        backupContacts: backupContacts.filter((c) => c.phone.trim()),
+        backupContacts: backupContacts.filter((c) => c.phone.trim()).map((c) => ({
+          name: c.name,
+          phone: c.phone,
+          addedBy: c.addedBy,
+        })),
       });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -115,7 +115,8 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({ onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-white dark:bg-frost-800 rounded-xl shadow-xl dark:shadow-[0_0_32px_rgba(0,0,0,0.4)] max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-[rgba(100,200,255,0.12)]">
         <div className="sticky top-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-[rgba(100,200,255,0.12)] bg-white dark:bg-frost-800 z-10">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-frost-100">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-frost-100 flex items-center gap-2">
+            <Cog6ToothIcon className="h-6 w-6 text-gray-600 dark:text-slate-400" />
             Instellingen alarmering
           </h2>
           <button
@@ -257,9 +258,14 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({ onClose }) => {
                         key={i}
                         className="flex items-center justify-between px-3 py-2 text-sm text-gray-900 dark:text-frost-100"
                       >
-                        <span>
-                          {c.name ? `${c.name} – ` : ''}{c.phone}
-                        </span>
+                        <div>
+                          <span>{c.name ? `${c.name} – ` : ''}{c.phone}</span>
+                          {c.addedBy && (
+                            <span className="block text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                              Toegevoegd door: {c.addedBy}
+                            </span>
+                          )}
+                        </div>
                         <button
                           type="button"
                           onClick={() => handleRemoveBackup(i)}

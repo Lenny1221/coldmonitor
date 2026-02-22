@@ -264,50 +264,50 @@ const Login: React.FC = () => {
                 <div className="text-sm text-amber-800 dark:text-amber-300">{errorMsg}</div>
               </div>
             )}
-            {error && (
+          {error && (
               <div className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
                 <div className="text-sm text-red-800 dark:text-red-300">{typeof error === 'string' ? error : 'Er is iets misgegaan'}</div>
-              </div>
-            )}
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="email" className="sr-only">
-                  Email address
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
+            </div>
+          )}
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="email" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
                   className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-400 text-gray-900 dark:text-frost-100 bg-white dark:bg-frost-850 rounded-t-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] focus:z-10 sm:text-sm"
                   placeholder="E-mailadres"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
                   className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] placeholder-gray-400 dark:placeholder-slate-400 text-gray-900 dark:text-frost-100 bg-white dark:bg-frost-850 rounded-b-md focus:outline-none focus:ring-[#0080ff] focus:border-[#0080ff] focus:z-10 sm:text-sm"
                   placeholder="Wachtwoord"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
+          </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
                 className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-semibold rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 style={{ background: 'linear-gradient(135deg, #00c8ff 0%, #0080ff 100%)' }}
               >
@@ -682,9 +682,9 @@ const Login: React.FC = () => {
                     className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-semibold rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all" style={{ background: "linear-gradient(135deg, #00c8ff 0%, #0080ff 100%)" }}
                   >
                     {loading ? 'Account aanmaken...' : 'Technicus account aanmaken'}
-                  </button>
-                </div>
-              </form>
+            </button>
+          </div>
+        </form>
             )}
 
             <div className="text-center">
