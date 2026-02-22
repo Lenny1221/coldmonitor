@@ -83,6 +83,14 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({ onClose }) => {
 
   const [contactName, setContactName] = useState('');
 
+  const handleAddBackup = () => {
+    const phone = newPhone.trim();
+    if (!phone) return;
+    setBackupContacts((prev) => [...prev, { name: newName.trim(), phone, addedBy: contactName || undefined }]);
+    setNewName('');
+    setNewPhone('');
+  };
+
   const handleRemoveBackup = (index: number) => {
     setBackupContacts((prev) => prev.filter((_, i) => i !== index));
   };
