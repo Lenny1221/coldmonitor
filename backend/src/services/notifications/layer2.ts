@@ -45,12 +45,11 @@ export async function sendLayer2Notifications(alert: AlertWithRelations): Promis
     await logEscalation(alert.id, 'LAYER_2', 'E-mail herhaling naar klant', 'CLIENT', 'EMAIL');
   }
 
-  // Backup contact: SMS
-  if (customer?.backupPhone) {
-    await sendSms(
-      customer.backupPhone,
-      `IntelliFrost: ${customer.companyName} – Alarm ${coldCellName}. Neem contact op.`
-    );
+  // Backup contacten: SMS
+  const backupList = (customer?.backupContacts as Array<{ phone: string }> | null)?.filter((c) => c?.phone) ?? [];
+  const backupPhones = backupList.length > 0 ? backupList.map((c) => c.phone) : (customer?.backupPhone ? [customer.backupPhone] : []);
+  for (const phone of backupPhones) {
+    await sendSms(phone, `IntelliFrost: ${customer?.companyName} – Alarm ${coldCellName}. Neem contact op.`);
     await logEscalation(alert.id, 'LAYER_2', 'SMS naar backup contact', 'CLIENT', 'SMS');
   }
 

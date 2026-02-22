@@ -68,15 +68,18 @@ router.get('/search', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (re
 router.patch('/me/settings', requireAuth, requireRole('CUSTOMER'), async (req: AuthRequest, res) => {
   try {
     const customerId = req.customerId!;
-    const { openingTime, closingTime, nightStart, backupPhone, escalationConfig } = req.body;
+    const { openingTime, closingTime, nightStart, backupContacts } = req.body;
 
     const data: Record<string, unknown> = {};
     if (typeof openingTime === 'string' && /^\d{1,2}:\d{2}$/.test(openingTime)) data.openingTime = openingTime;
     if (typeof closingTime === 'string' && /^\d{1,2}:\d{2}$/.test(closingTime)) data.closingTime = closingTime;
     if (typeof nightStart === 'string' && /^\d{1,2}:\d{2}$/.test(nightStart)) data.nightStart = nightStart;
-    if (typeof backupPhone === 'string') data.backupPhone = backupPhone.trim() || null;
-    if (escalationConfig && typeof escalationConfig === 'object') {
-      data.escalationConfig = escalationConfig;
+    if (Array.isArray(backupContacts)) {
+      const valid = backupContacts.filter(
+        (c: any) => c && typeof c.phone === 'string' && c.phone.trim()
+      ).map((c: any) => ({ name: String(c.name || '').trim(), phone: String(c.phone).trim() }));
+      data.backupContacts = valid;
+      data.backupPhone = valid[0]?.phone || null;
     }
 
     if (Object.keys(data).length === 0) {

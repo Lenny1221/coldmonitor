@@ -30,10 +30,12 @@ export async function sendLayer3Notifications(alert: AlertWithRelations): Promis
     }
   }
 
-  // Backup contact parallel
-  if (customer?.backupPhone) {
+  // Backup contacten parallel
+  const backupList = (customer?.backupContacts as Array<{ phone: string }> | null)?.filter((c) => c?.phone) ?? [];
+  const backupPhones = backupList.length > 0 ? backupList.map((c) => c.phone) : (customer?.backupPhone ? [customer.backupPhone] : []);
+  for (const phone of backupPhones) {
     const backupVoiceUrl = `${apiUrl}/api/twilio/voice/${alert.id}?backup=1`;
-    await initiatePhoneCall(customer.backupPhone, backupVoiceUrl);
+    await initiatePhoneCall(phone, backupVoiceUrl);
     await logEscalation(alert.id, 'LAYER_3', 'Telefoon naar backup contact', 'CLIENT', 'PHONE');
   }
 

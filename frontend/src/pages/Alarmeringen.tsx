@@ -9,10 +9,8 @@ import {
   XCircleIcon,
   CubeIcon,
   MapPinIcon,
-  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { format, parseISO } from 'date-fns';
-import LayerInfoCard from '../components/LayerInfoCard';
 import AlarmSettingsModal from '../components/AlarmSettingsModal';
 
 type AlertFilter = 'all' | 'active' | 'resolved';
@@ -127,9 +125,6 @@ const Alarmeringen: React.FC = () => {
           </button>
         )}
       </div>
-
-      {/* Layer-uitleg */}
-      <LayerInfoCard showSettingsLink={false} />
 
       {/* Samenvatting */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
