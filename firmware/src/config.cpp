@@ -17,6 +17,7 @@ void ConfigManager::setDefaults() {
   configDoc["apiUrl"] = DEFAULT_API_URL;
   configDoc["apiKey"] = DEFAULT_API_KEY;
   configDoc["modbusEnabled"] = DEFAULT_MODBUS_ENABLED;
+  configDoc["carelProtocolEnabled"] = DEFAULT_CAREL_PROTOCOL_ENABLED;
   configDoc["modbusInterval"] = DEFAULT_MODBUS_INTERVAL;
   configDoc["deepSleepEnabled"] = DEFAULT_DEEP_SLEEP_ENABLED;
   configDoc["deepSleepDuration"] = DEFAULT_DEEP_SLEEP_DURATION;
@@ -231,6 +232,14 @@ void ConfigManager::setAPIKey(String key) {
     Serial.println("WARNING: Attempted to set empty API Key!");
     // Don't set empty key - keep existing value
   }
+}
+
+bool ConfigManager::getCarelProtocolEnabled() {
+  return configDoc["carelProtocolEnabled"] | DEFAULT_CAREL_PROTOCOL_ENABLED;
+}
+
+void ConfigManager::setCarelProtocolEnabled(bool enabled) {
+  configDoc["carelProtocolEnabled"] = enabled;
 }
 
 bool ConfigManager::getModbusEnabled() {

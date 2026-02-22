@@ -17,6 +17,7 @@
 #define DEFAULT_API_URL FIXED_API_URL
 #define DEFAULT_API_KEY ""
 #define DEFAULT_MODBUS_ENABLED false
+#define DEFAULT_CAREL_PROTOCOL_ENABLED false  // true voor Carel PJEZ (supervisie 1200 8N2)
 #define DEFAULT_MODBUS_INTERVAL 30         // seconds
 #define DEFAULT_DEEP_SLEEP_ENABLED false
 #define DEFAULT_DEEP_SLEEP_DURATION 3600   // seconds (1 hour)
@@ -74,6 +75,10 @@ public:
   String getAPIKey();
   void setAPIKey(String key);
   
+  // Modbus / Carel protocol
+  bool getCarelProtocolEnabled();
+  void setCarelProtocolEnabled(bool enabled);
+
   // Modbus settings
   bool getModbusEnabled();
   void setModbusEnabled(bool enabled);

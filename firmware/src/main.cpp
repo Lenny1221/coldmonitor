@@ -16,6 +16,7 @@
 #include "sensors.h"
 #include "max31865_driver.h"
 #include "rs485_modbus.h"
+#include "carel_protocol.h"
 #include "data_buffer.h"
 #include "wifi_manager.h"
 #include "api_client.h"
@@ -35,6 +36,7 @@ ResetButtonHandler resetButton(DEFAULT_BOOT_PIN, DEFAULT_RESET_PIN, BOOT_WINDOW_
 Sensors sensors;
 MAX31865Driver tempSensor;
 RS485Modbus modbus;
+CarelProtocol carel;
 DataBuffer dataBuffer;
 WiFiManagerWrapper wifiManager;
 APIClient apiClient;
@@ -216,8 +218,16 @@ void setup() {
     logger.info("MAX31865 initialized");
   }
   
-  // Initialize RS485/Modbus (optional)
-  if (config.getModbusEnabled()) {
+  // Initialize RS485: Carel PJEZ (supervisie) OF Modbus RTU
+  bool carelMode = config.getCarelProtocolEnabled();
+  if (carelMode) {
+    ModbusConfig mcfg = config.getModbusConfig();
+    if (carel.init(mcfg.rxPin, mcfg.txPin, mcfg.dePin)) {
+      logger.info("RS485/Carel PJEZ protocol initialized (1200 8N2)");
+    } else {
+      logger.error("Carel protocol init failed!");
+    }
+  } else if (config.getModbusEnabled()) {
     if (modbus.init(config.getModbusConfig())) {
       logger.info("RS485/Modbus initialized");
     } else {
@@ -252,7 +262,7 @@ void setup() {
     1
   );
   
-  if (config.getModbusEnabled()) {
+  if (config.getModbusEnabled() && !config.getCarelProtocolEnabled()) {
     xTaskCreatePinnedToCore(
       modbusTask,
       "ModbusTask",
@@ -274,9 +284,8 @@ void setup() {
     0
   );
   
-  // Command task for handling RS485 commands (only if Modbus is enabled)
-  // Note: Task will check conditions internally, but we only create it if Modbus might be used
-  if (config.getModbusEnabled()) {
+  // Command task for RS485 commands (Modbus or Carel PJEZ)
+  if (config.getModbusEnabled() || config.getCarelProtocolEnabled()) {
     xTaskCreatePinnedToCore(
       commandTask,
       "CommandTask",
@@ -648,8 +657,10 @@ void commandTask(void *parameter) {
       lastWatchdogFeed = now;
     }
     
-    // Only check if WiFi is connected and Modbus is enabled
-    if (WiFi.isConnected() && config.getModbusEnabled() && config.getModbusWriteEnabled()) {
+    // Only check if WiFi connected and RS485 enabled (Modbus or Carel)
+    bool rs485Active = config.getModbusEnabled() || config.getCarelProtocolEnabled();
+    bool writeAllowed = config.getCarelProtocolEnabled() || config.getModbusWriteEnabled();
+    if (WiFi.isConnected() && rs485Active && writeAllowed) {
       if (now - lastCheck >= checkInterval) {
         lastCheck = now;
         logger.info("Command task: polling for pending commands");
@@ -675,67 +686,98 @@ void commandTask(void *parameter) {
             lastCommandTime = now;
             
             bool success = false;
-            DynamicJsonDocument result(512); // Increased size
-            
-            if (commandType == "DEFROST_START") {
-              // Carel PZD2S0P001: probeer register 6, dan coil 2 (Carel booleans bij 2), dan coil 6
-              logger.info("Executing DEFROST_START command...");
-              logger.info("========== ONTDOOIING DIAGNOSTIEK ==========");
-              ModbusConfig mcfg = config.getModbusConfig();
-              logger.info("Config: Slave ID=" + String(mcfg.slaveId) + ", Baud=" + String(mcfg.baudRate) + ", RX=" + String(mcfg.rxPin) + " TX=" + String(mcfg.txPin) + " DE/RE=" + String(mcfg.dePin));
-              logger.info("Poging 1: Register " + String(DEFROST_REG_ADDR) + " (FC06)...");
-              modbus.setDefrostDebug(true);
-              if (modbus.writeSingleRegister(DEFROST_REG_ADDR, 1)) {
-                logger.info("Defrost (register " + String(DEFROST_REG_ADDR) + ") - SUCCESS");
-                success = true;
-                result["status"] = "defrost_started";
-                delay(100);
-              } else {
-                logger.info("  -> geen antwoord");
-                logger.info("Poging 2: Coil " + String(DEFROST_COIL_ADDR) + " (FC05)...");
-                if (modbus.writeSingleCoil(DEFROST_COIL_ADDR, true)) {
-                  logger.info("Defrost (coil " + String(DEFROST_COIL_ADDR) + ") - SUCCESS");
+            DynamicJsonDocument result(512);
+            bool useCarel = config.getCarelProtocolEnabled();
+
+            if (useCarel) {
+              // Carel PJEZ supervisie protocol
+              if (commandType == "DEFROST_START") {
+                logger.info("Carel: DEFROST_START");
+                success = carel.startDefrost();
+                if (success) result["status"] = "defrost_started";
+                else result["error"] = "Carel defrost start failed";
+              } else if (commandType == "DEFROST_STOP") {
+                logger.info("Carel: DEFROST_STOP");
+                success = carel.stopDefrost();
+                if (success) result["status"] = "defrost_stopped";
+                else result["error"] = "Carel defrost stop failed";
+              } else if (commandType == "READ_TEMPERATURE") {
+                logger.info("Carel: READ_TEMPERATURE");
+                float temp = carel.readTemperature();
+                if (!isnan(temp)) {
                   success = true;
-                  result["status"] = "defrost_started";
-                  delay(100);
+                  result["temperature"] = temp;
+                  logger.info("Carel temp: " + String(temp) + " °C");
                 } else {
-                  logger.info("  -> geen antwoord");
-                  logger.info("Poging 3: Coil " + String(DEFROST_REG_ADDR) + " (FC05)...");
-                  if (modbus.writeSingleCoil(DEFROST_REG_ADDR, true)) {
-                    logger.info("Defrost (coil " + String(DEFROST_REG_ADDR) + ") - SUCCESS");
-                    success = true;
-                    result["status"] = "defrost_started";
-                    delay(100);
-                  } else {
-                    logger.info("  -> geen antwoord");
-                    logger.error("Defrost failed: alle 3 pogingen faalden");
-                    result["error"] = "RS485 write failed. Zie Serial Monitor voor diagnostiek.";
-                  }
+                  result["error"] = "Carel temperature read failed";
                 }
-              }
-              modbus.setDefrostDebug(false);
-              if (!success) {
-                logger.info("===========================================");
-                logger.info("Lees README 'Ontdooiing werkt niet' + 'RS485 hardware check'");
-              }
-            } else if (commandType == "READ_TEMPERATURE") {
-              // Read temperature via RS485
-              logger.info("Executing READ_TEMPERATURE command...");
-              if (modbus.readInputRegisters(0x0000, 2)) {
-                float temp = modbus.getFloat(0);
-                logger.info("RS485 temperature read: " + String(temp) + " °C");
-                success = true;
-                result["temperature"] = temp;
+              } else if (commandType == "READ_DEFROST_PARAMS") {
+                logger.info("Carel: READ_DEFROST_PARAMS");
+                int type, interval, duration;
+                if (carel.readDefrostParams(type, interval, duration)) {
+                  success = true;
+                  result["defrostType"] = type;
+                  result["defrostInterval"] = interval;
+                  result["defrostDuration"] = duration;
+                } else {
+                  result["error"] = "Carel read params failed";
+                }
+              } else if (commandType == "SET_DEFROST_INTERVAL") {
+                int hours = parametersDoc["hours"] | 6;
+                logger.info("Carel: SET_DEFROST_INTERVAL " + String(hours));
+                success = carel.setDefrostInterval(hours);
+                if (success) result["status"] = "ok";
+                else result["error"] = "Carel set interval failed";
+              } else if (commandType == "SET_DEFROST_DURATION") {
+                int minutes = parametersDoc["minutes"] | 20;
+                logger.info("Carel: SET_DEFROST_DURATION " + String(minutes));
+                success = carel.setDefrostDuration(minutes);
+                if (success) result["status"] = "ok";
+                else result["error"] = "Carel set duration failed";
+              } else if (commandType == "SET_DEFROST_TYPE") {
+                int type = parametersDoc["type"] | 0;
+                logger.info("Carel: SET_DEFROST_TYPE " + String(type));
+                success = carel.setDefrostType(type);
+                if (success) result["status"] = "ok";
+                else result["error"] = "Carel set type failed";
               } else {
-                logger.error("Failed to read temperature via RS485");
-                result["error"] = "RS485 read failed";
+                logger.warn("Carel: unknown command " + commandType);
+                result["error"] = "Unknown command type";
               }
             } else {
-              logger.warn("Unknown command type: " + commandType);
-              result["error"] = "Unknown command type";
+              // Modbus RTU (Carel PZD2S0P001 of andere)
+              if (commandType == "DEFROST_START") {
+                logger.info("Executing DEFROST_START command...");
+                modbus.setDefrostDebug(true);
+                if (modbus.writeSingleRegister(DEFROST_REG_ADDR, 1)) {
+                  success = true;
+                  result["status"] = "defrost_started";
+                } else if (modbus.writeSingleCoil(DEFROST_COIL_ADDR, true)) {
+                  success = true;
+                  result["status"] = "defrost_started";
+                } else if (modbus.writeSingleCoil(DEFROST_REG_ADDR, true)) {
+                  success = true;
+                  result["status"] = "defrost_started";
+                } else {
+                  result["error"] = "RS485 write failed. Zie Serial Monitor.";
+                }
+                modbus.setDefrostDebug(false);
+              } else if (commandType == "READ_TEMPERATURE") {
+                logger.info("Executing READ_TEMPERATURE command...");
+                if (modbus.readInputRegisters(0x0000, 2)) {
+                  float temp = modbus.getFloat(0);
+                  success = true;
+                  result["temperature"] = temp;
+                } else {
+                  result["error"] = "RS485 read failed";
+                }
+              } else {
+                logger.warn("Unknown command type: " + commandType);
+                result["error"] = "Unknown command type";
+              }
             }
-            
-            // Report command completion (only if we have enough memory)
+
+            // Report command completion
             if (ESP.getFreeHeap() > 5000) {
               DynamicJsonDocument resultDoc(512);
               if (result.containsKey("status")) {
@@ -743,6 +785,15 @@ void commandTask(void *parameter) {
               }
               if (result.containsKey("temperature")) {
                 resultDoc["temperature"] = result["temperature"].as<float>();
+              }
+              if (result.containsKey("defrostType")) {
+                resultDoc["defrostType"] = result["defrostType"].as<int>();
+              }
+              if (result.containsKey("defrostInterval")) {
+                resultDoc["defrostInterval"] = result["defrostInterval"].as<int>();
+              }
+              if (result.containsKey("defrostDuration")) {
+                resultDoc["defrostDuration"] = result["defrostDuration"].as<int>();
               }
               if (result.containsKey("error")) {
                 resultDoc["error"] = result["error"].as<String>();

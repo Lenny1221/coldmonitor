@@ -603,27 +603,55 @@ router.get(
       // Get latest command result for RS485 temperature
       const latestTempCommand = await prisma.deviceCommand.findFirst({
         where: {
-          device: {
-            coldCellId,
-          },
+          device: { coldCellId },
           commandType: 'READ_TEMPERATURE',
           status: 'COMPLETED',
         },
-        orderBy: {
-          executedAt: 'desc',
-        },
+        orderBy: { executedAt: 'desc' },
       });
 
-      const result = latestTempCommand?.result;
+      // Get latest defrost params (READ_DEFROST_PARAMS)
+      const latestParamsCommand = await prisma.deviceCommand.findFirst({
+        where: {
+          device: { coldCellId },
+          commandType: 'READ_DEFROST_PARAMS',
+          status: 'COMPLETED',
+        },
+        orderBy: { executedAt: 'desc' },
+      });
+
+      const tempResult = latestTempCommand?.result;
       const rs485Temperature =
-        result && typeof result === 'object' && 'temperature' in result
-          ? (result as { temperature?: number }).temperature ?? null
+        tempResult && typeof tempResult === 'object' && 'temperature' in tempResult
+          ? (tempResult as { temperature?: number }).temperature ?? null
           : null;
+
+      const paramsResult = latestParamsCommand?.result;
+      const defrostType =
+        paramsResult && typeof paramsResult === 'object' && 'defrostType' in paramsResult
+          ? (paramsResult as { defrostType?: number }).defrostType ?? null
+          : null;
+      const defrostInterval =
+        paramsResult && typeof paramsResult === 'object' && 'defrostInterval' in paramsResult
+          ? (paramsResult as { defrostInterval?: number }).defrostInterval ?? null
+          : null;
+      const defrostDuration =
+        paramsResult && typeof paramsResult === 'object' && 'defrostDuration' in paramsResult
+          ? (paramsResult as { defrostDuration?: number }).defrostDuration ?? null
+          : null;
+
+      const lastUpdate =
+        [latestTempCommand?.executedAt, latestParamsCommand?.executedAt]
+          .filter(Boolean)
+          .sort((a, b) => (b?.getTime() ?? 0) - (a?.getTime() ?? 0))[0] || null;
 
       res.json({
         rs485Temperature,
+        defrostType,
+        defrostInterval,
+        defrostDuration,
         deviceOnline: coldCell.devices.length > 0,
-        lastUpdate: latestTempCommand?.executedAt || null,
+        lastUpdate,
       });
     } catch (error) {
       next(error);

@@ -320,6 +320,14 @@ De verbinding met de backend faalt vóór of tijdens het sturen van de request. 
 - Check DE/RE pin configuration
 - Use serial monitor to debug
 
+### Carel PJEZ (supervisie protocol)
+
+Voor **Carel PJEZ Easy Cool** (PZD2S0P001) met het **Carel supervisie protocol** (1200 baud, 8N2):
+
+1. Zet `carelProtocolEnabled: true` in de config (NVS). Dit kan via de Serial Monitor of door de default in `config.cpp` aan te passen.
+2. Dezelfde pinnen als Modbus: RX=16, TX=17, DE=4.
+3. Ondersteunde commando's vanuit de app: Defrost start/stop, temperatuur uitlezen, defrost parameters (type, interval, duur) lezen en instellen.
+
 ### RS485 hardware check (ontdooiing / Modbus)
 
 Controleer de bekabeling als ontdooiing niet werkt:

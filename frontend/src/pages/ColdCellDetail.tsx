@@ -51,9 +51,19 @@ const ColdCellDetail: React.FC = () => {
   const [showAddLogger, setShowAddLogger] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [resolveAlert, setResolveAlert] = useState<any | null>(null);
-  const [rs485Status, setRs485Status] = useState<{ rs485Temperature: number | null; deviceOnline: boolean; lastUpdate: string | null } | null>(null);
+  const [rs485Status, setRs485Status] = useState<{
+    rs485Temperature: number | null;
+    defrostType: number | null;
+    defrostInterval: number | null;
+    defrostDuration: number | null;
+    deviceOnline: boolean;
+    lastUpdate: string | null;
+  } | null>(null);
   const [defrostLoading, setDefrostLoading] = useState(false);
+  const [paramsLoading, setParamsLoading] = useState(false);
   const [pushDoorLoading, setPushDoorLoading] = useState(false);
+  const [showParamsModal, setShowParamsModal] = useState(false);
+  const [paramsForm, setParamsForm] = useState({ interval: 6, duration: 20, type: 0 });
 
   useEffect(() => {
     if (id) {
@@ -83,25 +93,83 @@ const ColdCellDetail: React.FC = () => {
     }
   };
 
+  const getOnlineDevice = () =>
+    coldCell?.devices?.find((d: any) => d.status === 'ONLINE') || coldCell?.devices?.[0];
+
   const handleStartDefrost = async () => {
-    if (!id || !coldCell?.devices || coldCell.devices.length === 0) {
-      alert('Geen online device gevonden voor deze cold cell');
+    if (!id || !coldCell?.devices?.length) {
+      alert('Geen device gevonden voor deze cold cell');
       return;
     }
-
-    const device = coldCell.devices[0]; // Use first device
+    const device = getOnlineDevice();
     setDefrostLoading(true);
     try {
       await devicesApi.sendCommand(device.id, 'DEFROST_START');
-      alert('Ontdooiing gestart! De ESP32 zal het commando binnen ca. 10 seconden uitvoeren. Open pio device monitor om te zien wat er gebeurt.');
-      // Refresh RS485 status after a delay
-      setTimeout(() => {
-        fetchRS485Status();
-      }, 2000);
+      alert('Ontdooiing gestart! Het device voert het commando binnen ca. 10 seconden uit.');
+      setTimeout(() => fetchRS485Status(), 2000);
     } catch (error: any) {
-      alert('Fout bij starten ontdooiing: ' + (error.response?.data?.error || error.message));
+      alert('Fout: ' + (error.response?.data?.error || error.message));
     } finally {
       setDefrostLoading(false);
+    }
+  };
+
+  const handleStopDefrost = async () => {
+    if (!id || !coldCell?.devices?.length) {
+      alert('Geen device gevonden voor deze cold cell');
+      return;
+    }
+    const device = getOnlineDevice();
+    setDefrostLoading(true);
+    try {
+      await devicesApi.sendCommand(device.id, 'DEFROST_STOP');
+      alert('Ontdooiing gestopt. Het device voert het commando binnen ca. 10 seconden uit.');
+      setTimeout(() => fetchRS485Status(), 2000);
+    } catch (error: any) {
+      alert('Fout: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setDefrostLoading(false);
+    }
+  };
+
+  const handleRefreshParams = async () => {
+    if (!id || !coldCell?.devices?.length) {
+      alert('Geen device gevonden voor deze cold cell');
+      return;
+    }
+    const device = getOnlineDevice();
+    setParamsLoading(true);
+    try {
+      await devicesApi.sendCommand(device.id, 'READ_TEMPERATURE');
+      await devicesApi.sendCommand(device.id, 'READ_DEFROST_PARAMS');
+      alert('Temperatuur en parameters worden uitgelezen. Vernieuw over ca. 15 seconden.');
+      setTimeout(() => fetchRS485Status(), 15000);
+    } catch (error: any) {
+      alert('Fout: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setParamsLoading(false);
+    }
+  };
+
+  const handleSetDefrostParams = async () => {
+    if (!id || !coldCell?.devices?.length) {
+      alert('Geen device gevonden voor deze cold cell');
+      return;
+    }
+    const device = getOnlineDevice();
+    const { interval, duration, type } = paramsForm;
+    setParamsLoading(true);
+    try {
+      await devicesApi.sendCommand(device.id, 'SET_DEFROST_INTERVAL', { hours: interval });
+      await devicesApi.sendCommand(device.id, 'SET_DEFROST_DURATION', { minutes: duration });
+      await devicesApi.sendCommand(device.id, 'SET_DEFROST_TYPE', { type });
+      alert('Parameters verstuurd. Het device past ze binnen ca. 30 seconden aan.');
+      setShowParamsModal(false);
+      setTimeout(() => fetchRS485Status(), 35000);
+    } catch (error: any) {
+      alert('Fout: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setParamsLoading(false);
     }
   };
 
@@ -851,70 +919,156 @@ const ColdCellDetail: React.FC = () => {
         </div>
       )}
 
-      {/* RS485 Control Tabel */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">RS485 Besturing</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Functie
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actie
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">RS485 Temperatuur</div>
-                  <div className="text-sm text-gray-500">Carel PZD2S0P001</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {rs485Status ? (
-                    <>
-                      <div className="text-sm font-semibold text-gray-900">
-                        {rs485Status.rs485Temperature != null
-                          ? `${rs485Status.rs485Temperature.toFixed(1)} °C`
-                          : 'Geen data'}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {rs485Status.deviceOnline ? (
-                          <span className="text-green-600">Device online</span>
-                        ) : (
-                          <span className="text-red-600">Device offline</span>
-                        )}
-                        {rs485Status.lastUpdate && (
-                          <> · {format(parseISO(rs485Status.lastUpdate), 'dd/MM HH:mm')}</>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-sm text-gray-500">Laden...</div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={handleStartDefrost}
-                    disabled={defrostLoading || !rs485Status?.deviceOnline}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${
-                      defrostLoading || !rs485Status?.deviceOnline
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                  >
-                    {defrostLoading ? 'Bezig...' : 'Start Ontdooiing'}
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      {/* RS485 / Carel PJEZ Besturing */}
+      <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.3)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.1)]">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-50 mb-4">RS485 / Carel PJEZ Besturing</h2>
+        <div className="space-y-4">
+          {/* Temperatuur + Defrost knoppen */}
+          <div className="flex flex-wrap items-center gap-4 p-4 rounded-lg bg-gray-50 dark:bg-frost-900/50">
+            <div>
+              <div className="text-sm font-medium text-gray-500 dark:text-slate-400">RS485 Temperatuur</div>
+              <div className="text-lg font-semibold text-gray-900 dark:text-frost-50">
+                {rs485Status?.rs485Temperature != null
+                  ? `${rs485Status.rs485Temperature.toFixed(1)} °C`
+                  : '—'}
+              </div>
+            </div>
+            <div className="flex-1" />
+            <div className="flex gap-2">
+              <button
+                onClick={handleStartDefrost}
+                disabled={defrostLoading || !rs485Status?.deviceOnline}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {defrostLoading ? 'Bezig...' : 'Start ontdooiing'}
+              </button>
+              <button
+                onClick={handleStopDefrost}
+                disabled={defrostLoading || !rs485Status?.deviceOnline}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Stop ontdooiing
+              </button>
+            </div>
+          </div>
+
+          {/* Defrost parameters */}
+          <div className="p-4 rounded-lg border border-gray-200 dark:border-[rgba(100,200,255,0.1)]">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-slate-300">Defrost parameters</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRefreshParams}
+                  disabled={paramsLoading || !rs485Status?.deviceOnline}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-200 dark:bg-frost-900 text-gray-700 dark:text-slate-300 hover:bg-gray-300 dark:hover:bg-[rgba(0,150,255,0.1)] disabled:opacity-50"
+                >
+                  {paramsLoading ? 'Bezig...' : 'Vernieuw'}
+                </button>
+                <button
+                  onClick={() => {
+                    setParamsForm({
+                      interval: rs485Status?.defrostInterval ?? 6,
+                      duration: rs485Status?.defrostDuration ?? 20,
+                      type: rs485Status?.defrostType ?? 0,
+                    });
+                    setShowParamsModal(true);
+                  }}
+                  disabled={!rs485Status?.deviceOnline}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium bg-[#0080ff] text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  Parameters aanpassen
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500 dark:text-slate-400">Type</span>
+                <div className="font-medium text-gray-900 dark:text-frost-50">
+                  {rs485Status?.defrostType != null
+                    ? `${rs485Status.defrostType} (${rs485Status.defrostType <= 1 ? 'temperatuur' : 'tijd'})`
+                    : '—'}
+                </div>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-slate-400">Interval</span>
+                <div className="font-medium text-gray-900 dark:text-frost-50">
+                  {rs485Status?.defrostInterval != null ? `${rs485Status.defrostInterval} uur` : '—'}
+                </div>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-slate-400">Max duur</span>
+                <div className="font-medium text-gray-900 dark:text-frost-50">
+                  {rs485Status?.defrostDuration != null ? `${rs485Status.defrostDuration} min` : '—'}
+                </div>
+              </div>
+            </div>
+            {rs485Status?.lastUpdate && (
+              <div className="mt-2 text-xs text-gray-500 dark:text-slate-500">
+                Laatste update: {format(parseISO(rs485Status.lastUpdate), 'dd/MM HH:mm')}
+                {rs485Status.deviceOnline ? (
+                  <span className="ml-2 text-green-600 dark:text-green-400">· Device online</span>
+                ) : (
+                  <span className="ml-2 text-red-600 dark:text-red-400">· Device offline</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Parameters aanpassen modal */}
+        {showParamsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowParamsModal(false)}>
+            <div className="bg-white dark:bg-frost-800 rounded-xl shadow-xl p-6 w-full max-w-md border border-gray-200 dark:border-[rgba(100,200,255,0.1)]" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-50 mb-4">Defrost parameters aanpassen</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Interval (uur)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={199}
+                    value={paramsForm.interval}
+                    onChange={e => setParamsForm(f => ({ ...f, interval: parseInt(e.target.value, 10) || 0 }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg bg-white dark:bg-frost-900 text-gray-900 dark:text-frost-50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Max duur (minuten)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={199}
+                    value={paramsForm.duration}
+                    onChange={e => setParamsForm(f => ({ ...f, duration: parseInt(e.target.value, 10) || 1 }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg bg-white dark:bg-frost-900 text-gray-900 dark:text-frost-50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Type (0–4)</label>
+                  <select
+                    value={paramsForm.type}
+                    onChange={e => setParamsForm(f => ({ ...f, type: parseInt(e.target.value, 10) }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-lg bg-white dark:bg-frost-900 text-gray-900 dark:text-frost-50"
+                  >
+                    <option value={0}>0 – Temperatuur</option>
+                    <option value={1}>1 – Temperatuur</option>
+                    <option value={2}>2 – Tijd</option>
+                    <option value={3}>3 – Tijd</option>
+                    <option value={4}>4 – Tijd</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-6 flex gap-3 justify-end">
+                <button onClick={() => setShowParamsModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-frost-900 text-gray-700 dark:text-slate-300">
+                  Annuleren
+                </button>
+                <button onClick={handleSetDefrostParams} disabled={paramsLoading} className="px-4 py-2 rounded-lg text-sm font-medium bg-[#0080ff] text-white hover:opacity-90 disabled:opacity-50">
+                  {paramsLoading ? 'Bezig...' : 'Opslaan'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
