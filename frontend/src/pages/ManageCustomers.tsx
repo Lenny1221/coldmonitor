@@ -207,7 +207,7 @@ const ManageCustomers: React.FC = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Manage Customers</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Manage Customers</h1>
           <p className="mt-1 text-sm text-gray-600">
             Link customers to view and manage their cold cells
           </p>
@@ -216,7 +216,7 @@ const ManageCustomers: React.FC = () => {
 
       {/* Add Customer Section */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Klant toevoegen</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">Klant toevoegen</h2>
         <div className="relative" ref={dropdownRef}>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -253,7 +253,7 @@ const ManageCustomers: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center">
                         <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2" />
-                        <div className="font-medium text-gray-900">{customer.companyName}</div>
+                        <div className="font-medium text-gray-900 dark:text-frost-100">{customer.companyName}</div>
                         {customer.linkedTechnician && (
                           <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
                             Linked to {customer.linkedTechnician.name}
@@ -304,7 +304,7 @@ const ManageCustomers: React.FC = () => {
       {/* Pending Invitations */}
       {invitations.filter((inv: any) => inv.status === 'PENDING').length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">
             Pending Invitations ({invitations.filter((inv: any) => inv.status === 'PENDING').length})
           </h2>
           <div className="space-y-3">
@@ -316,7 +316,7 @@ const ManageCustomers: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center">
                         <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2" />
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-gray-900 dark:text-frost-100">
                           {invitation.customer?.companyName || 'Unknown'}
                         </div>
                         <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
@@ -355,7 +355,7 @@ const ManageCustomers: React.FC = () => {
       {/* Rejected Invitations */}
       {invitations.filter((inv: any) => inv.status === 'REJECTED').length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">
             Rejected Invitations ({invitations.filter((inv: any) => inv.status === 'REJECTED').length})
           </h2>
           <div className="space-y-3">
@@ -367,7 +367,7 @@ const ManageCustomers: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center">
                         <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2" />
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-gray-900 dark:text-frost-100">
                           {invitation.customer?.companyName || 'Unknown'}
                         </div>
                         <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800">
@@ -393,7 +393,7 @@ const ManageCustomers: React.FC = () => {
       {/* Accepted Invitations */}
       {invitations.filter((inv: any) => inv.status === 'ACCEPTED').length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">
             Accepted Invitations ({invitations.filter((inv: any) => inv.status === 'ACCEPTED').length})
           </h2>
           <div className="space-y-3">
@@ -405,7 +405,7 @@ const ManageCustomers: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center">
                         <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2" />
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-gray-900 dark:text-frost-100">
                           {invitation.customer?.companyName || 'Unknown'}
                         </div>
                         <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">
@@ -430,7 +430,7 @@ const ManageCustomers: React.FC = () => {
 
       {/* Linked Customers List */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">
           Linked Customers ({linkedCustomers.length})
         </h2>
         {loading ? (
@@ -467,13 +467,13 @@ const ManageCustomers: React.FC = () => {
                       <div className="flex items-center">
                         <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2" />
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{customer.companyName}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-frost-100">{customer.companyName}</div>
                           <div className="text-sm text-gray-500">{customer.email}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{customer.contactName}</div>
+                      <div className="text-sm text-gray-900 dark:text-frost-100">{customer.contactName}</div>
                       {customer.phone && (
                         <div className="text-sm text-gray-500 flex items-center">
                           <PhoneIcon className="h-3 w-3 mr-1" />
@@ -487,10 +487,10 @@ const ManageCustomers: React.FC = () => {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-frost-100">
                       {customer.locations?.length || 0}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-frost-100">
                       {getTotalColdCells(customer)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -552,11 +552,11 @@ const ManageCustomers: React.FC = () => {
                   <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="ml-3 flex-1">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-2">
                     Unlink Customer
                   </h3>
                   <p className="text-sm text-gray-500 mb-4">
-                    Are you sure you want to unlink <span className="font-semibold text-gray-900">{customerToUnlink.companyName}</span>?
+                    Are you sure you want to unlink <span className="font-semibold text-gray-900 dark:text-frost-100">{customerToUnlink.companyName}</span>?
                   </p>
                   <p className="text-sm text-gray-500">
                     You will no longer be able to see their locations, cold cells, and alerts. This action can be reversed by sending a new invitation.

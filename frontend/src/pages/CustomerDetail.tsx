@@ -54,37 +54,37 @@ const CustomerDetail: React.FC = () => {
           <ArrowLeftIcon className="h-6 w-6" />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{customer.companyName}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">{customer.companyName}</h1>
           <p className="text-sm text-gray-600">{customer.contactName}</p>
         </div>
       </div>
 
       {/* Customer Info */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Customer Information</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Customer Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <div className="text-sm text-gray-600">Company Name</div>
-            <div className="text-lg font-medium text-gray-900">{customer.companyName}</div>
+            <div className="text-lg font-medium text-gray-900 dark:text-frost-100">{customer.companyName}</div>
           </div>
           <div>
             <div className="text-sm text-gray-600">Contact Name</div>
-            <div className="text-lg font-medium text-gray-900">{customer.contactName}</div>
+            <div className="text-lg font-medium text-gray-900 dark:text-frost-100">{customer.contactName}</div>
           </div>
           <div>
             <div className="text-sm text-gray-600">Email</div>
-            <div className="text-lg font-medium text-gray-900">{customer.email}</div>
+            <div className="text-lg font-medium text-gray-900 dark:text-frost-100">{customer.email}</div>
           </div>
           {customer.phone && (
             <div>
               <div className="text-sm text-gray-600">Phone</div>
-              <div className="text-lg font-medium text-gray-900">{customer.phone}</div>
+              <div className="text-lg font-medium text-gray-900 dark:text-frost-100">{customer.phone}</div>
             </div>
           )}
           {customer.address && (
             <div className="md:col-span-2">
               <div className="text-sm text-gray-600">Address</div>
-              <div className="text-lg font-medium text-gray-900">{customer.address}</div>
+              <div className="text-lg font-medium text-gray-900 dark:text-frost-100">{customer.address}</div>
             </div>
           )}
         </div>
@@ -92,26 +92,26 @@ const CustomerDetail: React.FC = () => {
 
       {/* Locations */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Locations</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Locations</h2>
         <div className="space-y-4">
           {customer.locations?.map((location: any) => (
             <div key={location.id} className="bg-white rounded-lg shadow p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{location.locationName}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">{location.locationName}</h3>
                   {location.address && (
                     <p className="text-sm text-gray-600 mt-1">{location.address}</p>
                   )}
                   <div className="mt-4 grid grid-cols-2 gap-4">
                     <div>
                       <div className="text-sm text-gray-600">Cold Cells</div>
-                      <div className="text-2xl font-bold text-gray-900">
+                      <div className="text-2xl font-bold text-gray-900 dark:text-frost-100">
                         {location.coldCells?.length || 0}
                       </div>
                     </div>
                     <div>
                       <div className="text-sm text-gray-600">Active Alarms</div>
-                      <div className="text-2xl font-bold text-red-600">
+                      <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                         {location.coldCells?.reduce(
                           (sum: number, cell: any) => sum + (cell._count?.alerts || 0),
                           0
@@ -135,7 +135,7 @@ const CustomerDetail: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="font-medium text-gray-900">{cell.name}</div>
+                            <div className="font-medium text-gray-900 dark:text-frost-100">{cell.name}</div>
                             <div className="text-xs text-gray-500 capitalize">{cell.type}</div>
                           </div>
                           {cell._count?.alerts > 0 && (

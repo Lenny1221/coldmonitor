@@ -120,13 +120,13 @@ const Reports: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Reports</h1>
       </div>
 
       {/* Filters */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Report Filters</h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-4">Report Filters</h2>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             <div>
               <label htmlFor="device" className="block text-sm font-medium text-gray-700">
@@ -189,7 +189,7 @@ const Reports: React.FC = () => {
       {report && (
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Report Summary</h2>
+            <h2 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-4">Report Summary</h2>
             {loading ? (
               <div className="text-center py-8">
                 <div className="text-gray-500">Loading report...</div>
@@ -202,16 +202,16 @@ const Reports: React.FC = () => {
                   <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Device Name</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{report.device.name}</dd>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-frost-100">{report.device.name}</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Device ID</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{report.device.deviceId}</dd>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-frost-100">{report.device.deviceId}</dd>
                     </div>
                     {user?.role !== 'CUSTOMER' && (
                       <div>
                         <dt className="text-sm font-medium text-gray-500">Client</dt>
-                        <dd className="mt-1 text-sm text-gray-900">{report.device.client}</dd>
+                        <dd className="mt-1 text-sm text-gray-900 dark:text-frost-100">{report.device.client}</dd>
                       </div>
                     )}
                   </dl>
@@ -223,7 +223,7 @@ const Reports: React.FC = () => {
                   <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Start Date</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-frost-100">
                         {report.period.start
                           ? format(new Date(report.period.start), 'PPP')
                           : 'N/A'}
@@ -231,7 +231,7 @@ const Reports: React.FC = () => {
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">End Date</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-frost-100">
                         {report.period.end
                           ? format(new Date(report.period.end), 'PPP')
                           : 'N/A'}
@@ -246,13 +246,13 @@ const Reports: React.FC = () => {
                   <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-4">
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Measurements</dt>
-                      <dd className="mt-1 text-lg font-semibold text-gray-900">
+                      <dd className="mt-1 text-lg font-semibold text-gray-900 dark:text-frost-100">
                         {report.statistics.measurementCount}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Min Temperature</dt>
-                      <dd className="mt-1 text-lg font-semibold text-gray-900">
+                      <dd className="mt-1 text-lg font-semibold text-gray-900 dark:text-frost-100">
                         {report.statistics.minTemperature !== null
                           ? `${report.statistics.minTemperature}°C`
                           : 'N/A'}
@@ -260,7 +260,7 @@ const Reports: React.FC = () => {
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Max Temperature</dt>
-                      <dd className="mt-1 text-lg font-semibold text-gray-900">
+                      <dd className="mt-1 text-lg font-semibold text-gray-900 dark:text-frost-100">
                         {report.statistics.maxTemperature !== null
                           ? `${report.statistics.maxTemperature}°C`
                           : 'N/A'}
@@ -268,7 +268,7 @@ const Reports: React.FC = () => {
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Average Temperature</dt>
-                      <dd className="mt-1 text-lg font-semibold text-gray-900">
+                      <dd className="mt-1 text-lg font-semibold text-gray-900 dark:text-frost-100">
                         {report.statistics.avgTemperature !== null
                           ? `${report.statistics.avgTemperature}°C`
                           : 'N/A'}
@@ -283,11 +283,11 @@ const Reports: React.FC = () => {
                   <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Low Temperature Threshold</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{report.thresholds.low}°C</dd>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-frost-100">{report.thresholds.low}°C</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">High Temperature Threshold</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{report.thresholds.high}°C</dd>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-frost-100">{report.thresholds.high}°C</dd>
                     </div>
                   </dl>
                 </div>
@@ -298,7 +298,7 @@ const Reports: React.FC = () => {
                   <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Total Alarms</dt>
-                      <dd className="mt-1 text-lg font-semibold text-gray-900">
+                      <dd className="mt-1 text-lg font-semibold text-gray-900 dark:text-frost-100">
                         {report.alarms.total}
                       </dd>
                     </div>

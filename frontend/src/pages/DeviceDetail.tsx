@@ -232,7 +232,7 @@ const DeviceDetail: React.FC = () => {
             <ArrowLeftIcon className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{device.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">{device.name}</h1>
             <p className="text-sm text-gray-500">{device.deviceId}</p>
           </div>
         </div>
@@ -256,7 +256,7 @@ const DeviceDetail: React.FC = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Current Temp</dt>
-                  <dd className="text-lg font-medium text-gray-900">
+                  <dd className="text-lg font-medium text-gray-900 dark:text-frost-100">
                     {device.currentTemperature !== null
                       ? `${device.currentTemperature}°C`
                       : 'N/A'}
@@ -296,7 +296,7 @@ const DeviceDetail: React.FC = () => {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">Min Temp</dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-lg font-medium text-gray-900 dark:text-frost-100">
                         {stats.min !== null ? `${stats.min}°C` : 'N/A'}
                       </dd>
                     </dl>
@@ -313,7 +313,7 @@ const DeviceDetail: React.FC = () => {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">Max Temp</dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-lg font-medium text-gray-900 dark:text-frost-100">
                         {stats.max !== null ? `${stats.max}°C` : 'N/A'}
                       </dd>
                     </dl>
@@ -329,7 +329,7 @@ const DeviceDetail: React.FC = () => {
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-gray-900">Temperature History</h2>
+            <h2 className="text-lg font-medium text-gray-900 dark:text-frost-100">Temperature History</h2>
             <div className="flex space-x-2">
               <button
                 onClick={() => setTimeRange('24h')}
@@ -408,7 +408,7 @@ const DeviceDetail: React.FC = () => {
       {/* Alarms History */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Alarm History</h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-4">Alarm History</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -436,10 +436,10 @@ const DeviceDetail: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {format(new Date(alarm.triggeredAt), 'MMM dd, yyyy HH:mm')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-frost-100">
                       {alarm.type.replace('_', ' ')}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{alarm.message}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-frost-100">{alarm.message}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {alarm.temperature !== null && alarm.temperature !== undefined
                         ? `${alarm.temperature}°C`

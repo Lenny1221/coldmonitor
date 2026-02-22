@@ -86,10 +86,10 @@ const Invitations: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { bg: string; text: string }> = {
-      PENDING: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
-      ACCEPTED: { bg: 'bg-green-100', text: 'text-green-800' },
-      REJECTED: { bg: 'bg-red-100', text: 'text-red-800' },
-      EXPIRED: { bg: 'bg-gray-100', text: 'text-gray-800' },
+      PENDING: { bg: 'bg-yellow-100 dark:bg-yellow-900/40', text: 'text-yellow-800 dark:text-yellow-300' },
+      ACCEPTED: { bg: 'bg-green-100 dark:bg-green-900/40', text: 'text-green-800 dark:text-green-300' },
+      REJECTED: { bg: 'bg-red-100 dark:bg-red-900/40', text: 'text-red-800 dark:text-red-300' },
+      EXPIRED: { bg: 'bg-gray-100 dark:bg-frost-850', text: 'text-gray-800 dark:text-slate-300' },
     };
     const badge = badges[status] || badges.PENDING;
     return (
@@ -105,8 +105,8 @@ const Invitations: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Invitations</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Invitations</h1>
+        <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
           {user?.role === 'CUSTOMER' 
             ? 'Manage technician invitations to access your cold cells'
             : 'View invitations you have sent to customers'}
@@ -114,20 +114,20 @@ const Invitations: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Uitnodigingen laden...</div>
+        <div className="text-center py-12 text-gray-500 dark:text-slate-300">Uitnodigingen laden...</div>
       ) : (
         <>
           {/* Pending Invitations */}
           {pendingInvitations.length > 0 && (
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">
                 Pending Invitations ({pendingInvitations.length})
               </h2>
               <div className="space-y-4">
                 {pendingInvitations.map((invitation: any) => (
                   <div
                     key={invitation.id}
-                    className="bg-white rounded-lg shadow border-2 border-yellow-200 p-6"
+                    className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] border-2 border-yellow-200 dark:border-yellow-800/50 p-6"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-4 flex-1">
@@ -136,25 +136,25 @@ const Invitations: React.FC = () => {
                           {user?.role === 'CUSTOMER' ? (
                             <>
                               <div className="flex items-center gap-2 mb-2">
-                                <UserIcon className="h-5 w-5 text-gray-400" />
-                                <h3 className="text-lg font-semibold text-gray-900">
+                                <UserIcon className="h-5 w-5 text-gray-400 dark:text-slate-400" />
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">
                                   {invitation.technician?.name}
                                 </h3>
                                 {getStatusBadge(invitation.status)}
                               </div>
                               {invitation.technician?.companyName && (
-                                <div className="flex items-center text-sm text-gray-600 mb-2">
+                                <div className="flex items-center text-sm text-gray-600 dark:text-slate-300 mb-2">
                                   <BuildingOfficeIcon className="h-4 w-4 mr-2" />
                                   {invitation.technician.companyName}
                                 </div>
                               )}
-                              <div className="space-y-1 text-sm text-gray-600">
+                              <div className="space-y-1 text-sm text-gray-600 dark:text-slate-300">
                                 {invitation.technician?.email && (
                                   <div className="flex items-center">
                                     <EnvelopeIcon className="h-4 w-4 mr-2" />
                                     <a 
                                       href={`mailto:${invitation.technician.email}`}
-                                      className="text-blue-600 hover:text-blue-800"
+                                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                                     >
                                       {invitation.technician.email}
                                     </a>
@@ -165,7 +165,7 @@ const Invitations: React.FC = () => {
                                     <PhoneIcon className="h-4 w-4 mr-2" />
                                     <a 
                                       href={`tel:${invitation.technician.phone}`}
-                                      className="text-blue-600 hover:text-blue-800"
+                                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                                     >
                                       {invitation.technician.phone}
                                     </a>
@@ -173,11 +173,11 @@ const Invitations: React.FC = () => {
                                 )}
                               </div>
                               {invitation.message && (
-                                <div className="mt-4 p-3 bg-gray-50 rounded-md">
-                                  <p className="text-sm text-gray-700">{invitation.message}</p>
+                                <div className="mt-4 p-3 bg-gray-50 dark:bg-frost-850 rounded-md">
+                                  <p className="text-sm text-gray-700 dark:text-slate-300">{invitation.message}</p>
                                 </div>
                               )}
-                              <div className="mt-4 text-xs text-gray-500">
+                              <div className="mt-4 text-xs text-gray-500 dark:text-slate-400">
                                 Sent: {new Date(invitation.sentAt).toLocaleString()}
                                 {invitation.expiresAt && (
                                   <span className="ml-2">
@@ -187,18 +187,18 @@ const Invitations: React.FC = () => {
                               </div>
                             </>
                           ) : (
-                            <>
+                              <>
                               <div className="flex items-center gap-2 mb-2">
-                                <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
-                                <h3 className="text-lg font-semibold text-gray-900">
+                                <BuildingOfficeIcon className="h-5 w-5 text-gray-400 dark:text-slate-400" />
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">
                                   {invitation.customer?.companyName}
                                 </h3>
                                 {getStatusBadge(invitation.status)}
                               </div>
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-gray-600 dark:text-slate-300">
                                 Contact: {invitation.customer?.contactName}
                               </div>
-                              <div className="mt-2 text-xs text-gray-500">
+                              <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">
                                 Sent: {new Date(invitation.sentAt).toLocaleString()}
                                 {invitation.expiresAt && (
                                   <span className="ml-2">
@@ -238,37 +238,37 @@ const Invitations: React.FC = () => {
           {/* Other Invitations (Accepted, Rejected, Expired) */}
           {otherInvitations.length > 0 && (
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">
                 {user?.role === 'CUSTOMER' ? 'Previous Invitations' : 'Invitation History'}
               </h2>
-              <div className="bg-white rounded-lg shadow overflow-x-auto table-scroll">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+              <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] overflow-x-auto table-scroll border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
+                  <thead className="bg-gray-50 dark:bg-frost-850">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                         {user?.role === 'CUSTOMER' ? 'Technician' : 'Customer'}
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                         Sent
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                         Responded
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-frost-800 divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
                     {otherInvitations.map((invitation: any) => (
-                      <tr key={invitation.id}>
+                      <tr key={invitation.id} className="hover:bg-gray-50 dark:hover:bg-frost-850">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 dark:text-frost-100">
                             {user?.role === 'CUSTOMER' 
                               ? invitation.technician?.name
                               : invitation.customer?.companyName}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-500 dark:text-slate-400">
                             {user?.role === 'CUSTOMER' 
                               ? invitation.technician?.email
                               : invitation.customer?.contactName}
@@ -277,10 +277,10 @@ const Invitations: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getStatusBadge(invitation.status)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
                           {new Date(invitation.sentAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
                           {invitation.respondedAt 
                             ? new Date(invitation.respondedAt).toLocaleDateString()
                             : '-'}
@@ -294,14 +294,14 @@ const Invitations: React.FC = () => {
           )}
 
           {invitations.length === 0 && (
-            <div className="bg-white rounded-lg shadow p-12 text-center">
-              <EnvelopeIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">
+            <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-12 text-center border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+              <EnvelopeIcon className="h-12 w-12 text-gray-400 dark:text-slate-400 mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-slate-300">
                 {user?.role === 'CUSTOMER' 
                   ? 'No invitations received yet'
                   : 'No invitations sent yet'}
               </p>
-              <p className="text-sm text-gray-400 mt-2">
+              <p className="text-sm text-gray-400 dark:text-slate-400 mt-2">
                 {user?.role === 'CUSTOMER' 
                   ? 'When a technician sends you an invitation, it will appear here'
                   : 'Send invitations to customers from the Manage Customers page'}

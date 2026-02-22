@@ -86,8 +86,8 @@ const TechnicianDashboard: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Technician Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Technician Dashboard</h1>
+        <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
           Overview of all your customers and their monitoring systems
         </p>
       </div>
@@ -96,19 +96,19 @@ const TechnicianDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm font-medium text-gray-500">Total Customers</div>
-          <div className="mt-2 text-3xl font-bold text-gray-900">
+          <div className="mt-2 text-3xl font-bold text-gray-900 dark:text-frost-100">
             {data?.summary?.totalCustomers || 0}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm font-medium text-gray-500">Active Alarms</div>
-          <div className="mt-2 text-3xl font-bold text-red-600">
+        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+          <div className="text-sm font-medium text-gray-500 dark:text-slate-300">Active Alarms</div>
+          <div className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
             {data?.summary?.totalAlarms || 0}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-sm font-medium text-gray-500">Total Cold Cells</div>
-          <div className="mt-2 text-3xl font-bold text-gray-900">
+          <div className="mt-2 text-3xl font-bold text-gray-900 dark:text-frost-100">
             {data?.customers?.reduce((sum: number, c: any) => sum + (c.totalCells || 0), 0) || 0}
           </div>
         </div>
@@ -116,7 +116,7 @@ const TechnicianDashboard: React.FC = () => {
 
       {/* Customers List */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Customers</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Customers</h2>
         <div className="bg-white rounded-lg shadow overflow-x-auto table-scroll">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -145,19 +145,19 @@ const TechnicianDashboard: React.FC = () => {
               {data?.customers?.map((customer: any) => (
                 <tr key={customer.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{customer.companyName}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-frost-100">{customer.companyName}</div>
                     <div className="text-sm text-gray-500">{customer.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{customer.contactName}</div>
+                    <div className="text-sm text-gray-900 dark:text-frost-100">{customer.contactName}</div>
                     {customer.phone && (
                       <div className="text-sm text-gray-500">{customer.phone}</div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-frost-100">
                     {customer.totalLocations}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-frost-100">
                     {customer.totalCells}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -194,7 +194,7 @@ const TechnicianDashboard: React.FC = () => {
       {/* Global Alerts */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Alerts</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100">Alerts</h2>
           <div className="flex space-x-2">
             <button
               onClick={() => setAlertFilter('all')}
@@ -238,7 +238,7 @@ const TechnicianDashboard: React.FC = () => {
                 <div className="flex items-start space-x-3">
                   {getAlertIcon(alert.type)}
                   <div>
-                    <div className="font-semibold text-gray-900">
+                    <div className="font-semibold text-gray-900 dark:text-frost-100">
                       {alert.type.replace('_', ' ')}
                     </div>
                     <div className="text-sm text-gray-600 mt-1">

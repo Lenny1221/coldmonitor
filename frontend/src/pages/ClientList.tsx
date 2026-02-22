@@ -68,7 +68,7 @@ const ClientList: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Clients</h1>
       </div>
 
       <div className="bg-white shadow rounded-lg">
@@ -103,7 +103,7 @@ const ClientList: React.FC = () => {
                         <div className="flex items-center">
                           <UserGroupIcon className="h-5 w-5 text-gray-400 mr-3" />
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{client.name}</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-frost-100">{client.name}</div>
                             {client.user && (
                               <div className="text-sm text-gray-500">{client.user.email}</div>
                             )}
@@ -117,7 +117,7 @@ const ClientList: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <DevicePhoneMobileIcon className="h-4 w-4 text-gray-400 mr-2" />
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-gray-900 dark:text-frost-100">
                             {client._count?.devices || statusCounts.total || 0}
                           </span>
                         </div>

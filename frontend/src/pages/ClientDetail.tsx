@@ -102,26 +102,26 @@ const ClientDetail: React.FC = () => {
         >
           <ArrowLeftIcon className="h-5 w-5" />
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">{client.name}</h1>
       </div>
 
       {/* Client Info */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Client Information</h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-4">Client Information</h2>
           <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
             <div className="flex items-center">
               <UserIcon className="h-5 w-5 text-gray-400 mr-3" />
               <div>
                 <dt className="text-sm font-medium text-gray-500">Name</dt>
-                <dd className="mt-1 text-sm text-gray-900">{client.user.name}</dd>
+                <dd className="mt-1 text-sm text-gray-900 dark:text-frost-100">{client.user.name}</dd>
               </div>
             </div>
             <div className="flex items-center">
               <EnvelopeIcon className="h-5 w-5 text-gray-400 mr-3" />
               <div>
                 <dt className="text-sm font-medium text-gray-500">Email</dt>
-                <dd className="mt-1 text-sm text-gray-900">{client.user.email}</dd>
+                <dd className="mt-1 text-sm text-gray-900 dark:text-frost-100">{client.user.email}</dd>
               </div>
             </div>
             {client.phone && (
@@ -129,7 +129,7 @@ const ClientDetail: React.FC = () => {
                 <PhoneIcon className="h-5 w-5 text-gray-400 mr-3" />
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Phone</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{client.phone}</dd>
+                  <dd className="mt-1 text-sm text-gray-900 dark:text-frost-100">{client.phone}</dd>
                 </div>
               </div>
             )}
@@ -138,7 +138,7 @@ const ClientDetail: React.FC = () => {
                 <MapPinIcon className="h-5 w-5 text-gray-400 mr-3" />
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Address</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{client.address}</dd>
+                  <dd className="mt-1 text-sm text-gray-900 dark:text-frost-100">{client.address}</dd>
                 </div>
               </div>
             )}
@@ -150,7 +150,7 @@ const ClientDetail: React.FC = () => {
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-gray-900">Devices</h2>
+            <h2 className="text-lg font-medium text-gray-900 dark:text-frost-100">Devices</h2>
             <span className="text-sm text-gray-500">{client.devices.length} device(s)</span>
           </div>
           {client.devices.length > 0 ? (
@@ -182,12 +182,12 @@ const ClientDetail: React.FC = () => {
                         <div className="flex items-center">
                           <DevicePhoneMobileIcon className="h-5 w-5 text-gray-400 mr-3" />
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{device.name}</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-frost-100">{device.name}</div>
                             <div className="text-sm text-gray-500">{device.deviceId}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-frost-100">
                         {device.currentTemperature !== null
                           ? `${device.currentTemperature}°C`
                           : 'N/A'}
@@ -235,7 +235,7 @@ const ClientDetail: React.FC = () => {
       {client.devices.some(d => d.alarms.length > 0) && (
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Active Alarms</h2>
+            <h2 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-4">Active Alarms</h2>
             <div className="space-y-3">
               {client.devices.flatMap(device =>
                 device.alarms

@@ -354,24 +354,24 @@ const Locations: React.FC = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Locations</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Locations</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
             Manage your business locations
           </p>
           {apiKeyStatus !== null && apiKeyStatus !== 'not-set' && (
             <div className="mt-2">
               {apiKeyStatus === 'checking' && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300">
                   Testing API key...
                 </span>
               )}
               {apiKeyStatus === 'valid' && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300">
                   ✓ Google Maps API Key: Active
                 </span>
               )}
               {apiKeyStatus === 'invalid' && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300">
                   ✗ Google Maps API Key: Invalid or Restricted
                 </span>
               )}
@@ -388,39 +388,39 @@ const Locations: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading locations...</div>
+        <div className="text-center py-12 text-gray-500 dark:text-slate-300">Loading locations...</div>
       ) : locations.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {locations.map((location: any) => (
             <div
               key={location.id}
-              className="bg-white rounded-lg shadow border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+              className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] border border-gray-200 dark:border-[rgba(100,200,255,0.08)] p-6 hover:shadow-lg dark:hover:shadow-[0_0_24px_rgba(0,0,0,0.3)] transition-shadow"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <MapPinIcon className="h-5 w-5 text-blue-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <MapPinIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">
                     {location.locationName}
                   </h3>
                 </div>
                 <button
                   onClick={() => handleDeleteClick(location)}
-                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  className="p-1.5 text-gray-400 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/25 rounded-md transition-colors"
                   title="Delete location"
                 >
                   <TrashIcon className="h-5 w-5" />
                 </button>
               </div>
               {location.address && (
-                <p className="text-sm text-gray-600 mb-4">{location.address}</p>
+                <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">{location.address}</p>
               )}
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-500 dark:text-slate-400">
                   {location.coldCells?.length || 0} cold cell{location.coldCells?.length !== 1 ? 's' : ''}
                 </div>
                 <button
                   onClick={() => navigate(`/locations/${location.id}`)}
-                  className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                  className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                 >
                   View
                   <ArrowRightIcon className="ml-2 h-4 w-4" />
@@ -430,9 +430,9 @@ const Locations: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <p className="text-gray-500">No locations found</p>
-          <p className="text-sm text-gray-400 mt-2">
+        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-12 text-center border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+          <p className="text-gray-500 dark:text-slate-300">No locations found</p>
+          <p className="text-sm text-gray-400 dark:text-slate-400 mt-2">
             {loading ? 'Loading...' : 'Create your first location to get started'}
           </p>
         </div>
@@ -440,15 +440,15 @@ const Locations: React.FC = () => {
 
       {/* Create Location Dialog */}
       {showCreateDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Create New Location</h2>
-            <p className="text-sm text-gray-600 mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-black/60 p-4">
+          <div className="bg-white dark:bg-frost-800 rounded-lg shadow-xl dark:shadow-[0_0_24px_rgba(0,0,0,0.3)] p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-frost-100 mb-4">Create New Location</h2>
+            <p className="text-sm text-gray-600 dark:text-slate-300 mb-6">
               Enter the location details. The address will be shown on the map automatically.
             </p>
             <form onSubmit={handleCreateLocation} className="space-y-4">
               <div>
-                <label htmlFor="locationName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="locationName" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Location Name *
                 </label>
                 <input
@@ -458,11 +458,11 @@ const Locations: React.FC = () => {
                   onChange={(e) => setLocationName(e.target.value)}
                   placeholder="e.g., Main Store, Warehouse"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 />
               </div>
               <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Address *
                 </label>
                 <div className="relative">
@@ -477,7 +477,7 @@ const Locations: React.FC = () => {
                     }}
                     placeholder="Start typing an address..."
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                     autoComplete="off"
                   />
                   <MapPinIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
@@ -499,15 +499,15 @@ const Locations: React.FC = () => {
               {/* Map Preview */}
               {address.trim() && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Map Preview
                   </label>
-                  <div className="rounded-lg overflow-hidden border border-gray-300" style={{ height: '300px' }}>
+                  <div className="rounded-lg overflow-hidden border border-gray-300 dark:border-[rgba(100,200,255,0.15)]" style={{ height: '300px' }}>
                     {mapLoading ? (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-frost-850">
                         <div className="text-center">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                          <p className="text-gray-500 text-sm">Loading map...</p>
+                          <p className="text-gray-500 dark:text-slate-400 text-sm">Loading map...</p>
                         </div>
                       </div>
                     ) : mapUrl ? (
@@ -522,8 +522,8 @@ const Locations: React.FC = () => {
                         title="Location Map"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                        <p className="text-gray-500 text-sm">Enter an address to see it on the map</p>
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-frost-850">
+                        <p className="text-gray-500 dark:text-slate-400 text-sm">Enter an address to see it on the map</p>
                       </div>
                     )}
                   </div>
@@ -546,7 +546,7 @@ const Locations: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-md text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-frost-850 hover:bg-gray-50 dark:hover:bg-frost-900"
                 >
                   Cancel
                 </button>
@@ -567,36 +567,36 @@ const Locations: React.FC = () => {
       {/* Delete Location Confirmation Modal */}
       {showDeleteModal && locationToDelete && (
         <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center"
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 dark:bg-black/60 overflow-y-auto h-full w-full z-50 flex items-center justify-center"
           onClick={handleDeleteCancel}
         >
           <div
-            className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
+            className="relative bg-white dark:bg-frost-800 rounded-lg shadow-xl dark:shadow-[0_0_24px_rgba(0,0,0,0.3)] max-w-md w-full mx-4 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+                  <ExclamationTriangleIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
                 </div>
                 <div className="ml-3 flex-1">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-2">
                     Location verwijderen
                   </h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Weet je zeker dat je <span className="font-semibold text-gray-900">{locationToDelete.locationName}</span> wilt verwijderen?
+                  <p className="text-sm text-gray-500 dark:text-slate-300 mb-4">
+                    Weet je zeker dat je <span className="font-semibold text-gray-900 dark:text-frost-100">{locationToDelete.locationName}</span> wilt verwijderen?
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-slate-300">
                     Alle cold cells en bijbehorende gegevens van deze locatie worden ook verwijderd. Deze actie kan niet ongedaan worden gemaakt.
                   </p>
                 </div>
               </div>
             </div>
-            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-lg">
+            <div className="bg-gray-50 dark:bg-frost-850 px-6 py-4 flex justify-end space-x-3 rounded-b-lg">
               <button
                 onClick={handleDeleteCancel}
                 disabled={deleting}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-frost-800 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-md hover:bg-gray-50 dark:hover:bg-frost-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
                 Annuleren
               </button>
