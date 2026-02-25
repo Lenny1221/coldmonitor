@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
+import Landing from './pages/Landing';
 import VerifyEmailSent from './pages/VerifyEmailSent';
 import VerifyEmailRequired from './pages/VerifyEmailRequired';
 import Dashboard from './pages/Dashboard';
@@ -143,7 +144,7 @@ function AppRoutes() {
         </>
       )}
 
-      <Route path="/" element={<NavigateToDashboard />} />
+      <Route path="/" element={user ? <NavigateToDashboard /> : <Landing />} />
     </Routes>
   );
 }
