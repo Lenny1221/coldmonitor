@@ -2,7 +2,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
-import Landing from './pages/Landing';
+import Home from './pages/Home';
+import Product from './pages/Product';
+import Oplossingen from './pages/Oplossingen';
+import Prijzen from './pages/Prijzen';
+import Handleidingen from './pages/Handleidingen';
+import FAQ from './pages/FAQ';
+import Contact from './pages/Contact';
+import MarketingLayout from './components/MarketingLayout';
 import VerifyEmailSent from './pages/VerifyEmailSent';
 import VerifyEmailRequired from './pages/VerifyEmailRequired';
 import Dashboard from './pages/Dashboard';
@@ -144,7 +151,14 @@ function AppRoutes() {
         </>
       )}
 
-      <Route path="/" element={user ? <NavigateToDashboard /> : <Landing />} />
+      {/* Marketing pages (publiek) */}
+      <Route path="/" element={user ? <NavigateToDashboard /> : <MarketingLayout><Home /></MarketingLayout>} />
+      <Route path="/product" element={<MarketingLayout><Product /></MarketingLayout>} />
+      <Route path="/oplossingen" element={<MarketingLayout><Oplossingen /></MarketingLayout>} />
+      <Route path="/prijzen" element={<MarketingLayout><Prijzen /></MarketingLayout>} />
+      <Route path="/handleidingen" element={<MarketingLayout><Handleidingen /></MarketingLayout>} />
+      <Route path="/faq" element={<MarketingLayout><FAQ /></MarketingLayout>} />
+      <Route path="/contact" element={<MarketingLayout><Contact /></MarketingLayout>} />
     </Routes>
   );
 }
