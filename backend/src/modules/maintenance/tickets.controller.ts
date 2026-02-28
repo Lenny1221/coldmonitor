@@ -192,8 +192,8 @@ router.patch('/:id', requireAuth, requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN')
       if (cust?.linkedTechnicianId !== req.technicianId) throw new CustomError('Geen toegang', 403, 'ACCESS_DENIED');
     }
 
-    // Aanpassen: alleen wanneer NIEUW of IN_BEHANDELING (niet bij cancel)
-    if (!cancel && !['NIEUW', 'IN_BEHANDELING'].includes(ticket.status)) {
+    // Aanpassen: alleen wanneer NIEUW, IN_BEHANDELING of INGEPLAND (niet bij cancel)
+    if (!cancel && !['NIEUW', 'IN_BEHANDELING', 'INGEPLAND'].includes(ticket.status)) {
       throw new CustomError('Ticket kan niet meer worden aangepast', 400, 'INVALID_STATUS');
     }
 

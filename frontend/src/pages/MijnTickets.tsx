@@ -191,9 +191,9 @@ const MijnTickets: React.FC = () => {
         </div>
       )}
 
-      {(showForm || editingTicket) && (
+      {showForm && !editingTicket && (
         <div className="bg-white dark:bg-frost-800 shadow rounded-lg p-6">
-          <h2 className="text-lg font-medium mb-4">{editingTicket ? 'Ticket aanpassen' : 'Ticket indienen'}</h2>
+          <h2 className="text-lg font-medium mb-4">Ticket indienen</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">Type</label>
@@ -282,23 +282,136 @@ const MijnTickets: React.FC = () => {
               ))}
             </div>
             <div className="flex gap-2">
-              <button
+                <button
                 type="submit"
                 disabled={submitting}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 <PaperAirplaneIcon className="h-5 w-5 mr-2" />
-                {submitting ? 'Bezig...' : (editingTicket ? 'Wijzigingen opslaan' : 'Ticket indienen')}
+                {submitting ? 'Bezig...' : 'Ticket indienen'}
               </button>
               <button
                 type="button"
-                onClick={() => { setShowForm(false); setEditingTicket(null); setForm(resetForm()); }}
+                onClick={() => { setShowForm(false); setForm(resetForm()); }}
                 className="px-4 py-2 border border-gray-300 dark:border-frost-600 rounded-lg"
               >
                 Annuleren
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {editingTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-auto" onClick={() => setEditingTicket(null)}>
+          <div className="bg-white dark:bg-frost-800 rounded-lg p-6 max-w-lg w-full shadow-xl my-8" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-medium mb-4">Ticket aanpassen</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">Type</label>
+                <div className="flex gap-4">
+                  {TICKET_TYPES.map((t) => (
+                    <label key={t.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="type"
+                        value={t.id}
+                        checked={form.type === t.id}
+                        onChange={() => setForm({ ...form, type: t.id })}
+                      />
+                      <t.icon className="h-5 w-5" />
+                      {t.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">Ernst</label>
+                <select
+                  value={form.urgency}
+                  onChange={(e) => setForm({ ...form, urgency: e.target.value })}
+                  className="block w-full rounded-md border-gray-300 dark:border-frost-600 dark:bg-frost-700 dark:text-frost-100"
+                >
+                  {URGENCY_OPTIONS.map((u) => (
+                    <option key={u.id} value={u.id}>{u.label}</option>
+                  ))}
+                </select>
+              </div>
+              {installations.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">Installatie</label>
+                  <select
+                    value={form.installationId}
+                    onChange={(e) => setForm({ ...form, installationId: e.target.value })}
+                    className="block w-full rounded-md border-gray-300 dark:border-frost-600 dark:bg-frost-700 dark:text-frost-100"
+                  >
+                    <option value="">— Geen specifieke installatie —</option>
+                    {installations.map((i) => (
+                      <option key={i.id} value={i.id}>{i.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">Beschrijving</label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  rows={4}
+                  required
+                  className="block w-full rounded-md border-gray-300 dark:border-frost-600 dark:bg-frost-700 dark:text-frost-100"
+                  placeholder="Beschrijf het probleem of uw aanvraag..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-2">Gewenste tijdstippen</label>
+                {form.slots.map((s, idx) => (
+                  <div key={idx} className="flex gap-2 mb-2">
+                    <input
+                      type="date"
+                      value={s.date}
+                      onChange={(e) => {
+                        const slots = [...form.slots];
+                        slots[idx] = { ...slots[idx], date: e.target.value };
+                        setForm({ ...form, slots });
+                      }}
+                      className="rounded-md border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                    />
+                    <select
+                      value={s.preference}
+                      onChange={(e) => {
+                        const slots = [...form.slots];
+                        slots[idx] = { ...slots[idx], preference: e.target.value };
+                        setForm({ ...form, slots });
+                      }}
+                      className="rounded-md border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                    >
+                      <option value="OCHTEND">Ochtend</option>
+                      <option value="NAMIDDAG">Namiddag</option>
+                      <option value="AVOND">Avond</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  <PaperAirplaneIcon className="h-5 w-5 mr-2" />
+                  {submitting ? 'Bezig...' : 'Wijzigingen opslaan'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEditingTicket(null); setForm(resetForm()); }}
+                  className="px-4 py-2 border border-gray-300 dark:border-frost-600 rounded-lg"
+                >
+                  Annuleren
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -335,7 +448,7 @@ const MijnTickets: React.FC = () => {
                   </div>
                   {!['AFGEROND', 'GESLOTEN'].includes(t.status) && (
                     <div className="flex gap-2 shrink-0">
-                      {['NIEUW', 'IN_BEHANDELING'].includes(t.status) && (
+                      {['NIEUW', 'IN_BEHANDELING', 'INGEPLAND'].includes(t.status) && (
                         <button
                           onClick={() => openEditForm(t)}
                           disabled={submitting}
