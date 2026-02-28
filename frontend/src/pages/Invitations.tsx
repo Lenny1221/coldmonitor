@@ -241,8 +241,8 @@ const Invitations: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">
                 {user?.role === 'CUSTOMER' ? 'Previous Invitations' : 'Invitation History'}
               </h2>
-              <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] overflow-x-auto table-scroll border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
+              <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] overflow-x-auto border border-gray-100 dark:border-[rgba(100,200,255,0.08)] w-full">
+                <table className="w-full min-w-full table-fixed divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
                   <thead className="bg-gray-50 dark:bg-frost-850">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">

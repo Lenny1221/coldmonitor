@@ -197,9 +197,9 @@ const MijnTickets: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">Type</label>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 {TICKET_TYPES.map((t) => (
-                  <label key={t.id} className="flex items-center gap-2 cursor-pointer">
+                  <label key={t.id} className="flex items-center gap-2 cursor-pointer shrink-0">
                     <input
                       type="radio"
                       name="type"
@@ -304,14 +304,14 @@ const MijnTickets: React.FC = () => {
 
       {editingTicket && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-auto" onClick={() => setEditingTicket(null)}>
-          <div className="bg-white dark:bg-frost-800 rounded-lg p-6 max-w-lg w-full shadow-xl my-8" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-frost-800 rounded-lg p-6 max-w-xl w-full shadow-xl my-8" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-medium mb-4">Ticket aanpassen</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">Type</label>
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-4">
                   {TICKET_TYPES.map((t) => (
-                    <label key={t.id} className="flex items-center gap-2 cursor-pointer">
+                    <label key={t.id} className="flex items-center gap-2 cursor-pointer shrink-0">
                       <input
                         type="radio"
                         name="type"
