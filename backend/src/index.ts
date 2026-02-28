@@ -24,6 +24,7 @@ import escalationRoutes from './modules/escalation/escalation.controller';
 import reportsRoutes from './modules/reports/reports.controller';
 import installationsRoutes from './modules/maintenance/installations.controller';
 import ticketsRoutes from './modules/maintenance/tickets.controller';
+import refrigerantLogbookRoutes from './modules/refrigerantLogbook/refrigerantLogbook.controller';
 
 // Legacy routes (to be migrated or kept for compatibility)
 import customerRoutes from './routes/customers';
@@ -108,6 +109,7 @@ app.use('/api/devices', devicesRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/installations', installationsRoutes);
 app.use('/api/tickets', ticketsRoutes);
+app.use('/api/refrigerant-logbook', refrigerantLogbookRoutes);
 
 // Legacy routes (still functional)
 app.use('/api/customers', customerRoutes);

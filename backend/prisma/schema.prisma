@@ -437,6 +437,14 @@ model Installation {
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
 
+  // Uitbreiding Koudemiddelen Logboek (EU 517/2014, NBN EN 378)
+  brand                   String?           // Merk
+  modelNumber             String?           // Modelnummer
+  serialNumber            String?           // Serienummer
+  locationDescription     String?           // Specifieke plaats (bv. "kelder, links van ingang")
+  isHermeticallySealed    Boolean           @default(false) // Bepaalt drempelwaarde logboekplicht
+  installationNumber      String?           // Uniek installatienummer (automatisch gegenereerd)
+
   customerId   String
   customer     Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
   locationId   String?
@@ -447,10 +455,43 @@ model Installation {
   maintenanceReports    MaintenanceReport[]
   maintenanceReminders  MaintenanceReminder[]
   tickets               Ticket[]
+  refrigerantLogEntries RefrigerantLogEntry[]
 
   @@index([customerId])
   @@index([status])
   @@index([nextMaintenanceDate])
+}
+
+// Koudemiddelen Logboek – registraties per installatie (EU 517/2014, NBN EN 378)
+enum RefrigerantLogCategory {
+  LEKCONTROLE
+  BIJVULLING
+  TERUGWINNING
+  ONDERHOUD_SERVICE
+  HERSTELLING_LEK
+  BUITENDIENSTSTELLING
+  EERSTE_INBEDRIJFSTELLING
+}
+
+model RefrigerantLogEntry {
+  id              String                 @id @default(cuid())
+  category        RefrigerantLogCategory
+  performedAt     DateTime               // Datum en tijdstip handeling
+  technicianName  String                 // Naam uitvoerend technicus
+  technicianCertNr String?              // Certificaatnummer (BRL200/STEK)
+  notes           String?                // Opmerkingen
+  createdAt       DateTime               @default(now())
+  createdByUserId String?                // Audit: wie heeft toegevoegd
+
+  // Categorie-specifieke data (JSON)
+  data            Json                   // Alle verplichte velden per categorie
+
+  installationId  String
+  installation    Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+
+  @@index([installationId])
+  @@index([performedAt])
+  @@index([category])
 }
 
 // Geplande onderhoudsbeurt

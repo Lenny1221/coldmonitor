@@ -24,6 +24,8 @@ import Invitations from './pages/Invitations';
 import CustomerDetail from './pages/CustomerDetail';
 import MijnTickets from './pages/MijnTickets';
 import OnderhoudTickets from './pages/OnderhoudTickets';
+import RefrigerantLogbook from './pages/RefrigerantLogbook';
+import RefrigerantLogbookClient from './pages/RefrigerantLogbookClient';
 import Layout from './components/Layout';
 
 function NavigateToDashboard() {
@@ -136,6 +138,16 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/koudemiddelen-logboek"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <RefrigerantLogbookClient />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
       <Route path="/settings" element={<Navigate to="/alarmeringen" replace />} />
 
       {/* Technician Routes */}
@@ -167,6 +179,16 @@ function AppRoutes() {
               <PrivateRoute>
                 <Layout>
                   <OnderhoudTickets />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/technician/koudemiddelen-logboek"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <RefrigerantLogbook />
                 </Layout>
               </PrivateRoute>
             }

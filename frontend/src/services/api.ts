@@ -598,6 +598,33 @@ export const ticketsApi = {
   },
 };
 
+// Koudemiddelen Logboek API (EU 517/2014, NBN EN 378)
+export const refrigerantLogbookApi = {
+  getGwpTable: async () => {
+    const response = await api.get('/refrigerant-logbook/gwp');
+    return response.data;
+  },
+  getInstallations: async () => {
+    const response = await api.get('/refrigerant-logbook/installations');
+    return response.data;
+  },
+  getLogEntries: async (installationId: string) => {
+    const response = await api.get(`/refrigerant-logbook/installations/${installationId}/entries`);
+    return response.data;
+  },
+  addLogEntry: async (installationId: string, data: {
+    category: string;
+    performedAt: string;
+    technicianName: string;
+    technicianCertNr?: string;
+    notes?: string;
+    data: Record<string, any>;
+  }) => {
+    const response = await api.post(`/refrigerant-logbook/installations/${installationId}/entries`, data);
+    return response.data;
+  },
+};
+
 // Readings API
 export const readingsApi = {
   submitReading: async (serialNumber: string, data: {
