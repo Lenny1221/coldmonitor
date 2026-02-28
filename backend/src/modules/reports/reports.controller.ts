@@ -124,7 +124,13 @@ router.get(
       };
 
       const data = await fetchHaccpAuditData(params);
-      const pdfBuffer = await generateHaccpPdf(data);
+      let pdfBuffer: Buffer;
+      try {
+        pdfBuffer = await generateHaccpPdf(data);
+      } catch (pdfErr) {
+        logger.error('HACCP PDF generatie mislukt', pdfErr as Error, { customerId: custId });
+        throw pdfErr;
+      }
 
       // Log download
       await prisma.reportDownloadLog.create({

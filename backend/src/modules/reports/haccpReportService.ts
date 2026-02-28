@@ -12,7 +12,16 @@ import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
-const robotoPath = path.join(__dirname, '../../../node_modules/roboto-font/fonts/Roboto');
+// Gebruik require.resolve voor robuuste pad-resolutie in productie (Docker, Railway, etc.)
+function getRobotoFontPath(): string {
+  try {
+    return path.join(path.dirname(require.resolve('roboto-font/package.json')), 'fonts/Roboto');
+  } catch {
+    return path.join(__dirname, '../../../node_modules/roboto-font/fonts/Roboto');
+  }
+}
+
+const robotoPath = getRobotoFontPath();
 const fonts = {
   Roboto: {
     normal: path.join(robotoPath, 'roboto-regular-webfont.ttf'),
@@ -368,17 +377,13 @@ export async function generateHaccpPdf(data: HaccpAuditData): Promise<Buffer> {
     },
   };
 
-  return new Promise((resolve, reject) => {
-    try {
-      const pdfDoc = printer.createPdfKitDocument(docDef);
-      const chunks: Buffer[] = [];
-      pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
-      pdfDoc.on('error', reject);
-      pdfDoc.end();
-    } catch (e) {
-      reject(e);
-    }
+  const pdfDoc = await printer.createPdfKitDocument(docDef);
+  return new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
+    pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+    pdfDoc.on('error', reject);
+    pdfDoc.end();
   });
 }
 
