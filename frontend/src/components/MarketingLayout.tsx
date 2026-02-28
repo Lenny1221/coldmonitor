@@ -2,6 +2,47 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRightOnRectangleIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
+/** Inline IntelliFrost logo – voorkomt wit vakje bij laadfout */
+const IntelliFrostLogo: React.FC<{ size?: number; className?: string }> = ({ size = 40, className }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 72 72"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    style={{ filter: 'drop-shadow(0 0 10px rgba(0,200,255,0.5))' }}
+  >
+    <defs>
+      <linearGradient id="ml-grad" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#00e5ff" />
+        <stop offset="50%" stopColor="#0096ff" />
+        <stop offset="100%" stopColor="#00c8ff" />
+      </linearGradient>
+    </defs>
+    <path d="M36 4 L62 19 L62 49 L36 64 L10 49 L10 19 Z" stroke="url(#ml-grad)" strokeWidth="1.2" fill="none" opacity="0.5" />
+    <line x1="36" y1="8" x2="36" y2="64" stroke="url(#ml-grad)" strokeWidth="2.2" strokeLinecap="round" />
+    <line x1="8" y1="36" x2="64" y2="36" stroke="url(#ml-grad)" strokeWidth="2.2" strokeLinecap="round" />
+    <line x1="15" y1="15" x2="57" y2="57" stroke="url(#ml-grad)" strokeWidth="1.6" strokeLinecap="round" opacity="0.7" />
+    <line x1="57" y1="15" x2="15" y2="57" stroke="url(#ml-grad)" strokeWidth="1.6" strokeLinecap="round" opacity="0.7" />
+    <line x1="36" y1="8" x2="30" y2="14" stroke="url(#ml-grad)" strokeWidth="1.4" strokeLinecap="round" />
+    <line x1="36" y1="8" x2="42" y2="14" stroke="url(#ml-grad)" strokeWidth="1.4" strokeLinecap="round" />
+    <line x1="36" y1="64" x2="30" y2="58" stroke="url(#ml-grad)" strokeWidth="1.4" strokeLinecap="round" />
+    <line x1="36" y1="64" x2="42" y2="58" stroke="url(#ml-grad)" strokeWidth="1.4" strokeLinecap="round" />
+    <line x1="8" y1="36" x2="14" y2="30" stroke="url(#ml-grad)" strokeWidth="1.4" strokeLinecap="round" />
+    <line x1="8" y1="36" x2="14" y2="42" stroke="url(#ml-grad)" strokeWidth="1.4" strokeLinecap="round" />
+    <line x1="64" y1="36" x2="58" y2="30" stroke="url(#ml-grad)" strokeWidth="1.4" strokeLinecap="round" />
+    <line x1="64" y1="36" x2="58" y2="42" stroke="url(#ml-grad)" strokeWidth="1.4" strokeLinecap="round" />
+    <circle cx="36" cy="22" r="2.5" fill="url(#ml-grad)" />
+    <circle cx="36" cy="50" r="2.5" fill="url(#ml-grad)" />
+    <circle cx="22" cy="36" r="2.5" fill="url(#ml-grad)" />
+    <circle cx="50" cy="36" r="2.5" fill="url(#ml-grad)" />
+    <circle cx="36" cy="36" r="5.5" fill="url(#ml-grad)" opacity="0.9" />
+    <circle cx="36" cy="36" r="3" fill="#0a1520" />
+    <circle cx="36" cy="36" r="1.5" fill="url(#ml-grad)" />
+  </svg>
+);
+
 const navItems = [
   { to: '/', label: 'Home' },
   { to: '/product', label: 'Product' },
@@ -36,13 +77,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
     <div className="marketing-light min-h-screen bg-white text-[#212529]" data-marketing="true" style={{ colorScheme: 'light' }}>
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-white/95 backdrop-blur-md border-b border-gray-200">
         <Link to="/" className="flex items-center gap-3">
-          <img
-            src="/intellifrost-logo.svg"
-            alt="IntelliFrost logo"
-            width={40}
-            height={40}
-            style={{ filter: 'drop-shadow(0 0 10px rgba(0,200,255,0.5))' }}
-          />
+          <IntelliFrostLogo size={40} />
           <div>
             <span className="font-['Exo_2'] font-light text-xl tracking-tight text-gray-800">Intelli</span>
             <span
@@ -125,7 +160,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
       <footer className="border-t border-gray-200 py-8">
         <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <img src="/intellifrost-logo.svg" alt="IntelliFrost" width={24} height={24} />
+            <IntelliFrostLogo size={24} />
             <span className="text-sm text-gray-500">IntelliFrost – Smart Cold Intelligence</span>
           </div>
           <div className="flex gap-6">
