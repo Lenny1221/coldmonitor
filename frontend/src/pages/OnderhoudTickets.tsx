@@ -1,8 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { installationsApi, ticketsApi, techniciansApi, authApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getErrorMessage } from '../services/api';
-import { format } from 'date-fns';
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  subWeeks,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
+  isSameMonth,
+  isToday,
+} from 'date-fns';
+import { nl } from 'date-fns/locale';
+import { ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, ListBulletIcon } from '@heroicons/react/24/outline';
 
 const BADGE_COLORS: Record<string, string> = {
   IN_ORDE: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
@@ -11,14 +27,30 @@ const BADGE_COLORS: Record<string, string> = {
 };
 
 const STATUS_COLUMNS = ['NIEUW', 'IN_BEHANDELING', 'INGEPLAND', 'AFGEROND', 'GESLOTEN'];
+const AGENDA_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 
 const INSTALLATION_TYPES = ['KOELINSTALLATIE', 'AIRCO', 'WARMTEPOMP', 'VRIESINSTALLATIE'];
+
+/** Agenda-item: onderhoud (volgende datum) of ticket (gepland) */
+interface AgendaItem {
+  id: string;
+  type: 'onderhoud' | 'ticket';
+  date: Date;
+  hour?: number; // undefined = hele dag
+  title: string;
+  subtitle: string;
+  badge?: string;
+  color: string;
+  raw: any;
+}
 
 const OnderhoudTickets: React.FC = () => {
   const { user } = useAuth();
   const [installations, setInstallations] = useState<any[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [calendarView, setCalendarView] = useState<'week' | 'month'>('week');
+  const [calendarDate, setCalendarDate] = useState(new Date());
   const [showAddInstallation, setShowAddInstallation] = useState(false);
   const [addForm, setAddForm] = useState({
     customerId: '',
@@ -32,7 +64,9 @@ const OnderhoudTickets: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'onderhoud' | 'tickets'>('onderhoud');
+  const [onderhoudView, setOnderhoudView] = useState<'agenda' | 'lijst'>('agenda');
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [selectedAgendaItem, setSelectedAgendaItem] = useState<AgendaItem | null>(null);
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
@@ -69,6 +103,77 @@ const OnderhoudTickets: React.FC = () => {
     return acc;
   }, {} as Record<string, any[]>);
 
+  /** Agenda-items voor kalender: onderhoudsdata + ingeplande tickets */
+  const agendaItems: AgendaItem[] = useMemo(() => {
+    const items: AgendaItem[] = [];
+    installations.forEach((i) => {
+      if (i.nextMaintenanceDate) {
+        const d = new Date(i.nextMaintenanceDate);
+        items.push({
+          id: `inst-${i.id}`,
+          type: 'onderhoud',
+          date: d,
+          title: i.name,
+          subtitle: i.customer?.companyName ?? '',
+          badge: i.badge,
+          color: i.badge === 'VERVALLEN' ? 'bg-red-500' : i.badge === 'BINNENKORT' ? 'bg-amber-500' : 'bg-emerald-500',
+          raw: i,
+        });
+      }
+    });
+    tickets
+      .filter((t) => t.status === 'INGEPLAND' && t.scheduledAt)
+      .forEach((t) => {
+        const d = new Date(t.scheduledAt);
+        items.push({
+          id: `ticket-${t.id}`,
+          type: 'ticket',
+          date: d,
+          hour: d.getHours(),
+          title: t.customer?.companyName ?? 'Ticket',
+          subtitle: t.type,
+          color: 'bg-blue-500',
+          raw: t,
+        });
+      });
+    return items.sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [installations, tickets]);
+
+  const { weekStart, weekEnd, days } = useMemo(() => {
+    if (calendarView === 'week') {
+      const start = startOfWeek(calendarDate, { weekStartsOn: 1 });
+      const end = endOfWeek(calendarDate, { weekStartsOn: 1 });
+      const dayList = eachDayOfInterval({ start, end });
+      return { weekStart: start, weekEnd: end, days: dayList };
+    }
+    const monthStart = startOfMonth(calendarDate);
+    const monthEnd = endOfMonth(calendarDate);
+    const start = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const end = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    const dayList = eachDayOfInterval({ start, end });
+    return { weekStart: start, weekEnd: end, days: dayList };
+  }, [calendarDate, calendarView]);
+
+  const itemsByDay = useMemo(() => {
+    const map: Record<string, AgendaItem[]> = {};
+    days.forEach((d) => {
+      const key = format(d, 'yyyy-MM-dd');
+      map[key] = agendaItems.filter((item) => isSameDay(item.date, d));
+    });
+    return map;
+  }, [days, agendaItems]);
+
+  /** Voor weekweergave: items per dag per uur (of all-day) */
+  const itemsByDayAndHour = useMemo(() => {
+    const map: Record<string, Record<number | 'all', AgendaItem[]>> = {};
+    days.forEach((d) => {
+      const key = format(d, 'yyyy-MM-dd');
+      const dayItems = agendaItems.filter((item) => isSameDay(item.date, d));
+      map[key] = { all: dayItems.filter((i) => i.hour == null), ...AGENDA_HOURS.reduce((acc, h) => ({ ...acc, [h]: dayItems.filter((i) => i.hour === h) }), {} as Record<number, AgendaItem[]>) };
+    });
+    return map;
+  }, [days, agendaItems]);
+
   const handleTicketStatus = async (ticketId: string, status: string, extra?: { scheduledAt?: string; confirmedSlotIndex?: number }) => {
     setUpdating(true);
     try {
@@ -96,10 +201,18 @@ const OnderhoudTickets: React.FC = () => {
 
       <div className="flex gap-2 border-b border-gray-200 dark:border-frost-600">
         <button
-          onClick={() => setActiveTab('onderhoud')}
-          className={`px-4 py-2 font-medium ${activeTab === 'onderhoud' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+          onClick={() => { setActiveTab('onderhoud'); setOnderhoudView('agenda'); }}
+          className={`px-4 py-2 font-medium flex items-center gap-2 ${activeTab === 'onderhoud' && onderhoudView === 'agenda' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
         >
-          Onderhoudsplanning
+          <CalendarDaysIcon className="h-5 w-5" />
+          Agenda
+        </button>
+        <button
+          onClick={() => { setActiveTab('onderhoud'); setOnderhoudView('lijst'); }}
+          className={`px-4 py-2 font-medium flex items-center gap-2 ${activeTab === 'onderhoud' && onderhoudView === 'lijst' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+        >
+          <ListBulletIcon className="h-5 w-5" />
+          Lijst
         </button>
         <button
           onClick={() => setActiveTab('tickets')}
@@ -109,7 +222,221 @@ const OnderhoudTickets: React.FC = () => {
         </button>
       </div>
 
-      {activeTab === 'onderhoud' && (
+      {activeTab === 'onderhoud' && onderhoudView === 'agenda' && (
+        <div className="bg-white dark:bg-frost-800 shadow-xl rounded-xl overflow-hidden border border-gray-200 dark:border-frost-600">
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCalendarDate(calendarView === 'week' ? subWeeks(calendarDate, 1) : subMonths(calendarDate, 1))}
+                  className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-frost-700 transition-colors"
+                >
+                  <ChevronLeftIcon className="h-5 w-5" />
+                </button>
+                <span className="font-bold text-gray-900 dark:text-frost-100 min-w-[200px] text-center text-lg">
+                  {calendarView === 'week'
+                    ? `Week ${format(weekStart, 'd', { locale: nl })} – ${format(weekEnd, 'd MMM yyyy', { locale: nl })}`
+                    : format(calendarDate, 'MMMM yyyy', { locale: nl })}
+                </span>
+                <button
+                  onClick={() => setCalendarDate(calendarView === 'week' ? addWeeks(calendarDate, 1) : addMonths(calendarDate, 1))}
+                  className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-frost-700 transition-colors"
+                >
+                  <ChevronRightIcon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setCalendarDate(new Date())}
+                  className="px-4 py-2 text-sm font-medium border-2 border-blue-600 text-blue-600 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                >
+                  Vandaag
+                </button>
+              </div>
+              <div className="flex gap-1 p-1 bg-gray-100 dark:bg-frost-700 rounded-xl">
+                <button
+                  onClick={() => setCalendarView('week')}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${calendarView === 'week' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 dark:text-frost-300 hover:bg-gray-200 dark:hover:bg-frost-600'}`}
+                >
+                  Week
+                </button>
+                <button
+                  onClick={() => setCalendarView('month')}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${calendarView === 'month' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 dark:text-frost-300 hover:bg-gray-200 dark:hover:bg-frost-600'}`}
+                >
+                  Maand
+                </button>
+              </div>
+            </div>
+
+            {calendarView === 'week' ? (
+              <div className="overflow-x-auto -mx-2">
+                <div className="min-w-[700px] border border-gray-200 dark:border-frost-600 rounded-xl overflow-hidden">
+                  <div className="grid grid-cols-8 bg-gray-50 dark:bg-frost-800">
+                    <div className="p-2 border-b border-r border-gray-200 dark:border-frost-600" />
+                    {days.map((day) => (
+                      <div
+                        key={format(day, 'yyyy-MM-dd')}
+                        className={`p-2 text-center border-b border-r last:border-r-0 border-gray-200 dark:border-frost-600 ${isToday(day) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                      >
+                        <div className="text-xs font-semibold text-gray-500 dark:text-frost-400 uppercase">
+                          {format(day, 'EEE', { locale: nl })}
+                        </div>
+                        <div className={`text-lg font-bold ${isToday(day) ? 'text-blue-600' : 'text-gray-900 dark:text-frost-100'}`}>
+                          {format(day, 'd')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-8 border-b border-gray-200 dark:border-frost-600">
+                    <div className="p-2 border-r border-gray-200 dark:border-frost-600 bg-gray-50 dark:bg-frost-800 text-xs font-medium text-gray-500">
+                      Hele dag
+                    </div>
+                    {days.map((day) => {
+                      const key = format(day, 'yyyy-MM-dd');
+                      const allItems = (itemsByDayAndHour[key]?.all ?? []) as AgendaItem[];
+                      return (
+                        <div
+                          key={key}
+                          className={`min-h-[44px] p-2 border-r last:border-r-0 border-gray-200 dark:border-frost-600 ${isToday(day) ? 'bg-blue-50/50 dark:bg-blue-900/10' : 'bg-white dark:bg-frost-800'}`}
+                        >
+                          <div className="space-y-1.5">
+                            {allItems.map((item) => (
+                              <button
+                                key={item.id}
+                                onClick={() => setSelectedAgendaItem(item)}
+                                className={`w-full text-left text-xs px-2 py-1.5 rounded-lg font-medium truncate ${item.color} text-white hover:opacity-90 hover:ring-2 ring-offset-1 ring-white/50 transition-all shadow-sm`}
+                                title={`${item.title} – ${item.subtitle}`}
+                              >
+                                {item.title}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {AGENDA_HOURS.map((hour) => (
+                    <div key={hour} className="grid grid-cols-8 border-b last:border-b-0 border-gray-200 dark:border-frost-600">
+                      <div className="p-1.5 border-r border-gray-200 dark:border-frost-600 bg-gray-50 dark:bg-frost-800 text-xs font-medium text-gray-500 shrink-0">
+                        {hour}:00
+                      </div>
+                      {days.map((day) => {
+                        const key = format(day, 'yyyy-MM-dd');
+                        const hourItems = (itemsByDayAndHour[key]?.[hour] ?? []) as AgendaItem[];
+                        return (
+                          <div
+                            key={key}
+                            className={`min-h-[48px] p-1.5 border-r last:border-r-0 border-gray-200 dark:border-frost-600 ${isToday(day) ? 'bg-blue-50/30 dark:bg-blue-900/5' : 'bg-white dark:bg-frost-800'}`}
+                          >
+                            {hourItems.map((item) => (
+                              <button
+                                key={item.id}
+                                onClick={() => setSelectedAgendaItem(item)}
+                                className={`w-full text-left text-xs px-2 py-1.5 rounded-lg font-medium truncate ${item.color} text-white hover:opacity-90 hover:ring-2 ring-offset-1 ring-white/50 transition-all shadow-sm`}
+                                title={`${item.title} – ${item.subtitle} (${hour}:00)`}
+                              >
+                                {item.title}
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-frost-600 rounded-xl overflow-hidden">
+                {['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'].map((d) => (
+                  <div key={d} className="bg-gray-100 dark:bg-frost-800 p-3 text-center text-sm font-bold text-gray-600 dark:text-frost-400 uppercase">
+                    {d}
+                  </div>
+                ))}
+                {days.map((day) => {
+                  const key = format(day, 'yyyy-MM-dd');
+                  const dayItems = itemsByDay[key] ?? [];
+                  const isCurrentMonth = isSameMonth(day, calendarDate);
+                  return (
+                    <div
+                      key={key}
+                      className={`min-h-[100px] sm:min-h-[120px] p-3 bg-white dark:bg-frost-800 ${!isCurrentMonth ? 'opacity-40' : ''} ${isToday(day) ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
+                    >
+                      <div
+                        className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold mb-2 ${
+                          isToday(day) ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-frost-200'
+                        }`}
+                      >
+                        {format(day, 'd')}
+                      </div>
+                      <div className="space-y-1.5">
+                        {dayItems.slice(0, 4).map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => setSelectedAgendaItem(item)}
+                            className={`block w-full text-left text-xs px-2 py-1.5 rounded-lg truncate font-medium ${item.color} text-white hover:opacity-90 hover:ring-2 ring-offset-1 ring-white/50 transition-all shadow-sm`}
+                            title={`${item.title} – ${item.subtitle}`}
+                          >
+                            {item.title}
+                          </button>
+                        ))}
+                        {dayItems.length > 4 && (
+                          <div className="text-xs text-gray-500 font-medium">+{dayItems.length - 4}</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-wrap gap-6 text-sm">
+              <span className="flex items-center gap-2 font-medium">
+                <span className="w-4 h-4 rounded-md bg-emerald-500 shadow" /> Onderhoud in orde
+              </span>
+              <span className="flex items-center gap-2 font-medium">
+                <span className="w-4 h-4 rounded-md bg-amber-500 shadow" /> Onderhoud binnenkort
+              </span>
+              <span className="flex items-center gap-2 font-medium">
+                <span className="w-4 h-4 rounded-md bg-red-500 shadow" /> Onderhoud vervallen
+              </span>
+              <span className="flex items-center gap-2 font-medium">
+                <span className="w-4 h-4 rounded-md bg-blue-500 shadow" /> Ticket ingepland
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedAgendaItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedAgendaItem(null)}>
+          <div className="bg-white dark:bg-frost-800 rounded-xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-frost-600" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-4">
+              <span className={`px-3 py-1 rounded-lg text-sm font-bold text-white ${selectedAgendaItem.color}`}>
+                {selectedAgendaItem.type === 'onderhoud' ? 'Onderhoud' : 'Ticket'}
+              </span>
+              <button onClick={() => setSelectedAgendaItem(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-frost-100 mb-1">{selectedAgendaItem.title}</h3>
+            <p className="text-gray-600 dark:text-frost-400 mb-4">{selectedAgendaItem.subtitle}</p>
+            <div className="space-y-2 text-sm">
+              <p><strong>Datum:</strong> {format(selectedAgendaItem.date, 'EEEE d MMMM yyyy', { locale: nl })}</p>
+              {selectedAgendaItem.hour != null && <p><strong>Tijd:</strong> {selectedAgendaItem.hour}:00</p>}
+              {selectedAgendaItem.type === 'onderhoud' && selectedAgendaItem.badge && (
+                <p><strong>Status:</strong> {selectedAgendaItem.badge === 'IN_ORDE' ? 'In orde' : selectedAgendaItem.badge === 'BINNENKORT' ? 'Binnenkort' : 'Vervallen'}</p>
+              )}
+            </div>
+            {selectedAgendaItem.type === 'ticket' && (
+              <button
+                onClick={() => { setSelectedAgendaItem(null); setSelectedTicket(selectedAgendaItem.raw); setActiveTab('tickets'); }}
+                className="mt-4 w-full py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+              >
+                Ticket openen
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'onderhoud' && onderhoudView === 'lijst' && (
         <div className="bg-white dark:bg-frost-800 shadow rounded-lg overflow-hidden">
           <div className="px-4 py-5 sm:p-6">
             <div className="flex justify-between items-center mb-4">
