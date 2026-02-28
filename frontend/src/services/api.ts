@@ -575,6 +575,20 @@ export const ticketsApi = {
     const response = await api.post('/tickets', data);
     return response.data;
   },
+  update: async (id: string, data: {
+    type?: string;
+    urgency?: string;
+    description?: string;
+    installationId?: string;
+    proposedSlots?: { slotIndex: number; date: string; preference: string }[];
+  }) => {
+    const response = await api.patch(`/tickets/${id}`, data);
+    return response.data;
+  },
+  cancel: async (id: string) => {
+    const response = await api.patch(`/tickets/${id}`, { cancel: true });
+    return response.data;
+  },
   updateStatus: async (
     id: string,
     data: { status?: string; scheduledAt?: string; resolutionSummary?: string; confirmedSlotIndex?: number }

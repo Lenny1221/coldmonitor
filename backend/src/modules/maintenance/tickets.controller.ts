@@ -27,6 +27,8 @@ const createTicketSchema = z.object({
   ).min(1).max(3),
 });
 
+const updateTicketSchema = createTicketSchema.partial();
+
 /** GET /tickets – lijst tickets */
 router.get('/', requireAuth, requireRole('TECHNICIAN', 'ADMIN', 'CUSTOMER'), async (req: AuthRequest, res, next) => {
   try {
@@ -162,6 +164,95 @@ router.post('/', requireAuth, requireRole('CUSTOMER'), async (req: AuthRequest, 
     }
 
     res.status(201).json(ticket);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** PATCH /tickets/:id – klant past ticket aan of annuleert */
+router.patch('/:id', requireAuth, requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'), async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const { cancel, ...body } = req.body;
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      include: { proposedSlots: true },
+    });
+    if (!ticket) throw new CustomError('Ticket niet gevonden', 404, 'NOT_FOUND');
+
+    // Klant: alleen eigen tickets
+    if (req.userRole === 'CUSTOMER') {
+      if (ticket.customerId !== req.customerId) throw new CustomError('Geen toegang', 403, 'ACCESS_DENIED');
+    } else if (req.userRole === 'TECHNICIAN') {
+      const cust = await prisma.customer.findUnique({
+        where: { id: ticket.customerId },
+        select: { linkedTechnicianId: true },
+      });
+      if (cust?.linkedTechnicianId !== req.technicianId) throw new CustomError('Geen toegang', 403, 'ACCESS_DENIED');
+    }
+
+    // Aanpassen: alleen wanneer NIEUW of IN_BEHANDELING (niet bij cancel)
+    if (!cancel && !['NIEUW', 'IN_BEHANDELING'].includes(ticket.status)) {
+      throw new CustomError('Ticket kan niet meer worden aangepast', 400, 'INVALID_STATUS');
+    }
+
+    // Annuleren (alleen als nog niet afgerond)
+    if (cancel === true) {
+      if (!['NIEUW', 'IN_BEHANDELING', 'INGEPLAND'].includes(ticket.status)) {
+        throw new CustomError('Dit ticket kan niet meer worden geannuleerd', 400, 'INVALID_STATUS');
+      }
+      const updated = await prisma.ticket.update({
+        where: { id },
+        data: { status: 'GESLOTEN', closedAt: new Date() },
+      });
+      await prisma.ticketStatusLog.create({
+        data: { ticketId: id, status: 'GESLOTEN', note: req.userRole === 'CUSTOMER' ? 'Geannuleerd door klant' : 'Geannuleerd' },
+      });
+      return res.json(updated);
+    }
+
+    // Aanpassen
+    const updateData = updateTicketSchema.parse(body);
+    const data: any = {};
+
+    if (updateData.type !== undefined) data.type = updateData.type;
+    if (updateData.urgency !== undefined) data.urgency = updateData.urgency;
+    if (updateData.description !== undefined) data.description = updateData.description;
+    if (updateData.installationId !== undefined) data.installationId = updateData.installationId || null;
+
+    if (updateData.installationId !== undefined) {
+      if (updateData.installationId) {
+        const inst = await prisma.installation.findFirst({
+          where: { id: updateData.installationId, customerId: ticket.customerId },
+        });
+        if (!inst) throw new CustomError('Installatie niet gevonden', 400, 'INVALID_INSTALLATION');
+      }
+    }
+
+    if (updateData.proposedSlots && updateData.proposedSlots.length > 0) {
+      await prisma.ticketTimeSlot.deleteMany({ where: { ticketId: id } });
+      await prisma.ticketTimeSlot.createMany({
+        data: updateData.proposedSlots.map((s) => ({
+          ticketId: id,
+          slotIndex: s.slotIndex,
+          date: new Date(s.date),
+          preference: s.preference,
+        })),
+      });
+    }
+
+    const updated = await prisma.ticket.update({
+      where: { id },
+      data,
+      include: {
+        customer: true,
+        installation: true,
+        proposedSlots: true,
+      },
+    });
+
+    res.json(updated);
   } catch (e) {
     next(e);
   }
