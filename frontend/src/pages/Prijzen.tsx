@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { CheckIcon, XMarkIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
@@ -107,12 +108,22 @@ const Prijzen: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-6">
+      <Helmet>
+        <title>Prijzen – IntelliFrost | Transparante abonnementen voor koelcelmonitoring</title>
+        <meta name="description" content="Bekijk de abonnementen van IntelliFrost: Starter, Professional en Enterprise. Koelcelmonitoring op maat van uw bedrijf. Vraag een vrijblijvende offerte aan." />
+        <meta name="keywords" content="prijs koelcelmonitoring, abonnement temperatuurmonitoring, offerte koelcel bewaking, kosten HACCP monitoring" />
+        <link rel="canonical" href="https://intellifrost.be/prijzen" />
+        <meta property="og:title" content="Prijzen – IntelliFrost | Abonnementen op maat" />
+        <meta property="og:description" content="Transparante abonnementen voor koelcelmonitoring. Starter, Professional en Enterprise. Vraag een offerte aan." />
+        <meta property="og:url" content="https://intellifrost.be/prijzen" />
+      </Helmet>
+
       {/* Header */}
       <div className="text-center mb-14">
-        <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 dark:text-frost-100 mb-4">
+        <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
           Transparante prijzen
         </h1>
-        <p className="text-lg text-gray-600 dark:text-slate-400 max-w-xl mx-auto">
+        <p className="text-lg text-gray-600 max-w-xl mx-auto">
           Kies het plan dat past bij uw bedrijfsgrootte. Alle plannen zijn beschikbaar op maat –
           neem contact op voor een persoonlijke offerte.
         </p>
@@ -126,7 +137,7 @@ const Prijzen: React.FC = () => {
             className={`flex flex-col rounded-3xl border-2 overflow-hidden ${
               plan.highlight
                 ? 'border-[#00c8ff] bg-gradient-to-b from-[#00c8ff]/5 to-transparent'
-                : 'border-gray-200 dark:border-frost-800 bg-gray-50 dark:bg-frost-900'
+                : 'border-gray-200 bg-gray-50'
             }`}
           >
             <div className="p-8 flex-1">
@@ -135,10 +146,10 @@ const Prijzen: React.FC = () => {
                   {plan.badge}
                 </div>
               )}
-              <h2 className="font-['Exo_2'] text-xl font-bold text-gray-900 dark:text-frost-100 mb-1">
+              <h2 className="font-['Exo_2'] text-xl font-bold text-gray-900 mb-1">
                 {plan.name}
               </h2>
-              <p className="text-sm text-gray-500 dark:text-slate-500 mb-4">{plan.tagline}</p>
+              <p className="text-sm text-gray-500 mb-4">{plan.tagline}</p>
               <div className="text-3xl font-bold text-[#00c8ff] mb-8">{plan.price}</div>
               <ul className="space-y-2.5">
                 {plan.features.map((f) => (
@@ -146,9 +157,9 @@ const Prijzen: React.FC = () => {
                     {f.included ? (
                       <CheckIcon className="h-4 w-4 text-[#00c8ff] flex-shrink-0" />
                     ) : (
-                      <XMarkIcon className="h-4 w-4 text-gray-300 dark:text-slate-700 flex-shrink-0" />
+                      <XMarkIcon className="h-4 w-4 text-gray-300 flex-shrink-0" />
                     )}
-                    <span className={f.included ? 'text-gray-700 dark:text-slate-300' : 'text-gray-400 dark:text-slate-600'}>
+                    <span className={f.included ? 'text-gray-700' : 'text-gray-400'}>
                       {f.text}
                     </span>
                   </li>
@@ -173,17 +184,17 @@ const Prijzen: React.FC = () => {
 
       {/* Add-ons */}
       <section className="mb-16">
-        <h2 className="font-['Exo_2'] text-2xl font-bold text-gray-900 dark:text-frost-100 mb-4">
+        <h2 className="font-['Exo_2'] text-2xl font-bold text-gray-900 mb-4">
           Uitbreidingen & add-ons
         </h2>
-        <p className="text-gray-600 dark:text-slate-400 mb-8">
+        <p className="text-gray-600 mb-8">
           Breidt u uw abonnement uit met extra modules op maat van uw noden.
         </p>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
           {addons.map((addon) => (
-            <div key={addon.name} className="p-5 rounded-xl bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800">
-              <div className="font-semibold text-gray-900 dark:text-frost-100 mb-1 text-sm">{addon.name}</div>
-              <div className="text-xs text-gray-500 dark:text-slate-500">{addon.desc}</div>
+            <div key={addon.name} className="p-5 rounded-xl bg-gray-50 border border-gray-200">
+              <div className="font-semibold text-gray-900 mb-1 text-sm">{addon.name}</div>
+              <div className="text-xs text-gray-500">{addon.desc}</div>
             </div>
           ))}
         </div>
@@ -191,10 +202,10 @@ const Prijzen: React.FC = () => {
 
       {/* ROI section */}
       <section className="mb-16 p-8 rounded-3xl bg-gradient-to-br from-[#00c8ff]/10 to-transparent border border-[#00c8ff]/20">
-        <h2 className="font-['Exo_2'] text-2xl font-bold text-gray-900 dark:text-frost-100 mb-4">
+        <h2 className="font-['Exo_2'] text-2xl font-bold text-gray-900 mb-4">
           Wat kost een gemiste alarm u?
         </h2>
-        <p className="text-gray-600 dark:text-slate-400 mb-8 leading-relaxed">
+        <p className="text-gray-600 mb-8 leading-relaxed">
           Een defecte koelcel die 's nachts niet opgemerkt wordt kan leiden tot enorme schade. IntelliFrost betaalt
           zichzelf terug bij het eerste vermeden incident.
         </p>
@@ -204,15 +215,15 @@ const Prijzen: React.FC = () => {
             { scenario: 'Farmaceutisch – vaccins', loss: '€ 10.000 – 50.000', desc: 'Productschade + aansprakelijkheid + reputatie' },
             { scenario: 'Restaurant vriezer weekend', loss: '€ 2.000 – 8.000', desc: 'Vlees, vis, ingrediënten + noodaankopen' },
           ].map((item) => (
-            <div key={item.scenario} className="p-5 rounded-xl bg-white dark:bg-frost-900 border border-gray-200 dark:border-frost-800">
-              <div className="text-xs text-gray-500 dark:text-slate-500 mb-2">{item.scenario}</div>
+            <div key={item.scenario} className="p-5 rounded-xl bg-white border border-gray-200">
+              <div className="text-xs text-gray-500 mb-2">{item.scenario}</div>
               <div className="font-['Exo_2'] text-xl font-bold text-red-500 mb-1">{item.loss}</div>
-              <div className="text-xs text-gray-500 dark:text-slate-500">{item.desc}</div>
+              <div className="text-xs text-gray-500">{item.desc}</div>
             </div>
           ))}
         </div>
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600 dark:text-slate-400">
+          <p className="text-sm text-gray-600">
             IntelliFrost kost slechts een fractie van één vermeden incident. En het beschermt u elke nacht.
           </p>
         </div>
@@ -220,18 +231,18 @@ const Prijzen: React.FC = () => {
 
       {/* Pricing FAQ */}
       <section className="mb-14">
-        <h2 className="font-['Exo_2'] text-2xl font-bold text-gray-900 dark:text-frost-100 mb-8">
+        <h2 className="font-['Exo_2'] text-2xl font-bold text-gray-900 mb-8">
           Veelgestelde vragen over prijzen
         </h2>
         <div className="space-y-2">
           {faqs.map((faq, i) => (
             <div
               key={i}
-              className="rounded-xl bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800 overflow-hidden"
+              className="rounded-xl bg-gray-50 border border-gray-200 overflow-hidden"
             >
               <button
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full flex items-center justify-between p-5 text-left font-medium text-gray-900 dark:text-frost-100 hover:bg-gray-100/50 dark:hover:bg-frost-800/50 transition-colors text-sm"
+                className="w-full flex items-center justify-between p-5 text-left font-medium text-gray-900 hover:bg-gray-100/50 transition-colors text-sm"
               >
                 {faq.q}
                 <span className="text-[#00c8ff] flex-shrink-0 ml-4 text-lg leading-none">
@@ -239,7 +250,7 @@ const Prijzen: React.FC = () => {
                 </span>
               </button>
               {openFaq === i && (
-                <div className="px-5 pb-5 text-sm text-gray-600 dark:text-slate-400 leading-relaxed">
+                <div className="px-5 pb-5 text-sm text-gray-600 leading-relaxed">
                   {faq.a}
                 </div>
               )}
@@ -249,11 +260,11 @@ const Prijzen: React.FC = () => {
       </section>
 
       {/* CTA */}
-      <section className="text-center mb-6 p-10 rounded-3xl bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800">
-        <h2 className="font-['Exo_2'] text-xl font-bold text-gray-900 dark:text-frost-100 mb-3">
+      <section className="text-center mb-6 p-10 rounded-3xl bg-gray-50 border border-gray-200">
+        <h2 className="font-['Exo_2'] text-xl font-bold text-gray-900 mb-3">
           Persoonlijke offerte aanvragen
         </h2>
-        <p className="text-gray-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
+        <p className="text-gray-600 mb-6 max-w-md mx-auto">
           Elke situatie is anders. Contacteer ons voor een offerte op maat van uw bedrijf, aantal locaties en koelcellen.
         </p>
         <Link

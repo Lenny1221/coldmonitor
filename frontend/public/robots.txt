@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /locations
+Disallow: /coldcells
+Disallow: /technician
+Disallow: /customers
+Disallow: /invitations
+Disallow: /login
+Disallow: /verify-email-sent
+Disallow: /verify-email-required
+
+Sitemap: https://intellifrost.be/sitemap.xml

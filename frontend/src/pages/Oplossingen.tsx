@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
   CubeIcon,
@@ -173,12 +174,22 @@ const Oplossingen: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-6">
+      <Helmet>
+        <title>Oplossingen per sector – IntelliFrost | Retail, Farmaceutisch, Logistiek & meer</title>
+        <meta name="description" content="IntelliFrost biedt koelcelmonitoring voor retail, supermarkten, farmaceutische bedrijven, logistiek, ziekenhuizen en koeltechnici. HACCP, GDP en GMP compliant." />
+        <meta name="keywords" content="koelcelmonitoring retail, farmaceutische temperatuurmonitoring, logistiek koelketen, HACCP koelcel, supermarkt temperatuuralarm, technicus koelcel monitoring" />
+        <link rel="canonical" href="https://intellifrost.be/oplossingen" />
+        <meta property="og:title" content="Oplossingen per sector – IntelliFrost" />
+        <meta property="og:description" content="Koelcelmonitoring voor retail, farmaceutisch, logistiek, medisch en meer. Ontdek welke oplossing bij uw sector past." />
+        <meta property="og:url" content="https://intellifrost.be/oplossingen" />
+      </Helmet>
+
       {/* Header */}
       <div className="mb-14">
-        <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 dark:text-frost-100 mb-4">
+        <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
           Oplossingen per sector
         </h1>
-        <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+        <p className="text-lg text-gray-600 max-w-2xl leading-relaxed">
           IntelliFrost is inzetbaar in vrijwel elke sector waar temperatuurgevoelige producten worden bewaard.
           Elk platform is hetzelfde – de configuratie past zich aan uw sector aan.
         </p>
@@ -187,19 +198,19 @@ const Oplossingen: React.FC = () => {
       {/* Core capabilities */}
       <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 mb-16">
         {coreCapabilities.map((cap) => (
-          <div key={cap.title} className="p-5 rounded-2xl bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800 text-center">
+          <div key={cap.title} className="p-5 rounded-2xl bg-gray-50 border border-gray-200 text-center">
             <div className="w-10 h-10 rounded-lg bg-[#00c8ff]/15 flex items-center justify-center mx-auto mb-3">
               <cap.icon className="h-5 w-5 text-[#00c8ff]" />
             </div>
-            <div className="font-semibold text-gray-900 dark:text-frost-100 text-sm mb-1">{cap.title}</div>
-            <div className="text-xs text-gray-500 dark:text-slate-500">{cap.desc}</div>
+            <div className="font-semibold text-gray-900 text-sm mb-1">{cap.title}</div>
+            <div className="text-xs text-gray-500">{cap.desc}</div>
           </div>
         ))}
       </div>
 
       {/* Sector selector */}
       <div className="mb-14">
-        <h2 className="font-['Exo_2'] text-2xl font-bold text-gray-900 dark:text-frost-100 mb-8">
+        <h2 className="font-['Exo_2'] text-2xl font-bold text-gray-900 mb-8">
           Kies uw sector
         </h2>
         <div className="flex flex-wrap gap-2 mb-8">
@@ -225,8 +236,9 @@ const Oplossingen: React.FC = () => {
           <div className="relative h-52 overflow-hidden">
             <img
               src={sector.img}
-              alt={sector.title}
+              alt={`${sector.title} – temperatuurmonitoring`}
               className="w-full h-full object-cover"
+              loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#0D1B2E]/75 via-[#0D1B2E]/40 to-transparent" />
             <div className="absolute inset-0 p-6 flex items-end">
@@ -294,16 +306,16 @@ const Oplossingen: React.FC = () => {
       </div>
 
       {/* Technicus-koppeling */}
-      <section className="mb-14 p-8 rounded-3xl bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800">
+      <section className="mb-14 p-8 rounded-3xl bg-gray-50 border border-gray-200">
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00c8ff]/10 border border-[#00c8ff]/30 text-[#00c8ff] text-xs font-medium mb-4">
               Unieke functie
             </div>
-            <h2 className="font-['Exo_2'] text-xl font-bold text-gray-900 dark:text-frost-100 mb-3">
+            <h2 className="font-['Exo_2'] text-xl font-bold text-gray-900 mb-3">
               Klant–technicus koppeling
             </h2>
-            <p className="text-gray-600 dark:text-slate-400 mb-4 leading-relaxed">
+            <p className="text-gray-600 mb-4 leading-relaxed">
               Een technicus kan via het platform een uitnodiging sturen aan een klant. Bij acceptatie heeft de technicus
               toegang tot de alarmen van die klant. Zo kan hij proactief ingrijpen – nog voor de klant het probleem merkt.
             </p>
@@ -314,7 +326,7 @@ const Oplossingen: React.FC = () => {
                 'Alarmen van klanten zichtbaar in technicusportal',
                 'Volledige historiek beschikbaar voor onderhoudsgesprekken',
               ].map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm text-gray-700 dark:text-slate-300">
+                <li key={item} className="flex items-start gap-2 text-sm text-gray-700">
                   <CheckCircleIcon className="h-4 w-4 text-[#00c8ff] flex-shrink-0 mt-0.5" />
                   {item}
                 </li>
@@ -328,11 +340,11 @@ const Oplossingen: React.FC = () => {
               { step: '3', text: 'Technicus ziet nu klantalarmen in zijn dashboard', color: 'bg-[#00c8ff]' },
               { step: '4', text: 'Proactief ingrijpen bij problemen – vóór escalatie', color: 'bg-[#00c8ff]' },
             ].map((step) => (
-              <div key={step.step} className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-frost-800 border border-gray-200 dark:border-frost-700">
+              <div key={step.step} className="flex items-center gap-4 p-4 rounded-xl bg-white border border-gray-200">
                 <div className={`w-8 h-8 rounded-full ${step.color} flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}>
                   {step.step}
                 </div>
-                <span className="text-sm text-gray-700 dark:text-slate-300">{step.text}</span>
+                <span className="text-sm text-gray-700">{step.text}</span>
               </div>
             ))}
           </div>
@@ -341,10 +353,10 @@ const Oplossingen: React.FC = () => {
 
       {/* CTA */}
       <section className="text-center mb-6">
-        <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 dark:text-frost-100 mb-3">
+        <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
           Klaar om uw installatie te beschermen?
         </h2>
-        <p className="text-gray-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
+        <p className="text-gray-600 mb-6 max-w-md mx-auto">
           Vraag een vrijblijvende offerte aan en ontdek welke oplossing het beste bij uw sector past.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

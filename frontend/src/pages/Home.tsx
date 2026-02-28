@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
   ArrowRightOnRectangleIcon,
@@ -83,8 +84,33 @@ const features = [
 ];
 
 const Home: React.FC = () => {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'IntelliFrost',
+    description: 'Koelcelmonitoring met realtime temperatuurbewaking en automatische escalatie via e-mail, SMS en AI-telefoon. HACCP-compliant.',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR', priceSpecification: 'Op maat' },
+    areaServed: ['BE', 'NL'],
+    inLanguage: 'nl',
+  };
+
   return (
     <>
+      <Helmet>
+        <title>IntelliFrost – Koelcelmonitoring 24/7 voor België & Nederland</title>
+        <meta name="description" content="IntelliFrost bewaakt uw koel- en vriescellen 24/7. Realtime temperatuurmonitoring met automatische escalatie via e-mail, SMS en AI-telefoon. HACCP-compliant." />
+        <meta name="keywords" content="koelcelmonitoring, temperatuurmonitoring, HACCP, koelcel alarm, vriescell bewaking, IoT sensor koelcel, escalatie alarm" />
+        <link rel="canonical" href="https://intellifrost.be/" />
+        <meta property="og:title" content="IntelliFrost – Koelcelmonitoring 24/7" />
+        <meta property="og:description" content="Bewaking van koel- en vriescellen met slimme escalatie en HACCP-rapportage. Voor retail, farmaceutisch, logistiek en meer." />
+        <meta property="og:url" content="https://intellifrost.be/" />
+        <meta name="twitter:title" content="IntelliFrost – Koelcelmonitoring 24/7" />
+        <meta name="twitter:description" content="Realtime bewaking van koel- en vriescellen met slimme escalatie via e-mail, SMS en AI-telefoon." />
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
+
       {/* Hero – split layout */}
       <section className="max-w-6xl mx-auto px-6 mb-24">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -134,8 +160,9 @@ const Home: React.FC = () => {
             <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl">
               <img
                 src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=900&q=85"
-                alt="Koelcel opslag"
+                alt="Koelcel magazijn met opgeslagen producten"
                 className="w-full h-full object-cover"
+                loading="eager"
               />
               {/* Overlay met cijfers */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B2E]/80 via-transparent to-transparent" />
@@ -164,8 +191,9 @@ const Home: React.FC = () => {
           <div className="relative rounded-3xl overflow-hidden h-80 lg:h-auto lg:min-h-[400px] shadow-xl order-2 lg:order-1">
             <img
               src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80"
-              alt="IoT sensor technologie"
+              alt="IoT sensor technologie voor temperatuurmonitoring"
               className="w-full h-full object-cover"
+              loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-tr from-[#00c8ff]/30 to-transparent mix-blend-multiply" />
           </div>
@@ -270,8 +298,9 @@ const Home: React.FC = () => {
               <div className="relative h-44 overflow-hidden">
                 <img
                   src={s.img}
-                  alt={s.title}
+                  alt={`${s.title} – koelcelmonitoring`}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent" />
                 <div className="absolute bottom-3 left-4 flex items-center gap-2">
@@ -300,8 +329,9 @@ const Home: React.FC = () => {
       <section className="relative mb-24 mx-4 sm:mx-8 lg:mx-16 rounded-3xl overflow-hidden shadow-2xl">
         <img
           src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1600&q=85"
-          alt="Koelcel magazijn"
+          alt="Groot koelcel magazijn voor industriële opslag"
           className="w-full h-72 sm:h-96 object-cover"
+          loading="lazy"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0D1B2E]/90 via-[#0D1B2E]/60 to-transparent" />
         <div className="absolute inset-0 flex items-center px-10 sm:px-16">

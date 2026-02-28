@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
   DocumentTextIcon,
@@ -20,7 +21,7 @@ const categories = [
     icon: PlayCircleIcon,
     title: 'Aan de slag',
     color: 'text-green-500',
-    bg: 'bg-green-100 dark:bg-green-900/30',
+    bg: 'bg-green-100',
     guides: [
       {
         title: 'Eerste inlog en dashboard-overzicht',
@@ -66,7 +67,7 @@ const categories = [
     icon: CubeIcon,
     title: 'Locaties & koelcellen',
     color: 'text-blue-500',
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
+    bg: 'bg-blue-100',
     guides: [
       {
         title: 'Een nieuwe locatie aanmaken',
@@ -124,7 +125,7 @@ const categories = [
     icon: BellAlertIcon,
     title: 'Alarmen & escalatie',
     color: 'text-orange-500',
-    bg: 'bg-orange-100 dark:bg-orange-900/30',
+    bg: 'bg-orange-100',
     guides: [
       {
         title: 'Escalatiecontacten configureren',
@@ -182,7 +183,7 @@ const categories = [
     icon: ChartBarIcon,
     title: 'Rapporten & data',
     color: 'text-purple-500',
-    bg: 'bg-purple-100 dark:bg-purple-900/30',
+    bg: 'bg-purple-100',
     guides: [
       {
         title: 'HACCP-rapport genereren',
@@ -227,7 +228,7 @@ const categories = [
     icon: WrenchScrewdriverIcon,
     title: 'Technicus & koppeling',
     color: 'text-slate-500',
-    bg: 'bg-slate-100 dark:bg-slate-900/30',
+    bg: 'bg-slate-100',
     guides: [
       {
         title: 'Een technicus uitnodigingslink accepteren',
@@ -274,7 +275,7 @@ const categories = [
     icon: ShieldCheckIcon,
     title: 'Compliance & beveiliging',
     color: 'text-teal-500',
-    bg: 'bg-teal-100 dark:bg-teal-900/30',
+    bg: 'bg-teal-100',
     guides: [
       {
         title: 'Tweestapsverificatie inschakelen',
@@ -311,12 +312,22 @@ const Handleidingen: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-6">
+      <Helmet>
+        <title>Handleidingen – IntelliFrost | Stapsgewijze gidsen voor koelcelmonitoring</title>
+        <meta name="description" content="Stapsgewijze handleidingen voor IntelliFrost: koelcellen configureren, alarmen instellen, HACCP-rapporten genereren en de technicus-koppeling beheren." />
+        <meta name="keywords" content="IntelliFrost handleiding, koelcel configureren, alarm instellen, HACCP rapport genereren, temperatuurmonitoring instellen" />
+        <link rel="canonical" href="https://intellifrost.be/handleidingen" />
+        <meta property="og:title" content="Handleidingen – IntelliFrost" />
+        <meta property="og:description" content="Alles wat u nodig heeft om IntelliFrost optimaal te gebruiken. Stapsgewijze gidsen voor elke functie." />
+        <meta property="og:url" content="https://intellifrost.be/handleidingen" />
+      </Helmet>
+
       {/* Header */}
       <div className="mb-14">
-        <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 dark:text-frost-100 mb-4">
+        <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
           Handleidingen
         </h1>
-        <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+        <p className="text-lg text-gray-600 max-w-2xl leading-relaxed">
           Stapsgewijze handleidingen voor alle functies van IntelliFrost. Van eerste inlog tot geavanceerde
           configuratie – hier vindt u alles.
         </p>
@@ -331,14 +342,14 @@ const Handleidingen: React.FC = () => {
             className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-center ${
               activeCategory === i
                 ? 'border-[#00c8ff] bg-[#00c8ff]/10'
-                : 'border-gray-200 dark:border-frost-800 bg-gray-50 dark:bg-frost-900 hover:border-[#00c8ff]/40'
+                : 'border-gray-200 bg-gray-50 hover:border-[#00c8ff]/40'
             }`}
           >
             <div className={`w-9 h-9 rounded-lg ${c.bg} flex items-center justify-center`}>
               <c.icon className={`h-5 w-5 ${c.color}`} />
             </div>
             <span className={`text-xs font-medium leading-tight ${
-              activeCategory === i ? 'text-[#00c8ff]' : 'text-gray-700 dark:text-slate-300'
+              activeCategory === i ? 'text-[#00c8ff]' : 'text-gray-700'
             }`}>
               {c.title}
             </span>
@@ -352,31 +363,31 @@ const Handleidingen: React.FC = () => {
           <div className={`w-8 h-8 rounded-lg ${cat.bg} flex items-center justify-center`}>
             <cat.icon className={`h-4 w-4 ${cat.color}`} />
           </div>
-          <h2 className="font-['Exo_2'] text-xl font-bold text-gray-900 dark:text-frost-100">{cat.title}</h2>
-          <span className="text-sm text-gray-400 dark:text-slate-500">{cat.guides.length} handleidingen</span>
+          <h2 className="font-['Exo_2'] text-xl font-bold text-gray-900">{cat.title}</h2>
+          <span className="text-sm text-gray-400">{cat.guides.length} handleidingen</span>
         </div>
 
         <div className="space-y-3">
           {cat.guides.map((guide, i) => (
             <div
               key={guide.title}
-              className="rounded-2xl bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800 overflow-hidden"
+              className="rounded-2xl bg-gray-50 border border-gray-200 overflow-hidden"
             >
               <button
                 onClick={() => setOpenGuide(openGuide === i ? null : i)}
-                className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-100/50 dark:hover:bg-frost-800/50 transition-colors"
+                className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-100/50 transition-colors"
               >
                 <div className="w-10 h-10 rounded-lg bg-[#00c8ff]/15 flex items-center justify-center flex-shrink-0">
                   <DocumentTextIcon className="h-5 w-5 text-[#00c8ff]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900 dark:text-frost-100 text-sm mb-1">{guide.title}</div>
+                  <div className="font-semibold text-gray-900 text-sm mb-1">{guide.title}</div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500 dark:text-slate-500">{guide.time}</span>
+                    <span className="text-xs text-gray-500">{guide.time}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       guide.difficulty === 'Gemakkelijk'
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-orange-100 text-orange-700'
                     }`}>
                       {guide.difficulty}
                     </span>
@@ -390,14 +401,14 @@ const Handleidingen: React.FC = () => {
               </button>
 
               {openGuide === i && (
-                <div className="px-5 pb-5 border-t border-gray-200 dark:border-frost-800 pt-5">
+                <div className="px-5 pb-5 border-t border-gray-200 pt-5">
                   <ol className="space-y-3">
                     {guide.steps.map((step, si) => (
                       <li key={si} className="flex items-start gap-3">
                         <span className="w-6 h-6 rounded-full bg-[#00c8ff] text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                           {si + 1}
                         </span>
-                        <span className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed">{step}</span>
+                        <span className="text-sm text-gray-700 leading-relaxed">{step}</span>
                       </li>
                     ))}
                   </ol>
@@ -413,9 +424,9 @@ const Handleidingen: React.FC = () => {
         <div className="p-6 rounded-2xl bg-[#00c8ff]/10 border border-[#00c8ff]/30">
           <div className="flex items-center gap-3 mb-3">
             <QuestionMarkCircleIcon className="h-6 w-6 text-[#00c8ff]" />
-            <h3 className="font-semibold text-gray-900 dark:text-frost-100">Hulp nodig?</h3>
+            <h3 className="font-semibold text-gray-900">Hulp nodig?</h3>
           </div>
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
+          <p className="text-sm text-gray-600 mb-4">
             Staat uw vraag er niet bij? Bekijk de FAQ of neem rechtstreeks contact op.
           </p>
           <div className="flex gap-3">
@@ -423,12 +434,12 @@ const Handleidingen: React.FC = () => {
             <Link to="/contact" className="text-sm text-[#00c8ff] font-medium hover:underline">Contact →</Link>
           </div>
         </div>
-        <div className="p-6 rounded-2xl bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800">
+        <div className="p-6 rounded-2xl bg-gray-50 border border-gray-200">
           <div className="flex items-center gap-3 mb-3">
             <ArrowRightOnRectangleIcon className="h-6 w-6 text-[#00c8ff]" />
-            <h3 className="font-semibold text-gray-900 dark:text-frost-100">Ingelogd bekijken</h3>
+            <h3 className="font-semibold text-gray-900">Ingelogd bekijken</h3>
           </div>
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
+          <p className="text-sm text-gray-600 mb-4">
             Log in op het platform voor contextgevoelige helpknopjes en video-tutorials bij elke stap.
           </p>
           <Link

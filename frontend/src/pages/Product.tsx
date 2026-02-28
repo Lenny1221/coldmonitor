@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
   CubeIcon,
@@ -90,6 +91,16 @@ const Product: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-6">
+      <Helmet>
+        <title>Product – IntelliFrost | IoT-sensoren, dashboard & escalatie</title>
+        <meta name="description" content="Ontdek hoe IntelliFrost werkt: draadloze IoT-sensoren (±0,1°C), realtime dashboard, 3-laagse escalatie en HACCP-conforme rapportage voor koel- en vriescellen." />
+        <meta name="keywords" content="IoT temperatuursensor, koelcel sensor, HACCP dashboard, escalatiesysteem koelcel, temperatuurlogger, GDP compliant" />
+        <link rel="canonical" href="https://intellifrost.be/product" />
+        <meta property="og:title" content="Product – IntelliFrost | IoT-sensoren & slimme escalatie" />
+        <meta property="og:description" content="Draadloze IoT-sensoren, realtime dashboard en 3-laagse escalatie voor betrouwbare koelcelmonitoring." />
+        <meta property="og:url" content="https://intellifrost.be/product" />
+      </Helmet>
+
       {/* Header */}
       <div className="mb-14">
         <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 dark:text-frost-100 mb-4">
@@ -150,8 +161,9 @@ const Product: React.FC = () => {
             <div className="relative rounded-2xl overflow-hidden h-64 lg:h-auto shadow-lg">
               <img
                 src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80"
-                alt="IoT sensor hardware"
+                alt="IoT sensor hardware voor koelcelmonitoring"
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B2E]/70 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4">

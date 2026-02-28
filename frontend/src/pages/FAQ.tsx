@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 
 const categories = [
   {
     title: 'Algemeen',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
+    color: 'bg-blue-100 text-blue-700',
     faqs: [
       {
         q: 'Wat is IntelliFrost?',
@@ -31,7 +32,7 @@ const categories = [
   },
   {
     title: 'Hardware & sensoren',
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
+    color: 'bg-green-100 text-green-700',
     faqs: [
       {
         q: 'Welke hardware is nodig?',
@@ -65,7 +66,7 @@ const categories = [
   },
   {
     title: 'Alarmen & escalatie',
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400',
+    color: 'bg-orange-100 text-orange-700',
     faqs: [
       {
         q: 'Hoe werkt de escalatie?',
@@ -95,7 +96,7 @@ const categories = [
   },
   {
     title: 'Dashboard & rapportage',
-    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400',
+    color: 'bg-purple-100 text-purple-700',
     faqs: [
       {
         q: 'Kan ik het dashboard op mijn smartphone gebruiken?',
@@ -121,7 +122,7 @@ const categories = [
   },
   {
     title: 'Technicus & koppeling',
-    color: 'bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-400',
+    color: 'bg-slate-100 text-slate-700',
     faqs: [
       {
         q: 'Hoe koppel ik een technicus?',
@@ -143,7 +144,7 @@ const categories = [
   },
   {
     title: 'Abonnement & facturatie',
-    color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400',
+    color: 'bg-teal-100 text-teal-700',
     faqs: [
       {
         q: 'Hoe werkt de facturatie?',
@@ -169,14 +170,37 @@ const FAQ: React.FC = () => {
   const [activeCat, setActiveCat] = useState(0);
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
+  // Alle vragen plat voor JSON-LD FAQPage schema
+  const allFaqs = categories.flatMap((cat) => cat.faqs);
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: allFaqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.q,
+      acceptedAnswer: { '@type': 'Answer', text: faq.a },
+    })),
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-6">
+      <Helmet>
+        <title>Veelgestelde vragen – IntelliFrost | FAQ over koelcelmonitoring</title>
+        <meta name="description" content="Antwoorden op vragen over IntelliFrost: hoe werkt de escalatie, welke hardware is nodig, HACCP-rapportage, abonnementen en de technicus-koppeling." />
+        <meta name="keywords" content="IntelliFrost FAQ, vragen koelcelmonitoring, hoe werkt escalatie alarm, HACCP rapportage, koelcel sensor batterij" />
+        <link rel="canonical" href="https://intellifrost.be/faq" />
+        <meta property="og:title" content="Veelgestelde vragen – IntelliFrost" />
+        <meta property="og:description" content="Alle antwoorden op uw vragen over koelcelmonitoring, escalatie, hardware, compliance en abonnementen." />
+        <meta property="og:url" content="https://intellifrost.be/faq" />
+        <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
+      </Helmet>
+
       {/* Header */}
       <div className="mb-14">
-        <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 dark:text-frost-100 mb-4">
+        <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
           Veelgestelde vragen
         </h1>
-        <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+        <p className="text-lg text-gray-600 max-w-2xl leading-relaxed">
           Antwoorden op de meest gestelde vragen over IntelliFrost. Staat uw vraag er niet bij?
           Neem dan contact met ons op.
         </p>
@@ -191,11 +215,11 @@ const FAQ: React.FC = () => {
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               activeCat === i
                 ? 'bg-[#00c8ff] text-white shadow-md shadow-[#00c8ff]/20'
-                : 'bg-gray-100 dark:bg-frost-900 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-frost-800 border border-gray-200 dark:border-frost-800'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
             }`}
           >
             {cat.title}
-            <span className={`ml-2 text-xs ${activeCat === i ? 'text-white/70' : 'text-gray-400 dark:text-slate-600'}`}>
+            <span className={`ml-2 text-xs ${activeCat === i ? 'text-white/70' : 'text-gray-400'}`}>
               {categories[i].faqs.length}
             </span>
           </button>
@@ -207,7 +231,7 @@ const FAQ: React.FC = () => {
         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${categories[activeCat].color}`}>
           {categories[activeCat].title}
         </span>
-        <span className="text-sm text-gray-400 dark:text-slate-500">
+        <span className="text-sm text-gray-400">
           {categories[activeCat].faqs.length} vragen
         </span>
       </div>
@@ -217,13 +241,13 @@ const FAQ: React.FC = () => {
         {categories[activeCat].faqs.map((faq, i) => (
           <div
             key={i}
-            className="rounded-2xl bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800 overflow-hidden"
+            className="rounded-2xl bg-gray-50 border border-gray-200 overflow-hidden"
           >
             <button
               onClick={() => setOpenIndex(openIndex === i ? null : i)}
-              className="w-full flex items-start justify-between p-6 text-left hover:bg-gray-100/50 dark:hover:bg-frost-800/50 transition-colors"
+              className="w-full flex items-start justify-between p-6 text-left hover:bg-gray-100/50 transition-colors"
             >
-              <span className="font-medium text-gray-900 dark:text-frost-100 pr-4 leading-snug">{faq.q}</span>
+              <span className="font-medium text-gray-900 pr-4 leading-snug">{faq.q}</span>
               {openIndex === i ? (
                 <ChevronUpIcon className="h-5 w-5 text-[#00c8ff] flex-shrink-0 mt-0.5" />
               ) : (
@@ -231,7 +255,7 @@ const FAQ: React.FC = () => {
               )}
             </button>
             {openIndex === i && (
-              <div className="px-6 pb-6 text-gray-600 dark:text-slate-400 leading-relaxed border-t border-gray-200 dark:border-frost-800 pt-4">
+              <div className="px-6 pb-6 text-gray-600 leading-relaxed border-t border-gray-200 pt-4">
                 {faq.a}
               </div>
             )}
@@ -241,10 +265,10 @@ const FAQ: React.FC = () => {
 
       {/* Geen antwoord gevonden */}
       <div className="p-8 rounded-3xl bg-gradient-to-br from-[#00c8ff]/10 to-transparent border border-[#00c8ff]/20 text-center">
-        <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 dark:text-frost-100 mb-3">
+        <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
           Staat uw vraag er niet bij?
         </h2>
-        <p className="text-gray-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
+        <p className="text-gray-600 mb-6 max-w-md mx-auto">
           Ons team helpt u graag verder. Stuur een bericht of plan een vrijblijvende demo in.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
