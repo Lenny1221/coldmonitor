@@ -111,7 +111,8 @@ model Technician {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   customers Customer[]
-  invitations Invitation[]
+  invitations           Invitation[]
+  installationTechnicians InstallationTechnician[]
 
   @@index([email])
 }
@@ -140,8 +141,10 @@ model Customer {
   linkedTechnicianId String?
   linkedTechnician   Technician? @relation(fields: [linkedTechnicianId], references: [id], onDelete: SetNull)
   
-  locations Location[]
-  invitations Invitation[]
+  locations     Location[]
+  invitations   Invitation[]
+  installations Installation[]
+  tickets       Ticket[]
 
   @@index([email])
   @@index([linkedTechnicianId])
@@ -160,7 +163,8 @@ model Location {
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   
-  coldCells ColdCell[]
+  coldCells     ColdCell[]
+  installations Installation[]
 
   @@index([customerId])
 }
@@ -365,6 +369,205 @@ model ReportDownloadLog {
   @@index([userId])
   @@index([customerId])
   @@index([downloadedAt])
+}
+
+// ========== ONDERHOUD & TICKET MODULE ==========
+
+enum InstallationType {
+  KOELINSTALLATIE
+  AIRCO
+  WARMTEPOMP
+  VRIESINSTALLATIE
+}
+
+enum InstallationStatus {
+  ACTIEF
+  IN_ONDERHOUD
+  BUITEN_WERKING
+}
+
+enum TicketType {
+  ONDERHOUDSAANVRAAG
+  STORINGSMELDING
+  VRAAG_OPMERKING
+}
+
+enum TicketStatus {
+  NIEUW
+  IN_BEHANDELING
+  INGEPLAND
+  AFGEROND
+  GESLOTEN
+}
+
+enum TicketUrgency {
+  LAAG
+  NORMAAL
+  DRINGEND
+}
+
+// Koppelt technicus aan installatie (many-to-many)
+model InstallationTechnician {
+  id             String   @id @default(cuid())
+  installationId String
+  technicianId   String
+  createdAt      DateTime @default(now())
+
+  installation Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+  technician   Technician   @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@unique([installationId, technicianId])
+  @@index([technicianId])
+}
+
+// Installatie (koelinstallatie, airco, etc.) – per klant
+model Installation {
+  id                      String            @id @default(cuid())
+  name                    String            // Naam/omschrijving
+  type                    InstallationType
+  refrigerantType         String            // R410A, R32, R290, CO2...
+  refrigerantKg           Float             // Koelmiddelinhoud in kg
+  co2EquivalentTon        Float?            // CO₂-eq in ton (berekend)
+  nominalCoolingKw        Float?            // Nominaal koelvermogen kW
+  hasLeakDetection        Boolean           @default(false)
+  firstUseDate            DateTime?         // Eerste ingebruikname
+  lastMaintenanceDate     DateTime?
+  nextMaintenanceDate     DateTime?
+  status                  InstallationStatus @default(ACTIEF)
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  customerId   String
+  customer     Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  locationId   String?
+  location     Location?  @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  assignedTechnicians  InstallationTechnician[]
+  maintenanceSchedules  MaintenanceSchedule[]
+  maintenanceReports    MaintenanceReport[]
+  maintenanceReminders  MaintenanceReminder[]
+  tickets               Ticket[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([nextMaintenanceDate])
+}
+
+// Geplande onderhoudsbeurt
+model MaintenanceSchedule {
+  id              String   @id @default(cuid())
+  scheduledAt     DateTime
+  technicianId    String?
+  technicianName  String?
+  status          String   @default("GEPLAND") // GEPLAND | BEVESTIGD | AFGEROND | GEANNULEERD
+  confirmationSentAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  installationId String
+  installation   Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+
+  @@index([installationId])
+  @@index([scheduledAt])
+}
+
+// Onderhoudsverslag (na afgerond onderhoud) – 5 jaar bewaard
+model MaintenanceReport {
+  id          String   @id @default(cuid())
+  reportDate  DateTime @default(now())
+  checklist   Json?    // Checklist resultaten
+  notes       String?
+  photos      String[] // URLs van geüploade foto's
+  createdAt   DateTime @default(now())
+
+  installationId String
+  installation   Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+
+  @@index([installationId])
+  @@index([reportDate])
+}
+
+// Supportticket
+model Ticket {
+  id          String       @id @default(cuid())
+  type        TicketType
+  urgency     TicketUrgency @default(NORMAAL)
+  description String
+  status      TicketStatus  @default(NIEUW)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  closedAt    DateTime?
+
+  customerId     String
+  customer       Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  installationId String?
+  installation   Installation? @relation(fields: [installationId], references: [id], onDelete: SetNull)
+
+  proposedSlots   TicketTimeSlot[]
+  attachments     TicketAttachment[]
+  statusHistory   TicketStatusLog[]
+
+  assignedTechnicianId String?
+  scheduledAt          DateTime?
+  resolutionSummary    String?
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Voorgestelde tijdsvakken door klant
+model TicketTimeSlot {
+  id        String   @id @default(cuid())
+  slotIndex Int      // 1, 2 of 3
+  date      DateTime @db.Date
+  preference String  // OCHTEND | NAMIDDAG | AVOND
+  confirmed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  ticketId String
+  ticket   Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
+// Ticket foto-bijlage
+model TicketAttachment {
+  id       String   @id @default(cuid())
+  url      String   // URL naar opgeslagen bestand
+  filename String
+  createdAt DateTime @default(now())
+
+  ticketId String
+  ticket   Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
+// Ticket statushistoriek
+model TicketStatusLog {
+  id        String       @id @default(cuid())
+  status    TicketStatus
+  note      String?
+  createdAt DateTime     @default(now())
+
+  ticketId String
+  ticket   Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
+// Onderhoudsherinnering (60d, 30d, vervallen)
+model MaintenanceReminder {
+  id           String   @id @default(cuid())
+  reminderType String   // 60_DAYS | 30_DAYS | EXPIRED
+  sentAt       DateTime @default(now())
+  scheduleId   String?
+
+  installationId String
+  installation   Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+
+  @@index([installationId])
 }
 
 // Invitation model (for technician to customer linking)

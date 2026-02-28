@@ -22,6 +22,8 @@ import TechnicianDashboard from './pages/TechnicianDashboard';
 import ManageCustomers from './pages/ManageCustomers';
 import Invitations from './pages/Invitations';
 import CustomerDetail from './pages/CustomerDetail';
+import MijnTickets from './pages/MijnTickets';
+import OnderhoudTickets from './pages/OnderhoudTickets';
 import Layout from './components/Layout';
 
 function NavigateToDashboard() {
@@ -124,6 +126,16 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/tickets"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <MijnTickets />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
       <Route path="/settings" element={<Navigate to="/alarmeringen" replace />} />
 
       {/* Technician Routes */}
@@ -145,6 +157,16 @@ function AppRoutes() {
               <PrivateRoute>
                 <Layout>
                   <ManageCustomers />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/technician/onderhoud"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <OnderhoudTickets />
                 </Layout>
               </PrivateRoute>
             }

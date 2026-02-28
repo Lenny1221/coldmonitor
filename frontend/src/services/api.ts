@@ -519,6 +519,71 @@ export const haccpReportsApi = {
   },
 };
 
+// Installations API (onderhoud)
+export interface InstallationCreateData {
+  name: string;
+  type: string;
+  refrigerantType: string;
+  refrigerantKg: number;
+  nominalCoolingKw?: number;
+  hasLeakDetection?: boolean;
+  firstUseDate?: string;
+  locationId?: string;
+  customerId: string;
+  technicianIds?: string[];
+}
+
+export const installationsApi = {
+  getAll: async (params?: { customerId?: string; status?: string }) => {
+    const response = await api.get('/installations', { params });
+    return response.data;
+  },
+  getById: async (id: string) => {
+    const response = await api.get(`/installations/${id}`);
+    return response.data;
+  },
+  create: async (data: InstallationCreateData) => {
+    const response = await api.post('/installations', data);
+    return response.data;
+  },
+  update: async (id: string, data: Partial<InstallationCreateData>) => {
+    const response = await api.patch(`/installations/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: string) => {
+    await api.delete(`/installations/${id}`);
+  },
+};
+
+// Tickets API
+export const ticketsApi = {
+  getAll: async (params?: { status?: string }) => {
+    const response = await api.get('/tickets', { params });
+    return response.data;
+  },
+  getById: async (id: string) => {
+    const response = await api.get(`/tickets/${id}`);
+    return response.data;
+  },
+  create: async (data: {
+    type: string;
+    urgency?: string;
+    description: string;
+    installationId?: string;
+    proposedSlots: { slotIndex: number; date: string; preference: string }[];
+  }) => {
+    const response = await api.post('/tickets', data);
+    return response.data;
+  },
+  updateStatus: async (
+    id: string,
+    data: { status?: string; scheduledAt?: string; resolutionSummary?: string; confirmedSlotIndex?: number }
+  ) => {
+    const response = await api.patch(`/tickets/${id}/status`, data);
+    return response.data;
+  },
+};
+
 // Readings API
 export const readingsApi = {
   submitReading: async (serialNumber: string, data: {

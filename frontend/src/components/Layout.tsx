@@ -16,6 +16,8 @@ import {
   SunIcon,
   MoonIcon,
   DocumentTextIcon,
+  WrenchScrewdriverIcon,
+  TicketIcon,
 } from '@heroicons/react/24/outline';
 
 interface LayoutProps {
@@ -89,6 +91,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           { to: '/locations', label: 'Locaties', icon: MapPinIcon },
           { to: '/coldcells', label: 'Koelcellen', icon: CubeIcon },
           { to: '/haccp-rapport', label: 'HACCP Rapport', icon: DocumentTextIcon },
+          { to: '/tickets', label: 'Tickets', icon: TicketIcon },
           { to: '/invitations', label: 'Uitnodigingen', icon: EnvelopeIcon },
         ]
       : user?.role === 'TECHNICIAN' || user?.role === 'ADMIN'
@@ -96,6 +99,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             { to: '/technician', label: 'Dashboard', icon: HomeIcon },
             { to: '/alarmeringen', label: 'Alarmeringen', icon: BellIcon },
             { to: '/technician/customers', label: 'Klanten beheren', icon: UserGroupIcon },
+            { to: '/technician/onderhoud', label: 'Onderhoud & Tickets', icon: WrenchScrewdriverIcon },
             { to: '/haccp-rapport', label: 'HACCP Rapport', icon: DocumentTextIcon },
           ]
         : [];

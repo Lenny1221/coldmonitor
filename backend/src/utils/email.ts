@@ -117,3 +117,37 @@ export async function sendVerificationEmail(
   logger.info('Verificatie-e-mail (uit):', { to, verifyUrl });
   return true;
 }
+
+/**
+ * Verstuur generieke transactionele e-mail (onderhoud, tickets, etc.)
+ */
+export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  if (config.resendApiKey) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: `IntelliFrost <${config.emailFrom}>`,
+          to: [to],
+          subject,
+          html,
+        }),
+      });
+      if (!res.ok) {
+        const errBody = await res.text();
+        logger.error('Resend API fout', new Error(errBody), { to, status: res.status });
+        return false;
+      }
+      return true;
+    } catch (err) {
+      logger.error('Fout bij verzenden e-mail', err as Error, { to });
+      return false;
+    }
+  }
+  logger.info('E-mail (uit – geen Resend):', { to, subject });
+  return true;
+}
