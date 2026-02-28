@@ -350,6 +350,23 @@ model EscalationLog {
   @@index([sentAt])
 }
 
+// Report download log – traceerbaarheid voor HACCP-audits
+model ReportDownloadLog {
+  id          String   @id @default(cuid())
+  userId      String
+  customerId  String   // Klant wiens rapport gedownload werd
+  format      String   // "PDF" | "EXCEL"
+  locationId  String?
+  coldCellIds String?  // JSON array van cold cell IDs (of null = alle)
+  startDate   DateTime
+  endDate     DateTime
+  downloadedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([customerId])
+  @@index([downloadedAt])
+}
+
 // Invitation model (for technician to customer linking)
 model Invitation {
   id            String           @id @default(cuid())

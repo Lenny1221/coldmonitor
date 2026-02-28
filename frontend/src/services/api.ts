@@ -465,6 +465,60 @@ export const reportsApi = {
   },
 };
 
+// HACCP Audit Report API
+export const haccpReportsApi = {
+  getAuditData: async (params: {
+    customerId?: string;
+    locationId?: string;
+    coldCellIds?: string[];
+    startDate: string;
+    endDate: string;
+  }) => {
+    const { coldCellIds, ...rest } = params;
+    const response = await api.get('/reports/haccp/audit-data', {
+      params: {
+        ...rest,
+        coldCellIds: coldCellIds?.length ? JSON.stringify(coldCellIds) : undefined,
+      },
+    });
+    return response.data;
+  },
+  downloadPdf: async (params: {
+    customerId?: string;
+    locationId?: string;
+    coldCellIds?: string[];
+    startDate: string;
+    endDate: string;
+  }) => {
+    const { coldCellIds, ...rest } = params;
+    const response = await api.get('/reports/haccp/pdf', {
+      params: {
+        ...rest,
+        coldCellIds: coldCellIds?.length ? JSON.stringify(coldCellIds) : undefined,
+      },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+  downloadExcel: async (params: {
+    customerId?: string;
+    locationId?: string;
+    coldCellIds?: string[];
+    startDate: string;
+    endDate: string;
+  }) => {
+    const { coldCellIds, ...rest } = params;
+    const response = await api.get('/reports/haccp/excel', {
+      params: {
+        ...rest,
+        coldCellIds: coldCellIds?.length ? JSON.stringify(coldCellIds) : undefined,
+      },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+};
+
 // Readings API
 export const readingsApi = {
   submitReading: async (serialNumber: string, data: {

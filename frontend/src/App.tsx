@@ -17,6 +17,7 @@ import Locations from './pages/Locations';
 import ColdCells from './pages/ColdCells';
 import ColdCellDetail from './pages/ColdCellDetail';
 import Alarmeringen from './pages/Alarmeringen';
+import HACCPAuditReport from './pages/HACCPAuditReport';
 import TechnicianDashboard from './pages/TechnicianDashboard';
 import ManageCustomers from './pages/ManageCustomers';
 import Invitations from './pages/Invitations';
@@ -109,6 +110,16 @@ function AppRoutes() {
           <PrivateRoute>
             <Layout>
               <Alarmeringen />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/haccp-rapport"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <HACCPAuditReport />
             </Layout>
           </PrivateRoute>
         }
