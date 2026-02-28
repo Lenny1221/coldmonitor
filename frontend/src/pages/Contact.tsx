@@ -102,6 +102,22 @@ const Contact: React.FC = () => {
         </p>
       </div>
 
+      {/* Hero-foto boven de content */}
+      <div className="relative rounded-3xl overflow-hidden mb-10 h-52 shadow-lg">
+        <img
+          src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1400&q=85"
+          alt="Kantoor sfeer"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#00c8ff]/60 to-[#0D1B2E]/70" />
+        <div className="absolute inset-0 flex items-center px-10">
+          <div>
+            <div className="text-white/80 text-sm mb-1">Antwoord binnen 1 werkdag</div>
+            <div className="font-['Exo_2'] text-2xl font-bold text-white">Wij helpen u graag verder</div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid lg:grid-cols-3 gap-10">
         {/* Left: contact info */}
         <div className="space-y-8">

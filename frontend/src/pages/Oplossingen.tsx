@@ -19,10 +19,11 @@ const sectors = [
   {
     id: 'voeding',
     icon: BuildingStorefrontIcon,
+    img: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
     title: 'Retail & voeding',
     subtitle: 'Supermarkten, slagerijen, restaurants en groothandels',
     color: 'border-emerald-400',
-    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400',
+    badge: 'bg-emerald-100 text-emerald-700',
     description:
       'In de voedingssector is temperatuurbewaking niet alleen wettelijk verplicht, maar ook essentieel om voedselverspilling en boetes te vermijden. IntelliFrost biedt een kant-en-klare oplossing die voldoet aan de HACCP-wetgeving.',
     challenges: [
@@ -42,10 +43,11 @@ const sectors = [
   {
     id: 'farmaceutisch',
     icon: BeakerIcon,
+    img: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=800&q=80',
     title: 'Farmaceutisch',
     subtitle: 'Apotheken, ziekenhuizen en distributeurs',
     color: 'border-blue-400',
-    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
+    badge: 'bg-blue-100 text-blue-700',
     description:
       'Farmaceutische producten vereisen strikte temperatuurcontrole. Afwijkingen kunnen producten onbruikbaar maken en leiden tot serieuze financiële schade. IntelliFrost levert gecertificeerde dataloggers en audit-klare rapporten.',
     challenges: [
@@ -65,10 +67,11 @@ const sectors = [
   {
     id: 'logistiek',
     icon: TruckIcon,
+    img: 'https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=800&q=80',
     title: 'Logistiek & transport',
     subtitle: 'Koelketen, depots en distributiecentra',
     color: 'border-orange-400',
-    badge: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400',
+    badge: 'bg-orange-100 text-orange-700',
     description:
       'In logistieke omgevingen gaan producten door meerdere schakels. IntelliFrost bewaakt elk depot en elke schakel in de koelketen, met volledig traceerbaarheidsbewijs.',
     challenges: [
@@ -88,10 +91,11 @@ const sectors = [
   {
     id: 'technici',
     icon: WrenchScrewdriverIcon,
+    img: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&w=800&q=80',
     title: 'Technici & servicebedrijven',
     subtitle: 'Koeltechnici, installateurs en onderhoudsbedrijven',
     color: 'border-purple-400',
-    badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400',
+    badge: 'bg-purple-100 text-purple-700',
     description:
       'Als technicus beheert u installaties bij meerdere klanten. IntelliFrost biedt een technicusportal waarmee u proactief kunt ingrijpen – nog voor de klant het probleem merkt.',
     challenges: [
@@ -111,10 +115,11 @@ const sectors = [
   {
     id: 'medisch',
     icon: HeartIcon,
+    img: 'https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=800&q=80',
     title: 'Medisch & zorg',
     subtitle: 'Ziekenhuizen, woonzorgcentra en bloedbanken',
     color: 'border-red-400',
-    badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+    badge: 'bg-red-100 text-red-700',
     description:
       'In zorg- en medische omgevingen kan een temperatuurfout levensgevaarlijk zijn. Bloedproducten, vaccins en medicatie moeten onder strikt gecontroleerde omstandigheden worden bewaard.',
     challenges: [
@@ -134,10 +139,11 @@ const sectors = [
   {
     id: 'kantoor',
     icon: BuildingOffice2Icon,
+    img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
     title: 'Bedrijven & facilitair',
     subtitle: 'Kantines, vergaderfaciliteiten en bedrijfsrestaurants',
     color: 'border-slate-400',
-    badge: 'bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-400',
+    badge: 'bg-slate-100 text-slate-700',
     description:
       'Ook voor bedrijven met een kantine of personeelsrestaurant is HACCP van toepassing. IntelliFrost maakt de administratieve last minimaal terwijl de voedselveiligheid maximaal wordt geborgd.',
     challenges: [
@@ -204,7 +210,7 @@ const Oplossingen: React.FC = () => {
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 activeSector === i
                   ? 'bg-[#00c8ff] text-white shadow-md shadow-[#00c8ff]/20'
-                  : 'bg-gray-100 dark:bg-frost-900 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-frost-800 border border-gray-200 dark:border-frost-800'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
               }`}
             >
               <s.icon className="h-4 w-4" />
@@ -214,61 +220,74 @@ const Oplossingen: React.FC = () => {
         </div>
 
         {/* Active sector detail */}
-        <div className={`p-8 rounded-3xl border-2 ${sector.color} bg-gray-50 dark:bg-frost-900`}>
-          <div className="flex items-start gap-4 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-[#00c8ff]/15 flex items-center justify-center flex-shrink-0">
-              <sector.icon className="h-7 w-7 text-[#00c8ff]" />
-            </div>
-            <div>
-              <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-2 ${sector.badge}`}>
-                {sector.subtitle}
+        <div className={`rounded-3xl border-2 ${sector.color} bg-gray-50 overflow-hidden`}>
+          {/* Foto bovenaan */}
+          <div className="relative h-52 overflow-hidden">
+            <img
+              src={sector.img}
+              alt={sector.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0D1B2E]/75 via-[#0D1B2E]/40 to-transparent" />
+            <div className="absolute inset-0 p-6 flex items-end">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+                  <sector.icon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <div className="text-white/70 text-xs mb-0.5">{sector.subtitle}</div>
+                  <h3 className="font-['Exo_2'] text-xl font-bold text-white">{sector.title}</h3>
+                </div>
               </div>
-              <h3 className="font-['Exo_2'] text-xl font-bold text-gray-900 dark:text-frost-100">
-                {sector.title}
-              </h3>
-            </div>
-          </div>
-          <p className="text-gray-600 dark:text-slate-400 mb-8 leading-relaxed">{sector.description}</p>
-
-          <div className="grid md:grid-cols-2 gap-8 mb-8">
-            <div>
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-frost-100 uppercase tracking-wide mb-4">
-                Uitdagingen in deze sector
-              </h4>
-              <ul className="space-y-2.5">
-                {sector.challenges.map((c) => (
-                  <li key={c} className="flex items-start gap-2 text-sm text-gray-600 dark:text-slate-400">
-                    <span className="w-5 h-5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center flex-shrink-0 text-xs mt-0.5">✕</span>
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-frost-100 uppercase tracking-wide mb-4">
-                Hoe IntelliFrost helpt
-              </h4>
-              <ul className="space-y-2.5">
-                {sector.solutions.map((s) => (
-                  <li key={s} className="flex items-start gap-2 text-sm text-gray-700 dark:text-slate-300">
-                    <CheckCircleIcon className="h-5 w-5 text-[#00c8ff] flex-shrink-0 mt-0.5" />
-                    {s}
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-gray-200 dark:border-frost-800">
-            <div className="text-xs font-medium text-gray-500 dark:text-slate-500 uppercase tracking-wide mb-3">
-              Relevante regelgeving & normen
+          <div className="p-8">
+            <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4 ${sector.badge}`}>
+              {sector.subtitle}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {sector.regulations.map((r) => (
-                <span key={r} className="px-3 py-1 rounded-lg bg-[#00c8ff]/10 border border-[#00c8ff]/20 text-xs font-medium text-[#00c8ff]">
-                  {r}
-                </span>
-              ))}
+            <p className="text-gray-600 mb-8 leading-relaxed">{sector.description}</p>
+
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">
+                  Uitdagingen in deze sector
+                </h4>
+                <ul className="space-y-2.5">
+                  {sector.challenges.map((c) => (
+                    <li key={c} className="flex items-start gap-2 text-sm text-gray-600">
+                      <span className="w-5 h-5 rounded-full bg-red-100 text-red-500 flex items-center justify-center flex-shrink-0 text-xs mt-0.5">✕</span>
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">
+                  Hoe IntelliFrost helpt
+                </h4>
+                <ul className="space-y-2.5">
+                  {sector.solutions.map((s) => (
+                    <li key={s} className="flex items-start gap-2 text-sm text-gray-700">
+                      <CheckCircleIcon className="h-5 w-5 text-[#00c8ff] flex-shrink-0 mt-0.5" />
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-gray-200">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                Relevante regelgeving & normen
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {sector.regulations.map((r) => (
+                  <span key={r} className="px-3 py-1 rounded-lg bg-[#00c8ff]/10 border border-[#00c8ff]/20 text-xs font-medium text-[#00c8ff]">
+                    {r}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>

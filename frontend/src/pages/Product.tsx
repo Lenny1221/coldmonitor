@@ -137,25 +137,44 @@ const Product: React.FC = () => {
       {/* Tab content */}
       {activeTab === 0 && (
         <div className="mb-14">
-          <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 dark:text-frost-100 mb-3">
+          <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
             IoT-sensoren & hardware
           </h2>
-          <p className="text-gray-600 dark:text-slate-400 mb-8 leading-relaxed">
+          <p className="text-gray-600 mb-8 leading-relaxed">
             De IntelliFrost-sensor meet zowel temperatuur als deurstatus en stuurt data continu naar het cloudplatform.
             Installatie duurt minder dan 5 minuten per cel. Geen bekabeling, geen speciale gereedschappen.
           </p>
-          <div className="grid md:grid-cols-2 gap-4 mb-8">
-            {hardwareSpecs.map((spec) => (
-              <div key={spec.label} className="flex justify-between items-center p-4 rounded-xl bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800">
-                <span className="text-sm text-gray-600 dark:text-slate-400">{spec.label}</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-frost-100 text-right">{spec.value}</span>
+
+          {/* Hardware foto + specs naast elkaar */}
+          <div className="grid lg:grid-cols-2 gap-8 mb-8">
+            <div className="relative rounded-2xl overflow-hidden h-64 lg:h-auto shadow-lg">
+              <img
+                src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80"
+                alt="IoT sensor hardware"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B2E]/70 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4">
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-3">
+                  <div className="w-2 h-2 rounded-full bg-[#00c8ff] animate-pulse flex-shrink-0" />
+                  <span className="text-white text-xs font-medium">Sensor actief · Data wordt verstuurd</span>
+                </div>
               </div>
-            ))}
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              {hardwareSpecs.map((spec) => (
+                <div key={spec.label} className="flex justify-between items-center p-3.5 rounded-xl bg-gray-50 border border-gray-200">
+                  <span className="text-sm text-gray-600">{spec.label}</span>
+                  <span className="text-sm font-semibold text-gray-900 text-right">{spec.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
+
           <div className="p-5 rounded-xl bg-[#00c8ff]/8 border border-[#00c8ff]/20">
             <div className="flex items-start gap-3">
               <CubeIcon className="h-5 w-5 text-[#00c8ff] flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-gray-700 dark:text-slate-300">
+              <p className="text-sm text-gray-700">
                 <strong>Meerdere connectiviteitsopties:</strong> De sensoren ondersteunen WiFi 2.4GHz voor vaste installaties
                 en 4G LTE voor locaties zonder WiFi-dekking. Data wordt versleuteld verstuurd (TLS 1.3).
               </p>
