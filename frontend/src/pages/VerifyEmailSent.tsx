@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { EnvelopeIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
@@ -13,6 +14,7 @@ const VerifyEmailSent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f0f7ff] dark:bg-[#080e1a] py-12 px-4 sm:px-6 lg:px-8 transition-colors">
+      <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
       <div className="max-w-md w-full">
         <div className="bg-white dark:bg-frost-800 rounded-2xl shadow-lg dark:shadow-[0_0_40px_rgba(0,100,200,0.12)] border border-gray-100 dark:border-[rgba(100,200,255,0.1)] p-8 text-center">
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/20 mb-6">

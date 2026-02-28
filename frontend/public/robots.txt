@@ -1,13 +1,27 @@
 User-agent: *
 Allow: /
+Allow: /product
+Allow: /oplossingen
+Allow: /prijzen
+Allow: /handleidingen
+Allow: /faq
+Allow: /contact
+Allow: /favicon-32.png
+Allow: /favicon-512.png
+Allow: /apple-touch-icon.png
+Allow: /sitemap.xml
+
+Disallow: /login
 Disallow: /dashboard
 Disallow: /locations
 Disallow: /coldcells
 Disallow: /technician
 Disallow: /customers
 Disallow: /invitations
-Disallow: /login
 Disallow: /verify-email-sent
 Disallow: /verify-email-required
+Disallow: /settings
+Disallow: /alarmeringen
+Disallow: /reports
 
 Sitemap: https://intellifrost.be/sitemap.xml

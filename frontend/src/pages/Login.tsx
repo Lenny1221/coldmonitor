@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -231,6 +232,10 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f0f7ff] dark:bg-[#080e1a] py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+      <Helmet>
+        <title>Inloggen – IntelliFrost</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {/* Theme toggle top-right */}
       <button
         onClick={toggleTheme}

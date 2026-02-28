@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -100,6 +101,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex bg-frost-50 dark:bg-frost-950">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
