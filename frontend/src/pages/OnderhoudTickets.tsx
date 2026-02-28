@@ -31,6 +31,36 @@ const AGENDA_HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 
 const INSTALLATION_TYPES = ['KOELINSTALLATIE', 'AIRCO', 'WARMTEPOMP', 'VRIESINSTALLATIE'];
 
+const INSTALLATION_TYPE_LABELS: Record<string, string> = {
+  KOELINSTALLATIE: 'Koelinstallatie',
+  AIRCO: 'Airco',
+  WARMTEPOMP: 'Warmtepomp',
+  VRIESINSTALLATIE: 'Vriesinstallatie',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  NIEUW: 'Nieuw',
+  IN_BEHANDELING: 'In behandeling',
+  INGEPLAND: 'Ingepland',
+  AFGEROND: 'Afgerond',
+  GESLOTEN: 'Gesloten',
+};
+
+const TICKET_TYPE_LABELS: Record<string, string> = {
+  ONDERHOUDSAANVRAAG: 'Onderhoudsaanvraag',
+  STORINGSMELDING: 'Storingsmelding',
+  VRAAG_OPMERKING: 'Vraag / Opmerking',
+};
+
+/** Volledige lijst koelgassen voor installaties */
+const REFRIGERANTS = [
+  'R22', 'R123', 'R124', 'R125', 'R134a', 'R143a', 'R152a', 'R227ea', 'R236fa', 'R245fa',
+  'R32', 'R410A', 'R407C', 'R407A', 'R404A', 'R507', 'R422D', 'R422A', 'R428A', 'R434A',
+  'R437A', 'R438A', 'R417A', 'R423A', 'R449A', 'R452A', 'R453A', 'R513A', 'R516A',
+  'R1234yf', 'R1234ze(E)', 'R1234ze(Z)', 'R1233zd(E)',
+  'R290', 'R600a', 'R744', 'R717',
+];
+
 /** Agenda-item: onderhoud (volgende datum) of ticket (gepland) */
 interface AgendaItem {
   id: string;
@@ -462,6 +492,7 @@ const OnderhoudTickets: React.FC = () => {
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Klant / Installatie</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Volgend onderhoud</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Frequentie</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     </tr>
                   </thead>
@@ -472,11 +503,14 @@ const OnderhoudTickets: React.FC = () => {
                           <div className="font-medium">{i.name}</div>
                           <div className="text-sm text-gray-500">{i.customer?.companyName}</div>
                         </td>
-                        <td className="px-4 py-3 text-sm">{i.type}</td>
+                        <td className="px-4 py-3 text-sm">{INSTALLATION_TYPE_LABELS[i.type] ?? i.type}</td>
                         <td className="px-4 py-3 text-sm">
                           {i.nextMaintenanceDate
                             ? format(new Date(i.nextMaintenanceDate), 'dd/MM/yyyy')
                             : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-sm max-w-[280px]">
+                          {i.maintenanceRules?.[0]?.label ?? '—'}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${BADGE_COLORS[i.badge] ?? 'bg-gray-100'}`}>
@@ -500,7 +534,7 @@ const OnderhoudTickets: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto">
             {STATUS_COLUMNS.map((status) => (
               <div key={status} className="bg-gray-100 dark:bg-frost-800 rounded-lg p-4 min-w-[200px]">
-                <h3 className="font-medium text-sm text-gray-700 dark:text-frost-300 mb-3">{status.replace('_', ' ')}</h3>
+                <h3 className="font-medium text-sm text-gray-700 dark:text-frost-300 mb-3">{STATUS_LABELS[status] ?? status}</h3>
                 <div className="space-y-2">
                   {(ticketsByStatus[status] || []).map((t) => (
                     <div
@@ -509,7 +543,7 @@ const OnderhoudTickets: React.FC = () => {
                       className="bg-white dark:bg-frost-700 rounded p-3 cursor-pointer hover:ring-2 ring-blue-500"
                     >
                       <div className="font-medium text-sm truncate">{t.customer?.companyName}</div>
-                      <div className="text-xs text-gray-500">{t.type}</div>
+                      <div className="text-xs text-gray-500">{TICKET_TYPE_LABELS[t.type] ?? t.type}</div>
                       <div className="text-xs mt-1 line-clamp-2">{t.description}</div>
                     </div>
                   ))}
@@ -524,7 +558,7 @@ const OnderhoudTickets: React.FC = () => {
                 <h3 className="text-lg font-medium mb-4">Ticket: {selectedTicket.customer?.companyName}</h3>
                 <p className="text-sm text-gray-600 dark:text-frost-400 mb-4">{selectedTicket.description}</p>
                 <div className="text-sm space-y-2 mb-4">
-                  <p><strong>Type:</strong> {selectedTicket.type}</p>
+                  <p><strong>Type:</strong> {TICKET_TYPE_LABELS[selectedTicket.type] ?? selectedTicket.type}</p>
                   <p><strong>Ernst:</strong> {selectedTicket.urgency}</p>
                   <p><strong>Voorgestelde tijden:</strong></p>
                   <ul className="list-disc pl-4">
@@ -625,18 +659,21 @@ const OnderhoudTickets: React.FC = () => {
                   className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
                 >
                   {INSTALLATION_TYPES.map((t) => (
-                    <option key={t} value={t}>{t.replace('_', ' ')}</option>
+                    <option key={t} value={t}>{INSTALLATION_TYPE_LABELS[t] ?? t}</option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Koelmiddel (type)</label>
-                <input
+                <select
                   value={addForm.refrigerantType}
                   onChange={(e) => setAddForm({ ...addForm, refrigerantType: e.target.value })}
                   className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
-                  placeholder="R410A, R32, CO2..."
-                />
+                >
+                  {REFRIGERANTS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Koelmiddel (kg)</label>

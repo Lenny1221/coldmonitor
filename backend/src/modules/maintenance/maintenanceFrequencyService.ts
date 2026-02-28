@@ -22,15 +22,12 @@ export interface MaintenanceRule {
 
 /** GWP-waarden (Global Warming Potential) voor CO₂-eq berekening - ton CO₂-eq per kg */
 const GWP: Record<string, number> = {
-  R410A: 2088,
-  R32: 675,
-  R290: 3,
-  R134a: 1430,
-  R404A: 3922,
-  R407C: 1774,
-  R507: 3985,
-  CO2: 1,
-  R717: 0, // Ammoniak
+  R22: 1810, R123: 77, R124: 609, R125: 3170, R134a: 1430, R143a: 4470, R152a: 124, R227ea: 3220, R236fa: 9810, R245fa: 1030,
+  R32: 675, R410A: 2088, R407C: 1774, R407A: 2107, R404A: 3922, R507: 3985,
+  R422D: 2729, R422A: 3143, R428A: 3607, R434A: 3245, R437A: 2285, R438A: 2263, R417A: 2346, R423A: 2283,
+  R449A: 1397, R452A: 2140, R453A: 1480, R513A: 631, R516A: 733,
+  R1234YF: 4, 'R1234ZE(E)': 7, 'R1234ZE(Z)': 7, 'R1233ZD(E)': 1,
+  R290: 3, R600A: 3, R744: 1, R717: 0, // R744=CO2, R717=ammoniak
 };
 
 /** Bereken CO₂-equivalent in ton uit kg en refrigerant type */
@@ -60,15 +57,27 @@ export function getMaintenanceFrequency(input: MaintenanceFrequencyInput): Maint
   // ≥ 3 kg: jaarlijks verplicht + lektest
   if (refrigerantKg >= 3) {
     let leakFreqMonths = 12;
-    if (co2EquivalentTon >= 5 && co2EquivalentTon < 50) leakFreqMonths = 12;
-    else if (co2EquivalentTon >= 50 && co2EquivalentTon < 500) leakFreqMonths = 6;
-    else if (co2EquivalentTon >= 500) leakFreqMonths = 3;
+    let reason = '';
+    if (co2EquivalentTon >= 5 && co2EquivalentTon < 50) {
+      leakFreqMonths = 12;
+      reason = ' (omdat CO₂-equivalent ≥ 5 ton)';
+    } else if (co2EquivalentTon >= 50 && co2EquivalentTon < 500) {
+      leakFreqMonths = 6;
+      reason = ' (omdat CO₂-equivalent ≥ 50 ton)';
+    } else if (co2EquivalentTon >= 500) {
+      leakFreqMonths = 3;
+      reason = ' (omdat CO₂-equivalent ≥ 500 ton)';
+    }
 
-    if (hasLeakDetection) leakFreqMonths = Math.ceil(leakFreqMonths / 2);
+    if (hasLeakDetection) {
+      leakFreqMonths = Math.ceil(leakFreqMonths / 2);
+      if (reason) reason += '; met lekdetectie: ' + (leakFreqMonths === 6 ? 'halfjaarlijks' : leakFreqMonths === 3 ? 'kwartaal' : leakFreqMonths === 2 ? 'tweemaandelijks' : 'maandelijks');
+    }
 
+    const freqLabel = leakFreqMonths === 12 ? 'jaarlijkse' : leakFreqMonths === 6 ? 'halfjaarlijkse' : leakFreqMonths === 3 ? 'driemaandelijkse' : leakFreqMonths === 2 ? 'tweemaandelijkse' : 'maandelijkse';
     rules.push({
       label: co2EquivalentTon >= 5
-        ? `Verplichte ${leakFreqMonths === 12 ? 'jaarlijkse' : leakFreqMonths === 6 ? 'halfjaarlijkse' : 'driemaandelijkse'} lekdichtheidscontrole`
+        ? `Verplichte ${freqLabel} lekdichtheidscontrole${reason}`
         : 'Verplicht jaarlijks onderhoud + lektest',
       frequencyMonths: leakFreqMonths,
       isMandatory: true,
