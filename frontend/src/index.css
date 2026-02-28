@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Marketing: vaste kleuren voor consistente weergave op alle PC's */
+.marketing-light {
+  color-scheme: light;
+}
+.marketing-light h1,
+.marketing-light h2,
+.marketing-light h3,
+.marketing-light h4 {
+  color: #212529;
+}
+.marketing-light .text-gray-600,
+.marketing-light .text-gray-700 {
+  color: #495057;
+}
+.marketing-light .text-gray-500 {
+  color: #6c757d;
+}
+.marketing-light .text-gray-900 {
+  color: #212529;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

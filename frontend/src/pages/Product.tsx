@@ -43,8 +43,8 @@ const dashboardFeatures = [
 const escalationLayers = [
   {
     layer: 'Laag 1 – Direct alarm',
-    color: 'border-green-400 bg-green-50 dark:bg-green-900/10',
-    badge: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
+    color: 'border-green-400 bg-green-50',
+    badge: 'bg-green-100 text-green-700',
     trigger: 'Onmiddellijk bij overschrijding drempelwaarde',
     actions: [
       'E-mail naar alle geconfigureerde contacten',
@@ -55,8 +55,8 @@ const escalationLayers = [
   },
   {
     layer: 'Laag 2 – Escalatie',
-    color: 'border-orange-400 bg-orange-50 dark:bg-orange-900/10',
-    badge: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400',
+    color: 'border-orange-400 bg-orange-50',
+    badge: 'bg-orange-100 text-orange-700',
     trigger: 'Geen reactie na X minuten (configureerbaar)',
     actions: [
       'SMS naar primaire contacten',
@@ -67,8 +67,8 @@ const escalationLayers = [
   },
   {
     layer: 'Laag 3 – AI-telefoon',
-    color: 'border-red-400 bg-red-50 dark:bg-red-900/10',
-    badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+    color: 'border-red-400 bg-red-50',
+    badge: 'bg-red-100 text-red-700',
     trigger: 'Na verdere non-respons op laag 2',
     actions: [
       'AI-telefoonoproep naar primaire contacten',
@@ -103,10 +103,10 @@ const Product: React.FC = () => {
 
       {/* Header */}
       <div className="mb-14">
-        <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 dark:text-frost-100 mb-4">
+        <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
           Wat is IntelliFrost?
         </h1>
-        <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+        <p className="text-lg text-gray-600 max-w-2xl leading-relaxed">
           IntelliFrost is een end-to-end bewakingsplatform voor koel- en vriescellen. Het combineert
           IoT-sensoren, een krachtige cloud-backend en een slimme escalatie-engine in één gebruiksvriendelijk product.
         </p>
@@ -121,22 +121,22 @@ const Product: React.FC = () => {
         ].map((vp) => (
           <div key={vp.text} className="flex items-center gap-3 p-4 rounded-xl bg-[#00c8ff]/8 border border-[#00c8ff]/20">
             <vp.icon className="h-5 w-5 text-[#00c8ff] flex-shrink-0" />
-            <span className="text-sm font-medium text-gray-700 dark:text-slate-300">{vp.text}</span>
+            <span className="text-sm font-medium text-gray-700">{vp.text}</span>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
       <div className="mb-10">
-        <div className="flex gap-1 p-1 rounded-xl bg-gray-100 dark:bg-frost-900 border border-gray-200 dark:border-frost-800 w-fit">
+        <div className="flex gap-1 p-1 rounded-xl bg-gray-100 border border-gray-200 w-fit">
           {tabs.map((tab, i) => (
             <button
               key={tab}
               onClick={() => setActiveTab(i)}
               className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === i
-                  ? 'bg-white dark:bg-frost-800 text-[#00c8ff] shadow-sm'
-                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+                  ? 'bg-white text-[#00c8ff] shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {tab}
@@ -197,22 +197,22 @@ const Product: React.FC = () => {
 
       {activeTab === 1 && (
         <div className="mb-14">
-          <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 dark:text-frost-100 mb-3">
+          <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
             Dashboard & rapportage
           </h2>
-          <p className="text-gray-600 dark:text-slate-400 mb-8 leading-relaxed">
+          <p className="text-gray-600 mb-8 leading-relaxed">
             Het webdashboard geeft u op elk moment een volledig overzicht van al uw locaties en koelcellen.
             Alle data is live en historisch raadpleegbaar – van elk toestel, altijd.
           </p>
           <div className="grid md:grid-cols-2 gap-5">
             {dashboardFeatures.map((f) => (
-              <div key={f.title} className="flex gap-4 p-5 rounded-xl bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800">
+              <div key={f.title} className="flex gap-4 p-5 rounded-xl bg-gray-50 border border-gray-200">
                 <div className="w-10 h-10 rounded-lg bg-[#00c8ff]/15 flex items-center justify-center flex-shrink-0">
                   <f.icon className="h-5 w-5 text-[#00c8ff]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-frost-100 mb-1 text-sm">{f.title}</h3>
-                  <p className="text-xs text-gray-600 dark:text-slate-400 leading-relaxed">{f.desc}</p>
+                  <h3 className="font-semibold text-gray-900 mb-1 text-sm">{f.title}</h3>
+                  <p className="text-xs text-gray-600 leading-relaxed">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -222,10 +222,10 @@ const Product: React.FC = () => {
 
       {activeTab === 2 && (
         <div className="mb-14">
-          <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 dark:text-frost-100 mb-3">
+          <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
             Escalatie in 3 lagen
           </h2>
-          <p className="text-gray-600 dark:text-slate-400 mb-8 leading-relaxed">
+          <p className="text-gray-600 mb-8 leading-relaxed">
             Het escalatiesysteem is volledig configureerbaar en zorgt ervoor dat alarmen altijd de juiste persoon bereiken –
             ook midden in de nacht of in het weekend.
           </p>
@@ -236,14 +236,14 @@ const Product: React.FC = () => {
                   <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${layer.badge}`}>
                     {layer.layer}
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-slate-500">{layer.trigger}</span>
+                  <span className="text-xs text-gray-500">{layer.trigger}</span>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <div className="text-xs font-medium text-gray-500 dark:text-slate-500 uppercase tracking-wide mb-2">Acties</div>
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Acties</div>
                     <ul className="space-y-1.5">
                       {layer.actions.map((a) => (
-                        <li key={a} className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                        <li key={a} className="flex items-center gap-2 text-sm text-gray-700">
                           <CheckCircleIcon className="h-4 w-4 text-[#00c8ff] flex-shrink-0" />
                           {a}
                         </li>
@@ -251,8 +251,8 @@ const Product: React.FC = () => {
                     </ul>
                   </div>
                   <div>
-                    <div className="text-xs font-medium text-gray-500 dark:text-slate-500 uppercase tracking-wide mb-2">Configuratie</div>
-                    <p className="text-sm text-gray-600 dark:text-slate-400">{layer.config}</p>
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Configuratie</div>
+                    <p className="text-sm text-gray-600">{layer.config}</p>
                   </div>
                 </div>
               </div>
@@ -263,28 +263,28 @@ const Product: React.FC = () => {
 
       {activeTab === 3 && (
         <div className="mb-14">
-          <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 dark:text-frost-100 mb-3">
+          <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
             Compliance & wetgeving
           </h2>
-          <p className="text-gray-600 dark:text-slate-400 mb-8 leading-relaxed">
+          <p className="text-gray-600 mb-8 leading-relaxed">
             IntelliFrost helpt u voldoen aan voedselveiligheids- en farmaceutische regelgeving.
             Auditklare rapporten zijn met één klik beschikbaar.
           </p>
           <div className="grid md:grid-cols-2 gap-5 mb-8">
             {complianceItems.map((item) => (
-              <div key={item.title} className="flex gap-4 p-5 rounded-xl bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800">
+              <div key={item.title} className="flex gap-4 p-5 rounded-xl bg-gray-50 border border-gray-200">
                 <div className="w-10 h-10 rounded-lg bg-[#00c8ff]/15 flex items-center justify-center flex-shrink-0">
                   <item.icon className="h-5 w-5 text-[#00c8ff]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-frost-100 mb-1 text-sm">{item.title}</h3>
-                  <p className="text-xs text-gray-600 dark:text-slate-400 leading-relaxed">{item.desc}</p>
+                  <h3 className="font-semibold text-gray-900 mb-1 text-sm">{item.title}</h3>
+                  <p className="text-xs text-gray-600 leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             ))}
           </div>
           <div className="p-5 rounded-xl bg-[#00c8ff]/8 border border-[#00c8ff]/20">
-            <p className="text-sm text-gray-700 dark:text-slate-300">
+            <p className="text-sm text-gray-700">
               <strong>Tip:</strong> Bij een voedselinspectie kunt u direct een rapport downloaden met alle
               temperatuurmetingen van de geselecteerde periode. Geen handmatige registratie meer nodig.
             </p>
@@ -294,7 +294,7 @@ const Product: React.FC = () => {
 
       {/* Voor wie */}
       <section className="mb-14">
-        <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">
+        <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-4">
           Voor wie is IntelliFrost?
         </h2>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -309,7 +309,7 @@ const Product: React.FC = () => {
             'Productiebedrijven',
             'Technici & servicebedrijven',
           ].map((sector) => (
-            <div key={sector} className="flex items-center gap-2 p-3 rounded-lg bg-gray-50 dark:bg-frost-900 border border-gray-200 dark:border-frost-800 text-sm text-gray-700 dark:text-slate-300">
+            <div key={sector} className="flex items-center gap-2 p-3 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-700">
               <CheckCircleIcon className="h-4 w-4 text-[#00c8ff] flex-shrink-0" />
               {sector}
             </div>
@@ -319,10 +319,10 @@ const Product: React.FC = () => {
 
       {/* CTA */}
       <section className="text-center p-10 rounded-3xl bg-gradient-to-br from-[#00c8ff]/15 to-transparent border border-[#00c8ff]/20">
-        <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 dark:text-frost-100 mb-3">
+        <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
           Overtuigd? Vraag een demo aan.
         </h2>
-        <p className="text-gray-600 dark:text-slate-400 mb-6">
+        <p className="text-gray-600 mb-6">
           Onze experts tonen u het platform en bespreken de beste configuratie voor uw situatie.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRightOnRectangleIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -20,8 +20,20 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Force light mode op marketingpagina's – altijd dezelfde kleuren op elke PC
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('dark');
+    root.style.colorScheme = 'light';
+    return () => {
+      root.style.colorScheme = '';
+      const saved = localStorage.getItem('intellifrost-theme');
+      if (saved === 'dark') root.classList.add('dark');
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="marketing-light min-h-screen bg-white text-[#212529]" data-marketing="true" style={{ colorScheme: 'light' }}>
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-white/95 backdrop-blur-md border-b border-gray-200">
         <Link to="/" className="flex items-center gap-3">
           <img
