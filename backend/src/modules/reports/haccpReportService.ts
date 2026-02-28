@@ -4,8 +4,10 @@
  */
 import path from 'path';
 import { prisma } from '../../config/database';
+// pdfmake main export is a singleton; PdfPrinter class is in js/Printer (default export)
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const PdfPrinter = require('pdfmake');
+const PdfPrinterModule = require('pdfmake/js/Printer');
+const PdfPrinter = PdfPrinterModule.default ?? PdfPrinterModule;
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
