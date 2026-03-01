@@ -200,13 +200,13 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
             <IntelliFrostLogo size={24} />
             <span className="text-sm text-gray-500">IntelliFrost – Slimme koelbewaking</span>
           </div>
-          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-6">
+          <div className="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-end gap-6">
             {navItems.map(({ to, label }) => (
-              <Link key={to} to={to} className="text-sm text-gray-500 hover:text-[#00c8ff]">
+              <Link key={to} to={to} className="text-sm text-gray-500 hover:text-[#00c8ff] shrink-0">
                 {label}
               </Link>
             ))}
-            <MadeInBelgiumLogo compact className="sm:ml-4 sm:pl-4 sm:border-l sm:border-gray-200" />
+            <MadeInBelgiumLogo compact className="ml-4 pl-4 border-l border-gray-200 shrink-0" />
           </div>
         </div>
       </footer>
