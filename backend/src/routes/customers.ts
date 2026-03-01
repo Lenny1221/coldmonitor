@@ -76,11 +76,16 @@ router.patch('/me/settings', requireAuth, requireRole('CUSTOMER'), async (req: A
     if (typeof nightStart === 'string' && /^\d{1,2}:\d{2}$/.test(nightStart)) data.nightStart = nightStart;
     if (typeof backupPhone === 'string') data.backupPhone = backupPhone.trim() || null;
     if (Array.isArray(backupContacts)) {
-      data.backupContacts = backupContacts.map((c: { name?: string; phone?: string; addedBy?: string }) => ({
-        name: typeof c.name === 'string' ? c.name.trim() : '',
-        phone: typeof c.phone === 'string' ? c.phone.trim() : '',
-        addedBy: typeof c.addedBy === 'string' ? c.addedBy.trim() : undefined,
-      })).filter((c: { phone: string }) => c.phone);
+      const filtered = backupContacts
+        .map((c: { name?: string; phone?: string; addedBy?: string }) => ({
+          name: typeof c.name === 'string' ? c.name.trim() : '',
+          phone: typeof c.phone === 'string' ? c.phone.trim() : '',
+          addedBy: typeof c.addedBy === 'string' ? c.addedBy.trim() : undefined,
+        }))
+        .filter((c: { phone: string }) => c.phone);
+      data.backupContacts = filtered;
+      // Wis legacy backupPhone zodat bij herladen geen oude waarde meer verschijnt
+      data.backupPhone = null;
     }
 
     if (Object.keys(data).length === 0) {
