@@ -147,14 +147,14 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
         </nav>
 
         <div className="flex items-center gap-4 ml-auto shrink-0">
+          <MadeInBelgiumLogo compact className="hidden lg:flex" />
           <Link
             to="/login"
-            className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white bg-[#00c8ff] hover:bg-[#00a8dd] transition-colors"
+            className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white bg-[#00c8ff] hover:bg-[#00a8dd] transition-colors lg:pl-4 lg:border-l lg:border-gray-200"
           >
             <ArrowRightOnRectangleIcon className="h-5 w-5" />
             Inloggen
           </Link>
-          <MadeInBelgiumLogo compact className="hidden lg:flex pl-4 border-l border-gray-200" />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
