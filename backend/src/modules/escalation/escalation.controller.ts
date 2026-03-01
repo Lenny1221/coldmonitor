@@ -15,14 +15,40 @@ import { prisma } from '../../config/database';
 import { config } from '../../config/env';
 import { runEscalationCron } from '../../services/escalationService';
 import { alertService } from '../../services/alertService';
-import { generateTtsAudio } from '../../services/notifications/phoneChannel';
+import { generateTtsAudio, getCachedTts, setCachedTts } from '../../services/notifications/phoneChannel';
 import { logger } from '../../utils/logger';
 
 const router = Router();
 
-// In-memory cache voor TTS-audio (5 min)
-const ttsCache = new Map<string, { buffer: Buffer; expires: number }>();
-const TTS_CACHE_MS = 5 * 60 * 1000;
+/** Escape tekst voor gebruik in TwiML <Say> */
+function escapeTwiML(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Bouw alarmtekst voor TTS/Say */
+function buildAlarmText(
+  alert: { value?: number | null; coldCell?: { name?: string | null; location?: { customer?: { companyName?: string | null } | null } | null } | null },
+  backup?: string,
+  technician?: string
+): string {
+  const customer = alert.coldCell?.location?.customer;
+  const coldCellName = alert.coldCell?.name ?? 'Onbekende cel';
+  const temp = alert.value ?? 0;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond';
+
+  if (technician === '1') {
+    return `${greeting}. IntelliFrost. URGENT: ${customer?.companyName} – koelcel ${coldCellName}, temperatuur ${temp} graden. U wordt gevraagd om in te grijpen.`;
+  }
+  if (backup === '1') {
+    return `${greeting}. IntelliFrost. Er is een kritisch alarm bij ${customer?.companyName} – koelcel ${coldCellName}. Temperatuur ${temp} graden. Neem contact op.`;
+  }
+  return `${greeting}. Dit is IntelliFrost. Uw koelcel ${coldCellName} heeft een kritisch temperatuuralarm. De huidige temperatuur is ${temp} graden Celsius. Druk 1 om te bevestigen dat u op de hoogte bent. Druk 2 om een technieker op te roepen.`;
+}
 
 /**
  * POST /api/escalate
@@ -185,27 +211,13 @@ router.all('/tts/audio/:alarmId', async (req: Request, res: Response) => {
       return res.status(404).send('Alarm niet gevonden');
     }
 
-    const customer = alert.coldCell?.location?.customer;
-    const coldCellName = alert.coldCell?.name ?? 'Onbekende cel';
-    const temp = alert.value ?? 0;
-
-    const hour = new Date().getHours();
-    const greeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond';
-
-    let text: string;
-    if (technician === '1') {
-      text = `${greeting}. IntelliFrost. URGENT: ${customer?.companyName} – koelcel ${coldCellName}, temperatuur ${temp} graden. U wordt gevraagd om in te grijpen.`;
-    } else if (backup === '1') {
-      text = `${greeting}. IntelliFrost. Er is een kritisch alarm bij ${customer?.companyName} – koelcel ${coldCellName}. Temperatuur ${temp} graden. Neem contact op.`;
-    } else {
-      text = `${greeting}. Dit is IntelliFrost. Uw koelcel ${coldCellName} heeft een kritisch temperatuuralarm. De huidige temperatuur is ${temp} graden Celsius. Druk 1 om te bevestigen dat u op de hoogte bent. Druk 2 om een technieker op te roepen.`;
-    }
-
+    const text = buildAlarmText(alert, String(backup), String(technician));
     const cacheKey = `${alarmId}-${backup}-${technician}`;
-    let cached = ttsCache.get(cacheKey);
-    if (cached && cached.expires > Date.now()) {
+
+    let cached = getCachedTts(cacheKey);
+    if (cached) {
       res.setHeader('Content-Type', 'audio/mpeg');
-      return res.send(cached.buffer);
+      return res.send(cached);
     }
 
     const buffer = await generateTtsAudio(text);
@@ -213,7 +225,7 @@ router.all('/tts/audio/:alarmId', async (req: Request, res: Response) => {
       return res.status(503).send('TTS niet beschikbaar');
     }
 
-    ttsCache.set(cacheKey, { buffer, expires: Date.now() + TTS_CACHE_MS });
+    setCachedTts(cacheKey, buffer);
     res.setHeader('Content-Type', 'audio/mpeg');
     res.send(buffer);
   } catch (error) {
@@ -225,6 +237,7 @@ router.all('/tts/audio/:alarmId', async (req: Request, res: Response) => {
 /**
  * GET/POST /api/twilio/voice/:alarmId
  * TwiML voor AI-telefoongesprek (Twilio kan GET of POST gebruiken)
+ * Fallback: als ElevenLabs faalt, gebruikt Twilio's native Say
  */
 router.all('/twilio/voice/:alarmId', async (req: Request, res: Response) => {
   try {
@@ -239,11 +252,39 @@ router.all('/twilio/voice/:alarmId', async (req: Request, res: Response) => {
     const audioUrl = `${apiUrl}/api/tts/audio/${alarmId}${qs.toString() ? '?' + qs.toString() : ''}`;
     const webhookUrl = `${apiUrl}/api/twilio/webhook`;
 
+    // Haal alert op voor tekst (nodig voor Twilio Say fallback)
+    const alert = await prisma.alert.findUnique({
+      where: { id: alarmId },
+      include: {
+        coldCell: {
+          include: {
+            location: { include: { customer: true } },
+          },
+        },
+      },
+    });
+
+    const text = alert ? buildAlarmText(alert, String(backup), String(technician)) : 'Alarm melding.';
+    const cacheKey = `${alarmId}-${backup}-${technician}`;
+
+    // Probeer ElevenLabs; bij falen (402, geen config, etc.) gebruik Twilio Say
+    let usePlay = false;
+    const buffer = await generateTtsAudio(text);
+    if (buffer) {
+      setCachedTts(cacheKey, buffer);
+      usePlay = true;
+    } else {
+      logger.info('ElevenLabs TTS niet beschikbaar – gebruik Twilio Say fallback', { alarmId });
+    }
+
+    const sayXml = `<Say language="nl-BE">${escapeTwiML(text)}</Say>`;
+    const playXml = usePlay ? `<Play>${audioUrl}</Play>` : sayXml;
+
     // Geen Gather voor backup/technician (alleen afspelen)
     if (backup === '1' || technician === '1') {
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Play>${audioUrl}</Play>
+  ${playXml}
   <Pause length="2"/>
   <Hangup/>
 </Response>`;
@@ -256,7 +297,7 @@ router.all('/twilio/voice/:alarmId', async (req: Request, res: Response) => {
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather numDigits="1" action="${webhookUrl}?alarmId=${alarmId}" method="POST" timeout="30">
-    <Play>${audioUrl}</Play>
+    ${playXml}
   </Gather>
   ${retry < maxRetries - 1 ? `<Redirect>${apiUrl}/api/twilio/voice/${alarmId}?retry=${retry + 1}</Redirect>` : '<Hangup/>'}
 </Response>`;

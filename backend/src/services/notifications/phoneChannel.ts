@@ -6,6 +6,20 @@ import { logger } from '../../utils/logger';
 let twilioClient: ReturnType<typeof twilio> | null = null;
 let elevenLabsClient: ElevenLabsClient | null = null;
 
+// Cache voor TTS (gedeeld met escalation controller) – voorkomt dubbele ElevenLabs-calls
+const TTS_CACHE_MS = 5 * 60 * 1000;
+const ttsCache = new Map<string, { buffer: Buffer; expires: number }>();
+
+export function getCachedTts(cacheKey: string): Buffer | null {
+  const cached = ttsCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) return cached.buffer;
+  return null;
+}
+
+export function setCachedTts(cacheKey: string, buffer: Buffer): void {
+  ttsCache.set(cacheKey, { buffer, expires: Date.now() + TTS_CACHE_MS });
+}
+
 function getTwilioClient() {
   if (twilioClient) return twilioClient;
   if (!config.twilioAccountSid || !config.twilioAuthToken) {
