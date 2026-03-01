@@ -110,6 +110,7 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/installations', installationsRoutes);
 app.use('/api/tickets', ticketsRoutes);
 app.use('/api/refrigerant-logbook', refrigerantLogbookRoutes);
+app.use('/api', escalationRoutes);
 
 // Legacy routes (still functional)
 app.use('/api/customers', customerRoutes);
