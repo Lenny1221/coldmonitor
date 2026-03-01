@@ -44,23 +44,40 @@ const IntelliFrostLogo: React.FC<{ size?: number; className?: string }> = ({ siz
 );
 
 /** Made in Belgium logo – zwarte tekst met Belgische vlagstrepen */
-const MadeInBelgiumLogo: React.FC<{ className?: string; compact?: boolean }> = ({ className, compact }) => (
-  <div className={`flex flex-col items-center gap-0.5 ${className ?? ''}`}>
-    <div className={`flex w-full ${compact ? 'max-w-[70px] h-0.5' : 'max-w-[120px] h-0.5'}`}>
-      <span className="flex-1 bg-[#000000]" />
-      <span className="flex-1 bg-[#FDDA24]" />
-      <span className="flex-1 bg-[#EF3340]" />
+const MadeInBelgiumLogo: React.FC<{ className?: string; compact?: boolean }> = ({ className, compact }) => {
+  const isCompact = compact;
+  if (isCompact) {
+    return (
+      <div className={`flex items-center gap-1.5 ${className ?? ''}`}>
+        <div className="flex w-6 h-1.5 rounded-sm overflow-hidden shrink-0">
+          <span className="flex-1 bg-[#000000]" />
+          <span className="flex-1 bg-[#FDDA24]" />
+          <span className="flex-1 bg-[#EF3340]" />
+        </div>
+        <span className="font-medium tracking-wide text-gray-700 uppercase text-[9px] whitespace-nowrap" style={{ fontFamily: 'sans-serif' }}>
+          Made in Belgium
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className={`flex flex-col items-center gap-0.5 ${className ?? ''}`}>
+      <div className={`flex w-full ${'max-w-[120px] h-0.5'}`}>
+        <span className="flex-1 bg-[#000000]" />
+        <span className="flex-1 bg-[#FDDA24]" />
+        <span className="flex-1 bg-[#EF3340]" />
+      </div>
+      <span className={`font-medium tracking-wide text-gray-700 uppercase text-[10px] sm:text-xs`} style={{ fontFamily: 'sans-serif' }}>
+        Made in Belgium
+      </span>
+      <div className={`flex w-full max-w-[120px] h-0.5`}>
+        <span className="flex-1 bg-[#000000]" />
+        <span className="flex-1 bg-[#FDDA24]" />
+        <span className="flex-1 bg-[#EF3340]" />
+      </div>
     </div>
-    <span className={`font-medium tracking-wide text-gray-700 uppercase ${compact ? 'text-[8px]' : 'text-[10px] sm:text-xs'}`} style={{ fontFamily: 'sans-serif' }}>
-      Made in Belgium
-    </span>
-    <div className={`flex w-full ${compact ? 'max-w-[70px] h-0.5' : 'max-w-[120px] h-0.5'}`}>
-      <span className="flex-1 bg-[#000000]" />
-      <span className="flex-1 bg-[#FDDA24]" />
-      <span className="flex-1 bg-[#EF3340]" />
-    </div>
-  </div>
-);
+  );
+};
 
 const navItems = [
   { to: '/', label: 'Home' },
@@ -94,8 +111,8 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
 
   return (
     <div className="marketing-light min-h-screen bg-white text-[#212529]" data-marketing="true" style={{ colorScheme: 'light' }}>
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-white/95 backdrop-blur-md border-b border-gray-200">
-        <Link to="/" className="flex items-center gap-3">
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center gap-6 px-6 py-4 bg-white/95 backdrop-blur-md border-b border-gray-200">
+        <Link to="/" className="flex items-center gap-3 shrink-0">
           <IntelliFrostLogo size={40} />
           <div>
             <span className="font-['Exo_2'] font-light text-xl tracking-tight text-gray-800">Intelli</span>
@@ -113,12 +130,12 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
           </div>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-6 shrink-0">
           {navItems.map(({ to, label }) => (
             <Link
               key={to}
               to={to}
-              className={`text-sm font-medium transition-colors ${
+              className={`text-sm font-medium transition-colors whitespace-nowrap ${
                 location.pathname === to
                   ? 'text-[#00c8ff]'
                   : 'text-gray-600 hover:text-gray-900'
@@ -129,7 +146,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
           ))}
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 ml-auto shrink-0">
           <Link
             to="/login"
             className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white bg-[#00c8ff] hover:bg-[#00a8dd] transition-colors"
