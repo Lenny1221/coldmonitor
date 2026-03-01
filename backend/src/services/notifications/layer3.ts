@@ -8,8 +8,9 @@ import { logger } from '../../utils/logger';
 
 /**
  * Layer 3: AI-telefoonbot (Twilio + ElevenLabs TTS)
- * Backup contact parallel gebeld
- * Technicus automatisch gedispatcht
+ * - Klant: telefoon
+ * - Backup contacten: telefoon
+ * - Technicus: alleen SMS (geen telefoon)
  */
 export async function sendLayer3Notifications(alert: AlertWithRelations): Promise<void> {
   if (!alert) return;
@@ -39,17 +40,13 @@ export async function sendLayer3Notifications(alert: AlertWithRelations): Promis
     await logEscalation(alert.id, 'LAYER_3', 'Telefoon naar backup contact', 'CLIENT', 'PHONE');
   }
 
-  // Technicus: SMS + telefoon
+  // Technicus: alleen SMS (geen telefoon – enkel klant wordt opgebeld)
   if (technician?.phone) {
     await sendSms(
       technician.phone,
       `IntelliFrost URGENT: ${customer?.companyName} – ${coldCellName}. Temperatuur ${temp}°C. U wordt gedispatcht.`
     );
     await logEscalation(alert.id, 'LAYER_3', 'SMS naar technicus', 'TECHNICIAN', 'SMS');
-
-    const techVoiceUrl = `${apiUrl}/api/twilio/voice/${alert.id}?technician=1`;
-    await initiatePhoneCall(technician.phone, techVoiceUrl);
-    await logEscalation(alert.id, 'LAYER_3', 'Telefoon naar technicus', 'TECHNICIAN', 'PHONE');
   }
 
   logger.info('Layer 3 notificaties verzonden', { alertId: alert.id });
