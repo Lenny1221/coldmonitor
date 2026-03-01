@@ -206,7 +206,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
                 {label}
               </Link>
             ))}
-            <MadeInBelgiumLogo className="sm:ml-4 sm:pl-4 sm:border-l sm:border-gray-200" />
+            <MadeInBelgiumLogo compact className="sm:ml-4 sm:pl-4 sm:border-l sm:border-gray-200" />
           </div>
         </div>
       </footer>
