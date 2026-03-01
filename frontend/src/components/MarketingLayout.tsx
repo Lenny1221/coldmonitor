@@ -44,17 +44,17 @@ const IntelliFrostLogo: React.FC<{ size?: number; className?: string }> = ({ siz
 );
 
 /** Made in Belgium logo – zwarte tekst met Belgische vlagstrepen */
-const MadeInBelgiumLogo: React.FC<{ className?: string }> = ({ className }) => (
+const MadeInBelgiumLogo: React.FC<{ className?: string; compact?: boolean }> = ({ className, compact }) => (
   <div className={`flex flex-col items-center gap-0.5 ${className ?? ''}`}>
-    <div className="flex w-full max-w-[120px] h-0.5">
+    <div className={`flex w-full ${compact ? 'max-w-[70px] h-0.5' : 'max-w-[120px] h-0.5'}`}>
       <span className="flex-1 bg-[#000000]" />
       <span className="flex-1 bg-[#FDDA24]" />
       <span className="flex-1 bg-[#EF3340]" />
     </div>
-    <span className="text-[10px] sm:text-xs font-medium tracking-wide text-gray-700 uppercase" style={{ fontFamily: 'sans-serif' }}>
+    <span className={`font-medium tracking-wide text-gray-700 uppercase ${compact ? 'text-[8px]' : 'text-[10px] sm:text-xs'}`} style={{ fontFamily: 'sans-serif' }}>
       Made in Belgium
     </span>
-    <div className="flex w-full max-w-[120px] h-0.5">
+    <div className={`flex w-full ${compact ? 'max-w-[70px] h-0.5' : 'max-w-[120px] h-0.5'}`}>
       <span className="flex-1 bg-[#000000]" />
       <span className="flex-1 bg-[#FDDA24]" />
       <span className="flex-1 bg-[#EF3340]" />
@@ -137,6 +137,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
             <ArrowRightOnRectangleIcon className="h-5 w-5" />
             Inloggen
           </Link>
+          <MadeInBelgiumLogo compact className="hidden lg:flex pl-4 border-l border-gray-200" />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
@@ -181,15 +182,14 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
           <div className="flex items-center gap-4">
             <IntelliFrostLogo size={24} />
             <span className="text-sm text-gray-500">IntelliFrost – Slimme koelbewaking</span>
-            <MadeInBelgiumLogo className="hidden sm:flex pl-4 border-l border-gray-200" />
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-6">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-6">
             {navItems.map(({ to, label }) => (
               <Link key={to} to={to} className="text-sm text-gray-500 hover:text-[#00c8ff]">
                 {label}
               </Link>
             ))}
-            <MadeInBelgiumLogo className="sm:hidden mt-2" />
+            <MadeInBelgiumLogo className="sm:ml-4 sm:pl-4 sm:border-l sm:border-gray-200" />
           </div>
         </div>
       </footer>
