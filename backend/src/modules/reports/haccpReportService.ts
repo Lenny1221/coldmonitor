@@ -9,7 +9,7 @@ import { prisma } from '../../config/database';
 const PdfPrinterModule = require('pdfmake/js/Printer');
 const PdfPrinter = PdfPrinterModule.default ?? PdfPrinterModule;
 import ExcelJS from 'exceljs';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
 // Gebruik require.resolve voor robuuste pad-resolutie in productie (Docker, Railway, etc.)
@@ -54,6 +54,16 @@ export interface HaccpAuditData {
     waarde: number;
     normMin: number;
     normMax: number;
+    status: 'OK' | 'NOK';
+  }[];
+  /** Per-dag overzicht conform EU 852/2004 / FAVV (traceerbaarheid per kalenderdag) */
+  perDagOverzicht: {
+    datum: string;
+    koelcel: string;
+    minTemp: number;
+    maxTemp: number;
+    aantalMetingen: number;
+    binnenNorm: number;
     status: 'OK' | 'NOK';
   }[];
   ccpAfwijkingen: {
@@ -170,6 +180,55 @@ export async function fetchHaccpAuditData(params: HaccpReportParams): Promise<Ha
     };
   });
 
+  // Per-dag overzicht (conform EU 852/2004, FAVV – traceerbaarheid per kalenderdag)
+  const SEP = '\x00';
+  const perDagMap = new Map<string, { minTemp: number; maxTemp: number; count: number; binnenNorm: number; normMin: number; normMax: number }>();
+  for (const r of readings) {
+    const cc = r.device.coldCell;
+    const dateKey = format(startOfDay(r.recordedAt), 'yyyy-MM-dd');
+    const cellKey = `${cc.location.locationName} – ${cc.name}`;
+    const key = `${dateKey}${SEP}${cellKey}`;
+    const normMin = cc.temperatureMinThreshold;
+    const normMax = cc.temperatureMaxThreshold;
+    const ok = r.temperature >= normMin && r.temperature <= normMax;
+    const existing = perDagMap.get(key);
+    if (existing) {
+      existing.minTemp = Math.min(existing.minTemp, r.temperature);
+      existing.maxTemp = Math.max(existing.maxTemp, r.temperature);
+      existing.count += 1;
+      if (ok) existing.binnenNorm += 1;
+    } else {
+      perDagMap.set(key, {
+        minTemp: r.temperature,
+        maxTemp: r.temperature,
+        count: 1,
+        binnenNorm: ok ? 1 : 0,
+        normMin,
+        normMax,
+      });
+    }
+  }
+  const perDagOverzicht = Array.from(perDagMap.entries())
+    .map(([key, v]) => {
+      const [datumStr, koelcel] = key.split(SEP);
+      const datum = format(new Date(datumStr + 'T12:00:00'), "dd/MM/yyyy", { locale: nl });
+      const status: 'OK' | 'NOK' = v.minTemp >= v.normMin && v.maxTemp <= v.normMax ? 'OK' : 'NOK';
+      return {
+        datum,
+        koelcel,
+        minTemp: v.minTemp,
+        maxTemp: v.maxTemp,
+        aantalMetingen: v.count,
+        binnenNorm: v.binnenNorm,
+        status,
+      };
+    })
+    .sort((a, b) => {
+      const dA = a.datum.split('/').reverse().join('');
+      const dB = b.datum.split('/').reverse().join('');
+      return dA.localeCompare(dB) || a.koelcel.localeCompare(b.koelcel);
+    });
+
   // CCP-afwijkingen (vanuit alerts)
   const ccpAfwijkingen = coldCells.flatMap((cc) =>
     cc.alerts.map((a) => ({
@@ -243,6 +302,7 @@ export async function fetchHaccpAuditData(params: HaccpReportParams): Promise<Ha
     locatie: locationId && loc ? loc.locationName : customer.locations.map((l) => l.locationName).join(', ') || 'Alle locaties',
     verantwoordelijken,
     temperatuurmetingen,
+    perDagOverzicht,
     ccpAfwijkingen,
     alarmgeschiedenis,
     samenvatting: {
@@ -263,7 +323,7 @@ export async function generateHaccpPdf(data: HaccpAuditData): Promise<Buffer> {
     pageSize: 'A4',
     pageMargins: [40, 60, 40, 60],
     footer: (currentPage: number, pageCount: number) => ({
-      text: `${data.bedrijfsnaam} | Rapport ${data.rapportperiode.van} t.e.m. ${data.rapportperiode.tot} | Pagina ${currentPage}/${pageCount} | Gegenereerd door IntelliFrost`,
+      text: `${data.bedrijfsnaam} | Rapport ${data.rapportperiode.van} t.e.m. ${data.rapportperiode.tot} | Pagina ${currentPage}/${pageCount} | Gegenereerd door IntelliFrost | Registraties bewaard conform EU 852/2004 en FAVV (min. 6 maanden)`,
       fontSize: 8,
       color: '#666666',
       alignment: 'center',
@@ -288,7 +348,39 @@ export async function generateHaccpPdf(data: HaccpAuditData): Promise<Buffer> {
         margin: [0, 0, 0, 15],
       },
 
-      { text: '2. TEMPERATUURMETINGEN', style: 'sectionHeader', margin: [0, 20, 0, 10] },
+      { text: '2. TEMPERATUUR PER DAG (conform EU 852/2004, FAVV)', style: 'sectionHeader', margin: [0, 20, 0, 10] },
+      {
+        text: 'Overzicht per kalenderdag en koelcel – traceerbaarheid voor HACCP-audits.',
+        fontSize: 9,
+        margin: [0, 0, 0, 8],
+      },
+      ...(data.perDagOverzicht.length === 0
+        ? [{ text: 'Geen temperatuurmetingen in deze periode.', fontSize: 10, margin: [0, 0, 0, 15] }]
+        : [
+            {
+              table: {
+                headerRows: 1,
+                widths: [70, '*', 50, 50, 60, 55, 45],
+                body: [
+                  ['Datum', 'Koelcel', 'Min °C', 'Max °C', 'Metingen', 'Binnen norm', 'Status'],
+                  ...data.perDagOverzicht.map((p) => [
+                    p.datum,
+                    p.koelcel,
+                    p.minTemp.toFixed(1),
+                    p.maxTemp.toFixed(1),
+                    p.aantalMetingen.toString(),
+                    p.binnenNorm.toString(),
+                    p.status,
+                  ]),
+                ],
+              },
+              layout: 'lightGridLines',
+              fontSize: 8,
+              margin: [0, 0, 0, 10],
+            },
+          ]),
+
+      { text: '3. TEMPERATUURMETINGEN (ruwe data)', style: 'sectionHeader', margin: [0, 20, 0, 10] },
       {
         table: {
           headerRows: 1,
@@ -313,7 +405,7 @@ export async function generateHaccpPdf(data: HaccpAuditData): Promise<Buffer> {
         ? [{ text: `... en ${data.temperatuurmetingen.length - 100} metingen meer (zie Excel voor volledige data)`, fontSize: 8, italics: true, margin: [0, 0, 0, 15] }]
         : []),
 
-      { text: '3. CCP-AFWIJKINGEN & CORRECTIEVE ACTIES', style: 'sectionHeader', margin: [0, 20, 0, 10] },
+      { text: '4. CCP-AFWIJKINGEN & CORRECTIEVE ACTIES', style: 'sectionHeader', margin: [0, 20, 0, 10] },
       ...(data.ccpAfwijkingen.length === 0
         ? [{ text: 'Geen CCP-afwijkingen in deze periode.', fontSize: 10, margin: [0, 0, 0, 15] }]
         : data.ccpAfwijkingen.map((a, i) => ({
@@ -327,7 +419,7 @@ export async function generateHaccpPdf(data: HaccpAuditData): Promise<Buffer> {
             margin: [0, 0, 0, 5],
           }))),
 
-      { text: '4. ALARMGESCHIEDENIS', style: 'sectionHeader', margin: [0, 20, 0, 10] },
+      { text: '5. ALARMGESCHIEDENIS', style: 'sectionHeader', margin: [0, 20, 0, 10] },
       {
         table: {
           headerRows: 1,
@@ -350,7 +442,7 @@ export async function generateHaccpPdf(data: HaccpAuditData): Promise<Buffer> {
         margin: [0, 0, 0, 10],
       },
 
-      { text: '5. VERANTWOORDELIJKE PERSONEN', style: 'sectionHeader', margin: [0, 20, 0, 10] },
+      { text: '6. VERANTWOORDELIJKE PERSONEN', style: 'sectionHeader', margin: [0, 20, 0, 10] },
       {
         table: {
           widths: ['*', '*'],
@@ -410,32 +502,39 @@ export async function generateHaccpExcel(data: HaccpAuditData): Promise<Buffer> 
   ws1.addRow(['Beoordeling', data.samenvatting.beoordeling]);
   ws1.addRow(['Motivatie', data.samenvatting.motivatie]);
 
-  // Tab 2: Temperatuurmetingen
-  const ws2 = workbook.addWorksheet('Temperatuurmetingen');
-  ws2.addRow(['Datum & Tijdstip', 'Sensor', 'Locatie', 'Gemeten °C', 'Norm min', 'Norm max', 'Status']);
+  // Tab 2: Per dag overzicht (conform EU 852/2004, FAVV)
+  const ws2 = workbook.addWorksheet('Per dag overzicht');
+  ws2.addRow(['Datum', 'Koelcel', 'Min °C', 'Max °C', 'Aantal metingen', 'Binnen norm', 'Status']);
+  data.perDagOverzicht.forEach((p) => {
+    ws2.addRow([p.datum, p.koelcel, p.minTemp, p.maxTemp, p.aantalMetingen, p.binnenNorm, p.status]);
+  });
+
+  // Tab 3: Temperatuurmetingen
+  const ws3 = workbook.addWorksheet('Temperatuurmetingen');
+  ws3.addRow(['Datum & Tijdstip', 'Sensor', 'Locatie', 'Gemeten °C', 'Norm min', 'Norm max', 'Status']);
   data.temperatuurmetingen.forEach((t) => {
-    ws2.addRow([t.timestamp, t.sensor, t.locatie, t.waarde, t.normMin, t.normMax, t.status]);
+    ws3.addRow([t.timestamp, t.sensor, t.locatie, t.waarde, t.normMin, t.normMax, t.status]);
   });
 
-  // Tab 3: CCP-afwijkingen
-  const ws3 = workbook.addWorksheet('CCP-afwijkingen');
-  ws3.addRow(['Tijdstip', 'Sensor', 'Waarde', 'Grenswaarde', 'Type', 'Correctieve actie', 'Uitgevoerd door', 'Herstel']);
+  // Tab 4: CCP-afwijkingen
+  const ws4 = workbook.addWorksheet('CCP-afwijkingen');
+  ws4.addRow(['Tijdstip', 'Sensor', 'Waarde', 'Grenswaarde', 'Type', 'Correctieve actie', 'Uitgevoerd door', 'Herstel']);
   data.ccpAfwijkingen.forEach((a) => {
-    ws3.addRow([a.timestamp, a.sensor, a.waarde, a.grenswaarde, a.type, a.correctieveActie, a.uitgevoerdDoor, a.herstelTijdstip]);
+    ws4.addRow([a.timestamp, a.sensor, a.waarde, a.grenswaarde, a.type, a.correctieveActie, a.uitgevoerdDoor, a.herstelTijdstip]);
   });
 
-  // Tab 4: Alarmgeschiedenis
-  const ws4 = workbook.addWorksheet('Alarmgeschiedenis');
-  ws4.addRow(['Tijdstip', 'Type', 'Ernst', 'Gecontacteerd', 'Kanaal', 'Bevestigd', 'Bevestiging', 'Opmerking']);
+  // Tab 5: Alarmgeschiedenis
+  const ws5 = workbook.addWorksheet('Alarmgeschiedenis');
+  ws5.addRow(['Tijdstip', 'Type', 'Ernst', 'Gecontacteerd', 'Kanaal', 'Bevestigd', 'Bevestiging', 'Opmerking']);
   data.alarmgeschiedenis.forEach((a) => {
-    ws4.addRow([a.timestamp, a.type, a.ernst, a.gecontacteerd, a.kanaal, a.bevestigd ? 'Ja' : 'Nee', a.bevestigingTijdstip, a.opmerking]);
+    ws5.addRow([a.timestamp, a.type, a.ernst, a.gecontacteerd, a.kanaal, a.bevestigd ? 'Ja' : 'Nee', a.bevestigingTijdstip, a.opmerking]);
   });
 
-  // Tab 5: Verantwoordelijken
-  const ws5 = workbook.addWorksheet('Verantwoordelijken');
-  ws5.addRow(['Naam', 'Functie']);
+  // Tab 6: Verantwoordelijken
+  const ws6 = workbook.addWorksheet('Verantwoordelijken');
+  ws6.addRow(['Naam', 'Functie']);
   data.verantwoordelijken.forEach((v) => {
-    ws5.addRow([v.naam, v.functie]);
+    ws6.addRow([v.naam, v.functie]);
   });
 
   const buffer = await workbook.xlsx.writeBuffer();

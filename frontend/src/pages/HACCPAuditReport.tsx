@@ -493,6 +493,17 @@ const HACCPAuditReport: React.FC = () => {
                   {preview.samenvatting?.beoordeling ?? '-'}
                 </dd>
               </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500 dark:text-frost-400">
+                  Per-dag registraties
+                </dt>
+                <dd className="mt-1 text-lg font-semibold text-gray-900 dark:text-frost-100">
+                  {preview.perDagOverzicht?.length ?? 0}
+                </dd>
+                <dd className="text-xs text-gray-500 dark:text-frost-400">
+                  (conform EU 852/2004, FAVV)
+                </dd>
+              </div>
             </dl>
           </div>
         </div>
