@@ -1,8 +1,10 @@
 import twilio from 'twilio';
+import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 import { config } from '../../config/env';
 import { logger } from '../../utils/logger';
 
 let twilioClient: ReturnType<typeof twilio> | null = null;
+let elevenLabsClient: ElevenLabsClient | null = null;
 
 function getTwilioClient() {
   if (twilioClient) return twilioClient;
@@ -13,40 +15,47 @@ function getTwilioClient() {
   return twilioClient;
 }
 
+function getElevenLabsClient(): ElevenLabsClient | null {
+  if (elevenLabsClient) return elevenLabsClient;
+  if (!config.elevenLabsApiKey || !config.elevenLabsVoiceId) {
+    return null;
+  }
+  elevenLabsClient = new ElevenLabsClient({
+    apiKey: config.elevenLabsApiKey,
+  });
+  return elevenLabsClient;
+}
+
 /**
- * Genereer TTS-audio via ElevenLabs API
+ * Genereer TTS-audio via ElevenLabs API (officiële SDK, zie elevenlabs.io/docs/eleven-api/quickstart)
  */
 export async function generateTtsAudio(text: string): Promise<Buffer | null> {
-  if (!config.elevenLabsApiKey || !config.elevenLabsVoiceId) {
+  const client = getElevenLabsClient();
+  if (!client || !config.elevenLabsVoiceId) {
     logger.warn('ElevenLabs niet geconfigureerd – TTS wordt overgeslagen');
     return null;
   }
 
   try {
-    const res = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${config.elevenLabsVoiceId}`,
-      {
-        method: 'POST',
-        headers: {
-          'xi-api-key': config.elevenLabsApiKey,
-          'Content-Type': 'application/json',
-          Accept: 'audio/mpeg',
-        },
-        body: JSON.stringify({
-          text,
-          model_id: 'eleven_multilingual_v2',
-        }),
-      }
-    );
+    const stream = await client.textToSpeech.convert(config.elevenLabsVoiceId, {
+      text,
+      modelId: 'eleven_multilingual_v2',
+      outputFormat: 'mp3_44100_128',
+    });
 
-    if (!res.ok) {
-      const errBody = await res.text();
-      logger.error('ElevenLabs API fout', new Error(errBody), { status: res.status });
+    if (!stream) {
+      logger.error('ElevenLabs: geen audio stream ontvangen');
       return null;
     }
 
-    const arrayBuffer = await res.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    const chunks: Buffer[] = [];
+    const reader = stream.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(Buffer.from(value));
+    }
+    return Buffer.concat(chunks);
   } catch (err) {
     logger.error('Fout bij ElevenLabs TTS', err as Error);
     return null;
