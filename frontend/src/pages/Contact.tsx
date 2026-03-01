@@ -22,9 +22,10 @@ const contactTypes: { id: ContactType; label: string; desc: string; icon: React.
 ];
 
 const sectors = [
+  'Slagerij / beenhouwerij',
+  'Ijsbereider / ijssalon',
+  'Restaurant / horeca / catering',
   'Retail / supermarkt',
-  'Slagerij / bakkerij',
-  'Restaurant / catering',
   'Groothandel / distributie',
   'Farmaceutisch',
   'Logistiek / transport',

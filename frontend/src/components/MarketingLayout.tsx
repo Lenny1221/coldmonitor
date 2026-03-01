@@ -43,6 +43,25 @@ const IntelliFrostLogo: React.FC<{ size?: number; className?: string }> = ({ siz
   </svg>
 );
 
+/** Made in Belgium logo – zwarte tekst met Belgische vlagstrepen */
+const MadeInBelgiumLogo: React.FC<{ className?: string }> = ({ className }) => (
+  <div className={`flex flex-col items-center gap-0.5 ${className ?? ''}`}>
+    <div className="flex w-full max-w-[120px] h-0.5">
+      <span className="flex-1 bg-[#000000]" />
+      <span className="flex-1 bg-[#FDDA24]" />
+      <span className="flex-1 bg-[#EF3340]" />
+    </div>
+    <span className="text-[10px] sm:text-xs font-medium tracking-wide text-gray-700 uppercase" style={{ fontFamily: 'sans-serif' }}>
+      Made in Belgium
+    </span>
+    <div className="flex w-full max-w-[120px] h-0.5">
+      <span className="flex-1 bg-[#000000]" />
+      <span className="flex-1 bg-[#FDDA24]" />
+      <span className="flex-1 bg-[#EF3340]" />
+    </div>
+  </div>
+);
+
 const navItems = [
   { to: '/', label: 'Home' },
   { to: '/product', label: 'Product' },
@@ -158,17 +177,19 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
       <main className="pt-24 pb-16">{children}</main>
 
       <footer className="border-t border-gray-200 py-8">
-        <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
+        <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-4">
             <IntelliFrostLogo size={24} />
             <span className="text-sm text-gray-500">IntelliFrost – Slimme koelbewaking</span>
+            <MadeInBelgiumLogo className="hidden sm:flex pl-4 border-l border-gray-200" />
           </div>
-          <div className="flex gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-6">
             {navItems.map(({ to, label }) => (
               <Link key={to} to={to} className="text-sm text-gray-500 hover:text-[#00c8ff]">
                 {label}
               </Link>
             ))}
+            <MadeInBelgiumLogo className="sm:hidden mt-2" />
           </div>
         </div>
       </footer>

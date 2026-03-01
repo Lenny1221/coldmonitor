@@ -18,15 +18,39 @@ import {
 
 const sectors = [
   {
-    id: 'voeding',
+    id: 'slagers-horeca',
     icon: BuildingStorefrontIcon,
-    img: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
-    title: 'Retail & voeding',
-    subtitle: 'Supermarkten, slagerijen, restaurants en groothandels',
+    img: 'https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=800&q=80',
+    title: 'Slagers, ijsbereiders & horeca',
+    subtitle: 'Slagers, beenhouwers, ijssalons, restaurants en cafés',
     color: 'border-emerald-400',
     badge: 'bg-emerald-100 text-emerald-700',
     description:
-      'In de voedingssector is temperatuurbewaking niet alleen wettelijk verplicht, maar ook essentieel om voedselverspilling en boetes te vermijden. IntelliFrost biedt een kant-en-klare oplossing die voldoet aan de HACCP-wetgeving.',
+      'Voor slagers, ijsbereiders en de horeca is correcte koeling cruciaal. Eén defecte vriescel of koeltoog kan producten onbruikbaar maken en leidt tot HACCP-overtredingen. IntelliFrost bewaakt uw koel- en vriescellen 24/7 en zorgt voor automatische HACCP-rapportage.',
+    challenges: [
+      'Temperatuurafwijkingen bij stroomuitval of defect compressor',
+      'Deuren die vergeten worden te sluiten na levering of service',
+      'Handmatige HACCP-registratie is tijdrovend en foutgevoelig',
+      'Alarmen buiten openingsuren missen',
+    ],
+    solutions: [
+      'Realtime meldingen bij temperatuuroverschrijding, dag en nacht',
+      'Deur-alarm bij open deur langer dan ingestelde tijd',
+      'Automatische digitale HACCP-rapportage, exporteerbaar voor inspectie',
+      'Escalatie naar backup contacten buiten openingsuren',
+    ],
+    regulations: ['HACCP-verordening (EG) nr. 852/2004', 'FAVV-controles', 'ISO 22000'],
+  },
+  {
+    id: 'voeding',
+    icon: BuildingStorefrontIcon,
+    img: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
+    title: 'Retail & supermarkten',
+    subtitle: 'Supermarkten, groothandels en voedingsdetailhandel',
+    color: 'border-emerald-500',
+    badge: 'bg-emerald-100 text-emerald-700',
+    description:
+      'In de retail is temperatuurbewaking wettelijk verplicht en essentieel om voedselverspilling en boetes te vermijden. IntelliFrost biedt een kant-en-klare oplossing die voldoet aan de HACCP-wetgeving voor alle koel- en vriestoonkasten.',
     challenges: [
       'Temperatuurafwijkingen bij stroomuitval of defect compressor',
       'Deuren die vergeten worden te sluiten na levering',
@@ -247,8 +271,8 @@ const Oplossingen: React.FC = () => {
                   <sector.icon className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <div className="text-white/70 text-xs mb-0.5">{sector.subtitle}</div>
-                  <h3 className="font-['Exo_2'] text-xl font-bold text-white">{sector.title}</h3>
+                  <div className="!text-white text-xs mb-0.5 opacity-90">{sector.subtitle}</div>
+                  <h3 className="font-['Exo_2'] text-xl font-bold !text-white">{sector.title}</h3>
                 </div>
               </div>
             </div>

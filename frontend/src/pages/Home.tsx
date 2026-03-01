@@ -50,6 +50,12 @@ const steps = [
 const sectors = [
   {
     icon: BuildingStorefrontIcon,
+    title: 'Slagers, ijsbereiders & horeca',
+    desc: 'Bewaking van koel- en vriescellen voor slagers, ijssalons en restaurants. HACCP-compliant met automatische rapportage voor inspecties.',
+    img: 'https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=600&q=80',
+  },
+  {
+    icon: BuildingStorefrontIcon,
     title: 'Retail & supermarkten',
     desc: 'Monitor alle koel- en vriestoonkasten vanuit één dashboard. Ontvang direct een alarm bij deuren die te lang openstaan of temperatuurproblemen.',
     img: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80',
@@ -336,7 +342,7 @@ const Home: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-[#0D1B2E]/90 via-[#0D1B2E]/60 to-transparent" />
         <div className="absolute inset-0 flex items-center px-10 sm:px-16">
           <div className="max-w-lg">
-            <h2 className="font-['Exo_2'] text-2xl sm:text-4xl font-bold text-white mb-4">
+            <h2 className="font-['Exo_2'] text-2xl sm:text-4xl font-bold !text-white mb-4">
               Uw koelketen, continu bewaakt
             </h2>
             <p className="text-white/80 mb-6 leading-relaxed">
