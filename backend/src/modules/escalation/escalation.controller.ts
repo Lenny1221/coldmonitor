@@ -165,7 +165,7 @@ router.get('/alarms/active', requireAuth, async (req: AuthRequest, res, next) =>
  * GET /api/tts/audio/:alarmId
  * Genereer TTS-audio voor alarm (ElevenLabs)
  */
-router.get('/tts/audio/:alarmId', async (req: Request, res: Response) => {
+router.all('/tts/audio/:alarmId', async (req: Request, res: Response) => {
   try {
     const { alarmId } = req.params;
     const { backup, technician } = req.query;
@@ -223,10 +223,10 @@ router.get('/tts/audio/:alarmId', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/twilio/voice/:alarmId
- * TwiML voor AI-telefoongesprek
+ * GET/POST /api/twilio/voice/:alarmId
+ * TwiML voor AI-telefoongesprek (Twilio kan GET of POST gebruiken)
  */
-router.get('/twilio/voice/:alarmId', async (req: Request, res: Response) => {
+router.all('/twilio/voice/:alarmId', async (req: Request, res: Response) => {
   try {
     const { alarmId } = req.params;
     const { backup, technician } = req.query;
