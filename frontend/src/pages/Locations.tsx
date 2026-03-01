@@ -174,7 +174,7 @@ const Locations: React.FC = () => {
             setGeocodingError('');
           } else {
             setMapUrl('');
-            setGeocodingError('Address not found. Please check the address.');
+            setGeocodingError('Adres niet gevonden. Controleer het adres.');
           }
         });
       } else {
@@ -187,7 +187,7 @@ const Locations: React.FC = () => {
     } catch (error) {
       console.error('Geocoding error:', error);
       setMapLoading(false);
-      setGeocodingError('Failed to load map. Please check the address.');
+      setGeocodingError('Kaart laden mislukt. Controleer het adres.');
     }
   };
 
@@ -228,12 +228,12 @@ const Locations: React.FC = () => {
     e.preventDefault();
     
     if (!locationName.trim()) {
-      setGeocodingError('Location name is required');
+      setGeocodingError('Locatienaam is verplicht');
       return;
     }
     
     if (!address.trim()) {
-      setGeocodingError('Address is required');
+      setGeocodingError('Adres is verplicht');
       return;
     }
 
@@ -283,7 +283,7 @@ const Locations: React.FC = () => {
       console.error('Error code:', error.code);
       console.error('Request config:', error.config);
       
-      let errorMessage = 'Failed to create location';
+      let errorMessage = 'Locatie aanmaken mislukt';
       
       if (error.response) {
         // Server responded with error
@@ -299,13 +299,13 @@ const Locations: React.FC = () => {
         }
       } else if (error.request) {
         // Request made but no response
-        errorMessage = 'No response from server. Is the backend running?';
+        errorMessage = 'Geen antwoord van de server. Draait de backend?';
       } else {
         // Something else happened
-        errorMessage = error.message || 'Unknown error occurred';
+        errorMessage = error.message || 'Onbekende fout opgetreden';
       }
       
-      alert(`Failed to create location:\n\n${errorMessage}\n\nCheck the browser console (F12) for more details.`);
+      alert(`Locatie aanmaken mislukt:\n\n${errorMessage}\n\nControleer de browserconsole (F12) voor meer details.`);
     } finally {
       setCreating(false);
     }
@@ -338,7 +338,7 @@ const Locations: React.FC = () => {
       setLocationToDelete(null);
       await fetchLocations();
     } catch (error: any) {
-      const msg = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to delete location';
+      const msg = error.response?.data?.error || error.response?.data?.message || error.message || 'Locatie verwijderen mislukt';
       alert(msg);
     } finally {
       setDeleting(false);
@@ -354,25 +354,25 @@ const Locations: React.FC = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Locations</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Locaties</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
-            Manage your business locations
+            Beheer uw vestigingen
           </p>
           {apiKeyStatus !== null && apiKeyStatus !== 'not-set' && (
             <div className="mt-2">
               {apiKeyStatus === 'checking' && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300">
-                  Testing API key...
+                  API-sleutel testen...
                 </span>
               )}
               {apiKeyStatus === 'valid' && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300">
-                  ✓ Google Maps API Key: Active
+                  ✓ Google Maps API-sleutel: actief
                 </span>
               )}
               {apiKeyStatus === 'invalid' && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300">
-                  ✗ Google Maps API Key: Invalid or Restricted
+                  ✗ Google Maps API-sleutel: ongeldig of beperkt
                 </span>
               )}
             </div>
@@ -383,12 +383,12 @@ const Locations: React.FC = () => {
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
-          Add Location
+          Locatie toevoegen
         </button>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500 dark:text-slate-300">Loading locations...</div>
+        <div className="text-center py-12 text-gray-500 dark:text-slate-300">Locaties laden...</div>
       ) : locations.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {locations.map((location: any) => (
@@ -406,7 +406,7 @@ const Locations: React.FC = () => {
                 <button
                   onClick={() => handleDeleteClick(location)}
                   className="p-1.5 text-gray-400 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/25 rounded-md transition-colors"
-                  title="Delete location"
+                  title="Locatie verwijderen"
                 >
                   <TrashIcon className="h-5 w-5" />
                 </button>
@@ -416,13 +416,13 @@ const Locations: React.FC = () => {
               )}
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-500 dark:text-slate-400">
-                  {location.coldCells?.length || 0} cold cell{location.coldCells?.length !== 1 ? 's' : ''}
+                  {location.coldCells?.length || 0} koelcel{location.coldCells?.length !== 1 ? 'len' : ''}
                 </div>
                 <button
                   onClick={() => navigate(`/locations/${location.id}`)}
                   className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                 >
-                  View
+                  Bekijken
                   <ArrowRightIcon className="ml-2 h-4 w-4" />
                 </button>
               </div>
@@ -431,9 +431,9 @@ const Locations: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-12 text-center border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-          <p className="text-gray-500 dark:text-slate-300">No locations found</p>
+          <p className="text-gray-500 dark:text-slate-300">Geen locaties gevonden</p>
           <p className="text-sm text-gray-400 dark:text-slate-400 mt-2">
-            {loading ? 'Loading...' : 'Create your first location to get started'}
+            {loading ? 'Laden...' : 'Maak uw eerste locatie aan om te beginnen'}
           </p>
         </div>
       )}
@@ -442,14 +442,14 @@ const Locations: React.FC = () => {
       {showCreateDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-black/60 p-4">
           <div className="bg-white dark:bg-frost-800 rounded-lg shadow-xl dark:shadow-[0_0_24px_rgba(0,0,0,0.3)] p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-frost-100 mb-4">Create New Location</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-frost-100 mb-4">Nieuwe locatie aanmaken</h2>
             <p className="text-sm text-gray-600 dark:text-slate-300 mb-6">
-              Enter the location details. The address will be shown on the map automatically.
+              Vul de locatiegegevens in. Het adres wordt automatisch op de kaart getoond.
             </p>
             <form onSubmit={handleCreateLocation} className="space-y-4">
               <div>
                 <label htmlFor="locationName" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Location Name *
+                  Locatienaam *
                 </label>
                 <input
                   id="locationName"
@@ -463,7 +463,7 @@ const Locations: React.FC = () => {
               </div>
               <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Address *
+                  Adres *
                 </label>
                 <div className="relative">
                   <input
@@ -500,14 +500,14 @@ const Locations: React.FC = () => {
               {address.trim() && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                    Map Preview
+                    Kaartvoorvertoning
                   </label>
                   <div className="rounded-lg overflow-hidden border border-gray-300 dark:border-[rgba(100,200,255,0.15)]" style={{ height: '300px' }}>
                     {mapLoading ? (
                       <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-frost-850">
                         <div className="text-center">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                          <p className="text-gray-500 dark:text-slate-400 text-sm">Loading map...</p>
+                          <p className="text-gray-500 dark:text-slate-400 text-sm">Kaart laden...</p>
                         </div>
                       </div>
                     ) : mapUrl ? (
@@ -523,7 +523,7 @@ const Locations: React.FC = () => {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-frost-850">
-                        <p className="text-gray-500 dark:text-slate-400 text-sm">Enter an address to see it on the map</p>
+                        <p className="text-gray-500 dark:text-slate-400 text-sm">Voer een adres in om het op de kaart te zien</p>
                       </div>
                     )}
                   </div>
@@ -535,7 +535,7 @@ const Locations: React.FC = () => {
                         rel="noopener noreferrer"
                         className="text-sm text-blue-600 hover:text-blue-800 underline"
                       >
-                        Open in Google Maps
+                        Openen in Google Maps
                       </a>
                     </div>
                   )}
@@ -548,7 +548,7 @@ const Locations: React.FC = () => {
                   onClick={handleCancel}
                   className="px-4 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-md text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-frost-850 hover:bg-gray-50 dark:hover:bg-frost-900"
                 >
-                  Cancel
+                  Annuleren
                 </button>
                 <button
                   type="submit"
@@ -556,7 +556,7 @@ const Locations: React.FC = () => {
                   className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
                 >
                   <CheckIcon className="h-4 w-4 mr-2" />
-                  {creating ? 'Creating...' : 'Create Location'}
+                  {creating ? 'Aanmaken...' : 'Locatie aanmaken'}
                 </button>
               </div>
             </form>

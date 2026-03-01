@@ -46,7 +46,7 @@ const ColdCells: React.FC = () => {
   const handleCreateColdCell = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.locationId) {
-      alert('Please select a location first');
+      alert('Selecteer eerst een locatie');
       return;
     }
     setCreating(true);
@@ -66,7 +66,7 @@ const ColdCells: React.FC = () => {
       fetchData();
     } catch (error: any) {
       console.error('Failed to create cold cell:', error);
-      alert(error.response?.data?.error || 'Failed to create cold cell');
+      alert(error.response?.data?.error || 'Koelcel aanmaken mislukt');
     } finally {
       setCreating(false);
     }
@@ -74,13 +74,13 @@ const ColdCells: React.FC = () => {
 
   const getStatusBadge = (cell: any) => {
     if (cell._count?.alerts > 0) {
-      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300">Critical</span>;
+      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300">Kritiek</span>;
     }
     const latestReading = cell.devices?.[0]?.sensorReadings?.[0];
     if (latestReading) {
       const temp = latestReading.temperature;
       if (temp > cell.temperatureMaxThreshold || temp < cell.temperatureMinThreshold) {
-        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300">Warning</span>;
+        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300">Waarschuwing</span>;
       }
     }
     return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300">Normal</span>;
@@ -90,9 +90,9 @@ const ColdCells: React.FC = () => {
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-frost-100">Cold Cells</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-frost-100">Koelcellen</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
-            Manage your refrigeration and freezer units
+            Beheer uw koel- en vriescellen
           </p>
         </div>
         <button
@@ -108,13 +108,13 @@ const ColdCells: React.FC = () => {
       {locations.length === 0 && (
         <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 text-center border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
           <p className="text-gray-500 dark:text-slate-300 mb-4">
-            You need to create a location first before adding cold cells.
+            Maak eerst een locatie aan voordat u koelcellen kunt toevoegen.
           </p>
           <button
             onClick={() => navigate('/locations')}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
-            Go to Locations
+            Ga naar locaties
           </button>
         </div>
       )}
@@ -127,19 +127,19 @@ const ColdCells: React.FC = () => {
             <thead className="bg-gray-50 dark:bg-frost-850">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                  Cold Cell Name
+                  Koelcelnaam
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                  Location
+                  Locatie
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                  Current Temp
+                  Huidige temp
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                  Actions
+                  Acties
                 </th>
               </tr>
             </thead>
@@ -174,7 +174,7 @@ const ColdCells: React.FC = () => {
                         onClick={() => navigate(`/coldcell/${cell.id}`)}
                         className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 inline-flex items-center"
                       >
-                        View Details
+                        Details bekijken
                         <ArrowRightIcon className="ml-2 h-4 w-4" />
                       </button>
                     </td>
@@ -186,7 +186,7 @@ const ColdCells: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-12 text-center border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-          <p className="text-gray-500 dark:text-slate-300">No cold cells found</p>
+          <p className="text-gray-500 dark:text-slate-300">Geen koelcellen gevonden</p>
           <p className="text-sm text-gray-400 dark:text-slate-400 mt-2">
             Maak je eerste koelcel aan om te beginnen met monitoren
           </p>
@@ -204,7 +204,7 @@ const ColdCells: React.FC = () => {
             <form onSubmit={handleCreateColdCell} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Cold Cell Name *
+                  Koelcelnaam *
                 </label>
                 <input
                   id="name"
@@ -218,7 +218,7 @@ const ColdCells: React.FC = () => {
               </div>
               <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Location *
+                  Locatie *
                 </label>
                 <select
                   id="location"
@@ -227,7 +227,7 @@ const ColdCells: React.FC = () => {
                   required
                   className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 >
-                  <option value="">Select a location</option>
+                  <option value="">Selecteer een locatie</option>
                   {locations.map((loc) => (
                     <option key={loc.id} value={loc.id}>
                       {loc.locationName}
@@ -246,14 +246,14 @@ const ColdCells: React.FC = () => {
                   required
                   className="w-full px-3 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 >
-                  <option value="fridge">Fridge</option>
-                  <option value="freezer">Freezer</option>
+                  <option value="fridge">Koelkast</option>
+                  <option value="freezer">Vriezer</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="minTemp" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Min Temp (°C) *
+                    Min temp (°C) *
                   </label>
                   <input
                     id="minTemp"
@@ -267,7 +267,7 @@ const ColdCells: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="maxTemp" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Max Temp (°C) *
+                    Max temp (°C) *
                   </label>
                   <input
                     id="maxTemp"
@@ -286,7 +286,7 @@ const ColdCells: React.FC = () => {
                   onClick={() => setShowCreateDialog(false)}
                   className="px-4 py-2 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-md text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-frost-850 hover:bg-gray-50 dark:hover:bg-frost-900"
                 >
-                  Cancel
+                  Annuleren
                 </button>
                 <button
                   type="submit"
