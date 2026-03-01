@@ -60,7 +60,7 @@ const IntelliFrostMark: React.FC = () => (
         </span>
       </div>
       <p className="mt-1 text-xs tracking-[4px] uppercase font-['Rajdhani'] text-[#5590bb] dark:text-[#3a7aaa]">
-        Smart Cold Intelligence
+        Slimme koelbewaking
       </p>
     </div>
   </div>
@@ -189,7 +189,7 @@ const Login: React.FC = () => {
       await registerCustomer(data);
       navigate('/verify-email-sent', { state: { email: data.email } });
     } catch (err: unknown) {
-      const msg = (err as { safeMessage?: string })?.safeMessage ?? getErrorMessage(err, 'Registration failed');
+      const msg = (err as { safeMessage?: string })?.safeMessage ?? getErrorMessage(err, 'Registratie mislukt');
       setError(typeof msg === 'string' ? msg : 'Registratie mislukt');
     } finally {
       setLoading(false);
@@ -223,7 +223,7 @@ const Login: React.FC = () => {
       await registerTechnician(data);
       navigate('/verify-email-sent', { state: { email: data.email } });
     } catch (err: unknown) {
-      const msg = (err as { safeMessage?: string })?.safeMessage ?? getErrorMessage(err, 'Registration failed');
+      const msg = (err as { safeMessage?: string })?.safeMessage ?? getErrorMessage(err, 'Registratie mislukt');
       setError(typeof msg === 'string' ? msg : 'Registratie mislukt');
     } finally {
       setLoading(false);
@@ -277,7 +277,7 @@ const Login: React.FC = () => {
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email" className="sr-only">
-                Email address
+                E-mailadres
               </label>
               <input
                 id="email"
@@ -293,7 +293,7 @@ const Login: React.FC = () => {
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
-                Password
+                Wachtwoord
               </label>
               <input
                 id="password"
@@ -711,7 +711,7 @@ const Login: React.FC = () => {
         </div>{/* end card */}
 
         <p className="text-center text-xs font-['Rajdhani'] tracking-widest uppercase text-gray-400 dark:text-[#3a7aaa]">
-          IntelliFrost &mdash; Smart Cold Intelligence
+          IntelliFrost &mdash; Slimme koelbewaking
         </p>
       </div>
     </div>

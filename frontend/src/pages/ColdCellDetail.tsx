@@ -440,7 +440,7 @@ const ColdCellDetail: React.FC = () => {
             </div>
             {customer.contactName && (
               <div>
-                <div className="text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wide">Contact</div>
+                <div className="text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wide">Contactpersoon</div>
                 <div className="text-gray-900 dark:text-frost-100">{customer.contactName}</div>
               </div>
             )}
@@ -643,7 +643,7 @@ const ColdCellDetail: React.FC = () => {
                     }}
                     className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700 hover:bg-amber-200 disabled:opacity-50"
                   >
-                    Push Open
+                    Open duwen
                   </button>
                   <button
                     type="button"

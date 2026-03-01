@@ -444,7 +444,7 @@ const ManageCustomers: React.FC = () => {
                     Bedrijf
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
-                    Contact
+                    Contactpersoon
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
                     Locaties

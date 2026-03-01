@@ -86,7 +86,7 @@ const TechnicianDashboard: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Technicus Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Technicus overzicht</h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
           Overzicht van al uw klanten en hun monitorsystemen
         </p>
@@ -125,7 +125,7 @@ const TechnicianDashboard: React.FC = () => {
                   Bedrijf
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
-                  Contact
+                  Contactpersoon
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
                   Locaties

@@ -18,7 +18,7 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
-const tabs = ['Hardware', 'Dashboard', 'Escalatie', 'Compliance'];
+const tabs = ['Hardware', 'Overzicht', 'Escalatie', 'Compliance'];
 
 const hardwareSpecs = [
   { label: 'Meetbereik temperatuur', value: '-40°C tot +85°C' },
@@ -73,7 +73,7 @@ const escalationLayers = [
     actions: [
       'AI-telefoonoproep naar primaire contacten',
       'AI-oproep naar backup contacten',
-      'Technicus wordt gedispatcht',
+      'Technicus wordt ingeschakeld',
     ],
     config: 'AI-stem meldt koelcel, temperatuur en alarmduur. Wacht op bevestiging van de gebelde persoon.',
   },

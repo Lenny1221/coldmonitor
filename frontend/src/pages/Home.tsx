@@ -32,7 +32,7 @@ const steps = [
   },
   {
     num: '02',
-    title: 'Dashboard configureren',
+    title: 'Overzicht configureren',
     desc: 'Stel drempelwaarden, deur-alarmvertraging en escalatiecontacten in via het gebruiksvriendelijke webdashboard. Klaar in enkele minuten.',
   },
   {
@@ -77,7 +77,7 @@ const sectors = [
 const features = [
   { icon: CubeIcon, title: 'IoT-sensoren', desc: 'Meten temperatuur tot op 0,1°C nauwkeurig. Batterijduur tot 2 jaar. Draadloos en eenvoudig te installeren.' },
   { icon: BellAlertIcon, title: 'Slimme escalatie', desc: '3 escalatielagen: e-mail → SMS → AI-telefoon. Configureerbaar per tijdslot en per dag van de week.' },
-  { icon: ChartBarIcon, title: 'Live dashboard', desc: 'Realtime temperatuurgrafieken per cel. Historische data tot 2 jaar terug beschikbaar.' },
+  { icon: ChartBarIcon, title: 'Live overzicht', desc: 'Realtime temperatuurgrafieken per cel. Historische data tot 2 jaar terug beschikbaar.' },
   { icon: ShieldCheckIcon, title: 'HACCP-compliant', desc: 'Automatische rapportage voor voedselveiligheidsaudits. Exporteerbaar als PDF of CSV.' },
   { icon: ClockIcon, title: 'Openingstijden-bewust', desc: 'Stel nachtmodus en weekendgedrag in zodat u alleen alarmen ontvangt wanneer relevant.' },
   { icon: DevicePhoneMobileIcon, title: 'Mobiel & responsive', desc: 'Werkt op smartphone, tablet en desktop. Altijd en overal toegang tot uw data.' },
@@ -236,7 +236,7 @@ const Home: React.FC = () => {
           {[
             { level: 'Laag 1', time: 'Direct', channels: ['E-mail', 'Push-notificatie'], color: 'border-green-400', badge: 'bg-green-100 text-green-700' },
             { level: 'Laag 2', time: 'Na X min. geen reactie', channels: ['SMS', 'Backup contact', 'Technicus verwittigd'], color: 'border-orange-400', badge: 'bg-orange-100 text-orange-700' },
-            { level: 'Laag 3', time: 'Na verdere non-respons', channels: ['AI-telefoonoproep', 'Backup gebeld', 'Technicus dispatched'], color: 'border-red-400', badge: 'bg-red-100 text-red-700' },
+            { level: 'Laag 3', time: 'Na verdere non-respons', channels: ['AI-telefoonoproep', 'Backup gebeld', 'Technicus ingeschakeld'], color: 'border-red-400', badge: 'bg-red-100 text-red-700' },
           ].map((layer) => (
             <div key={layer.level} className="flex-1 flex flex-col">
               <div className={`flex-1 p-6 rounded-2xl bg-gray-50 border-2 ${layer.color}`}>

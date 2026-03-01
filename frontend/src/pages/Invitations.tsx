@@ -202,7 +202,7 @@ const Invitations: React.FC = () => {
                                 {getStatusBadge(invitation.status)}
                               </div>
                               <div className="text-sm text-gray-600 dark:text-slate-300">
-                                Contact: {invitation.customer?.contactName}
+                                Contactpersoon: {invitation.customer?.contactName}
                               </div>
                               <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">
                                 Verzonden: {new Date(invitation.sentAt).toLocaleString('nl-BE')}

@@ -152,7 +152,7 @@ export const ColdCellSettingsModal: React.FC<ColdCellSettingsModalProps> = ({
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 placeholder="-18"
               />
-              <p className="text-xs text-gray-500 mt-0.5">Range: {TEMP_MIN}°C tot {TEMP_MAX}°C</p>
+              <p className="text-xs text-gray-500 mt-0.5">Bereik: {TEMP_MIN}°C tot {TEMP_MAX}°C</p>
             </div>
 
             <div>

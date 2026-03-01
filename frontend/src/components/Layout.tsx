@@ -86,7 +86,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navLinks =
     user?.role === 'CUSTOMER'
       ? [
-          { to: '/dashboard', label: 'Dashboard', icon: HomeIcon },
+          { to: '/dashboard', label: 'Overzicht', icon: HomeIcon },
           { to: '/alarmeringen', label: 'Alarmeringen', icon: BellIcon },
           { to: '/locations', label: 'Locaties', icon: MapPinIcon },
           { to: '/coldcells', label: 'Koelcellen', icon: CubeIcon },
@@ -97,7 +97,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         ]
       : user?.role === 'TECHNICIAN' || user?.role === 'ADMIN'
         ? [
-            { to: '/technician', label: 'Dashboard', icon: HomeIcon },
+            { to: '/technician', label: 'Overzicht', icon: HomeIcon },
             { to: '/alarmeringen', label: 'Alarmeringen', icon: BellIcon },
             { to: '/technician/customers', label: 'Klanten beheren', icon: UserGroupIcon },
             { to: '/technician/onderhoud', label: 'Onderhoud & Tickets', icon: WrenchScrewdriverIcon },

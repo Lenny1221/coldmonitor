@@ -42,7 +42,7 @@ const VerifyEmailSent: React.FC = () => {
           </Link>
         </div>
         <p className="mt-6 text-center text-xs font-['Rajdhani'] tracking-widest uppercase text-gray-400 dark:text-[#3a7aaa]">
-          IntelliFrost &mdash; Smart Cold Intelligence
+          IntelliFrost &mdash; Slimme koelbewaking
         </p>
       </div>
     </div>

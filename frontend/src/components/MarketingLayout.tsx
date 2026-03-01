@@ -161,7 +161,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
         <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <IntelliFrostLogo size={24} />
-            <span className="text-sm text-gray-500">IntelliFrost – Smart Cold Intelligence</span>
+            <span className="text-sm text-gray-500">IntelliFrost – Slimme koelbewaking</span>
           </div>
           <div className="flex gap-6">
             {navItems.map(({ to, label }) => (
