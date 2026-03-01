@@ -150,7 +150,7 @@ const ManageCustomers: React.FC = () => {
       setShowSearchDropdown(false);
       await fetchInvitations();
     } catch (error: any) {
-      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Failed to send invitation';
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Uitnodiging versturen mislukt';
       alert(errorMsg);
     }
   };
@@ -166,7 +166,7 @@ const ManageCustomers: React.FC = () => {
     try {
       const technicianId = await getTechnicianId();
       if (!technicianId) {
-        alert('Technician ID not found. Please log out and log back in.');
+        alert('Technicus-ID niet gevonden. Log uit en opnieuw in.');
         setShowUnlinkModal(false);
         setCustomerToUnlink(null);
         return;
@@ -181,7 +181,7 @@ const ManageCustomers: React.FC = () => {
       setShowUnlinkModal(false);
       setCustomerToUnlink(null);
     } catch (error: any) {
-      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Failed to unlink customer';
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Klant ontkoppelen mislukt';
       alert(errorMsg);
     }
   };
@@ -207,15 +207,15 @@ const ManageCustomers: React.FC = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Manage Customers</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Link customers to view and manage their cold cells
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Klanten beheren</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
+            Koppel klanten om hun koelcellen te bekijken en beheren
           </p>
         </div>
       </div>
 
       {/* Add Customer Section */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">Klant toevoegen</h2>
         <div className="relative" ref={dropdownRef}>
           <div className="relative">
@@ -243,7 +243,7 @@ const ManageCustomers: React.FC = () => {
 
           {/* Search Results Dropdown */}
           {showSearchDropdown && searchResults.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+            <div className="absolute z-10 mt-1 w-full bg-white dark:bg-frost-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
               {searchResults.map((customer) => (
                 <div
                   key={customer.id}
@@ -256,7 +256,7 @@ const ManageCustomers: React.FC = () => {
                         <div className="font-medium text-gray-900 dark:text-frost-100">{customer.companyName}</div>
                         {customer.linkedTechnician && (
                           <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                            Linked to {customer.linkedTechnician.name}
+                            Gekoppeld aan {customer.linkedTechnician.name}
                           </span>
                         )}
                       </div>
@@ -273,8 +273,8 @@ const ManageCustomers: React.FC = () => {
                           </div>
                         )}
                         {customer._count?.locations > 0 && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {customer._count.locations} location(s)
+                          <div className="text-xs text-gray-500 dark:text-frost-500 mt-1">
+                            {customer._count.locations} locatie(s)
                           </div>
                         )}
                       </div>
@@ -285,7 +285,7 @@ const ManageCustomers: React.FC = () => {
                       className="ml-4 px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
                     >
                       <PlusIcon className="h-4 w-4 mr-1" />
-                      {customer.linkedTechnician ? 'Already Linked' : 'Send Invitation'}
+                      {customer.linkedTechnician ? 'Al gekoppeld' : 'Uitnodiging versturen'}
                     </button>
                   </div>
                 </div>
@@ -294,8 +294,8 @@ const ManageCustomers: React.FC = () => {
           )}
 
           {showSearchDropdown && searchQuery.length >= 2 && searchResults.length === 0 && !searching && (
-            <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md py-4 text-center text-sm text-gray-500">
-              No customers found
+            <div className="absolute z-10 mt-1 w-full bg-white dark:bg-frost-800 shadow-lg rounded-md py-4 text-center text-sm text-gray-500 dark:text-frost-400">
+              Geen klanten gevonden
             </div>
           )}
         </div>
@@ -303,9 +303,9 @@ const ManageCustomers: React.FC = () => {
 
       {/* Pending Invitations */}
       {invitations.filter((inv: any) => inv.status === 'PENDING').length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">
-            Pending Invitations ({invitations.filter((inv: any) => inv.status === 'PENDING').length})
+            Openstaande uitnodigingen ({invitations.filter((inv: any) => inv.status === 'PENDING').length})
           </h2>
           <div className="space-y-3">
             {invitations
@@ -317,17 +317,17 @@ const ManageCustomers: React.FC = () => {
                       <div className="flex items-center">
                         <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2" />
                         <div className="font-medium text-gray-900 dark:text-frost-100">
-                          {invitation.customer?.companyName || 'Unknown'}
+                          {invitation.customer?.companyName || 'Onbekend'}
                         </div>
                         <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                          Pending
+                          In afwachting
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 mt-1 ml-7">
-                        Sent: {new Date(invitation.sentAt).toLocaleDateString()}
+                        Verzonden: {new Date(invitation.sentAt).toLocaleDateString('nl-BE')}
                         {invitation.expiresAt && (
                           <span className="ml-2">
-                            (Expires: {new Date(invitation.expiresAt).toLocaleDateString()})
+                            (Verloopt: {new Date(invitation.expiresAt).toLocaleDateString('nl-BE')})
                           </span>
                         )}
                       </div>
@@ -338,12 +338,12 @@ const ManageCustomers: React.FC = () => {
                           await invitationsApi.cancel(invitation.id);
                           await fetchInvitations();
                         } catch (error: any) {
-                          alert(error.response?.data?.error || 'Failed to cancel invitation');
+                          alert(error.response?.data?.error || 'Uitnodiging annuleren mislukt');
                         }
                       }}
                       className="ml-4 px-3 py-1 text-sm font-medium text-red-600 border border-red-300 rounded-md hover:bg-red-50"
                     >
-                      Cancel
+                      Annuleren
                     </button>
                   </div>
                 </div>
@@ -354,9 +354,9 @@ const ManageCustomers: React.FC = () => {
 
       {/* Rejected Invitations */}
       {invitations.filter((inv: any) => inv.status === 'REJECTED').length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">
-            Rejected Invitations ({invitations.filter((inv: any) => inv.status === 'REJECTED').length})
+            Afgewezen uitnodigingen ({invitations.filter((inv: any) => inv.status === 'REJECTED').length})
           </h2>
           <div className="space-y-3">
             {invitations
@@ -368,17 +368,17 @@ const ManageCustomers: React.FC = () => {
                       <div className="flex items-center">
                         <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2" />
                         <div className="font-medium text-gray-900 dark:text-frost-100">
-                          {invitation.customer?.companyName || 'Unknown'}
+                          {invitation.customer?.companyName || 'Onbekend'}
                         </div>
                         <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                          Rejected
+                          Afgewezen
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 mt-1 ml-7">
-                        Sent: {new Date(invitation.sentAt).toLocaleDateString()}
+                        Verzonden: {new Date(invitation.sentAt).toLocaleDateString('nl-BE')}
                         {invitation.respondedAt && (
                           <span className="ml-2">
-                            • Rejected: {new Date(invitation.respondedAt).toLocaleDateString()}
+                            • Afgewezen: {new Date(invitation.respondedAt).toLocaleDateString('nl-BE')}
                           </span>
                         )}
                       </div>
@@ -392,9 +392,9 @@ const ManageCustomers: React.FC = () => {
 
       {/* Accepted Invitations */}
       {invitations.filter((inv: any) => inv.status === 'ACCEPTED').length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">
-            Accepted Invitations ({invitations.filter((inv: any) => inv.status === 'ACCEPTED').length})
+            Geaccepteerde uitnodigingen ({invitations.filter((inv: any) => inv.status === 'ACCEPTED').length})
           </h2>
           <div className="space-y-3">
             {invitations
@@ -406,17 +406,17 @@ const ManageCustomers: React.FC = () => {
                       <div className="flex items-center">
                         <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2" />
                         <div className="font-medium text-gray-900 dark:text-frost-100">
-                          {invitation.customer?.companyName || 'Unknown'}
+                          {invitation.customer?.companyName || 'Onbekend'}
                         </div>
                         <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                          Accepted
+                          Geaccepteerd
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 mt-1 ml-7">
-                        Sent: {new Date(invitation.sentAt).toLocaleDateString()}
+                        Verzonden: {new Date(invitation.sentAt).toLocaleDateString('nl-BE')}
                         {invitation.respondedAt && (
                           <span className="ml-2">
-                            • Accepted: {new Date(invitation.respondedAt).toLocaleDateString()}
+                            • Geaccepteerd: {new Date(invitation.respondedAt).toLocaleDateString('nl-BE')}
                           </span>
                         )}
                       </div>
@@ -431,38 +431,38 @@ const ManageCustomers: React.FC = () => {
       {/* Linked Customers List */}
       <div>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">
-          Linked Customers ({linkedCustomers.length})
+          Gekoppelde klanten ({linkedCustomers.length})
         </h2>
         {loading ? (
           <div className="text-center py-12 text-gray-500">Klanten laden...</div>
         ) : linkedCustomers.length > 0 ? (
-          <div className="bg-white rounded-lg shadow overflow-x-auto table-scroll">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] overflow-x-auto w-full border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+            <table className="w-full min-w-full table-fixed divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.12)]">
+              <thead className="bg-gray-50 dark:bg-[rgba(100,200,255,0.06)]">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Company
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
+                    Bedrijf
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
                     Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Locations
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
+                    Locaties
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cold Cells
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
+                    Koelcellen
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Active Alerts
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
+                    Actieve alarmen
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
+                    Acties
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-frost-800 divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.12)]">
                 {linkedCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
+                  <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-[rgba(100,200,255,0.04)]">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2" />
@@ -510,14 +510,14 @@ const ManageCustomers: React.FC = () => {
                           onClick={() => navigate(`/customers/${customer.id}`)}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                          View
+                          Bekijken
                         </button>
                         <button
                           onClick={() => handleUnlinkClick(customer)}
                           className="text-red-600 hover:text-red-900 inline-flex items-center"
                         >
                           <TrashIcon className="h-4 w-4 mr-1" />
-                          Unlink
+                          Ontkoppelen
                         </button>
                       </div>
                     </td>
@@ -527,10 +527,10 @@ const ManageCustomers: React.FC = () => {
             </table>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <p className="text-gray-500">No customers linked yet</p>
-            <p className="text-sm text-gray-400 mt-2">
-              Search and link customers above to start managing their cold cells
+          <div className="bg-white dark:bg-frost-800 rounded-lg shadow p-12 text-center">
+            <p className="text-gray-500 dark:text-frost-400">Nog geen klanten gekoppeld</p>
+            <p className="text-sm text-gray-400 dark:text-frost-500 mt-2">
+              Zoek en koppel klanten hierboven om hun koelcellen te beheren
             </p>
           </div>
         )}
@@ -543,7 +543,7 @@ const ManageCustomers: React.FC = () => {
           onClick={handleUnlinkCancel}
         >
           <div 
-            className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
+            className="relative bg-white dark:bg-frost-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
@@ -553,30 +553,30 @@ const ManageCustomers: React.FC = () => {
                 </div>
                 <div className="ml-3 flex-1">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-2">
-                    Unlink Customer
+                    Klant ontkoppelen
                   </h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Are you sure you want to unlink <span className="font-semibold text-gray-900 dark:text-frost-100">{customerToUnlink.companyName}</span>?
+                  <p className="text-sm text-gray-500 dark:text-frost-400 mb-4">
+                    Weet u zeker dat u <span className="font-semibold text-gray-900 dark:text-frost-100">{customerToUnlink.companyName}</span> wilt ontkoppelen?
                   </p>
-                  <p className="text-sm text-gray-500">
-                    You will no longer be able to see their locations, cold cells, and alerts. This action can be reversed by sending a new invitation.
+                  <p className="text-sm text-gray-500 dark:text-frost-400">
+                    U kunt hun locaties, koelcellen en alarmen niet meer bekijken. Deze actie kan ongedaan worden gemaakt door een nieuwe uitnodiging te versturen.
                   </p>
                 </div>
               </div>
             </div>
-            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-lg">
+            <div className="bg-gray-50 dark:bg-frost-850 px-6 py-4 flex justify-end space-x-3 rounded-b-lg">
               <button
                 onClick={handleUnlinkCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-frost-200 bg-white dark:bg-frost-800 border border-gray-300 dark:border-frost-600 rounded-md hover:bg-gray-50 dark:hover:bg-frost-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Cancel
+                Annuleren
               </button>
               <button
                 onClick={handleUnlinkConfirm}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 inline-flex items-center"
               >
                 <TrashIcon className="h-4 w-4 mr-2" />
-                Yes, Unlink
+                Ja, ontkoppelen
               </button>
             </div>
           </div>

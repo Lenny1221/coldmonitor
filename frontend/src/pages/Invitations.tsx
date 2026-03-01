@@ -44,7 +44,7 @@ const Invitations: React.FC = () => {
       console.error('Error response data:', error.response?.data);
       console.error('Error status:', error.response?.status);
       
-      let errorMessage = 'Failed to accept invitation';
+      let errorMessage = 'Uitnodiging accepteren mislukt';
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
       } else if (error.response?.data?.details) {
@@ -58,14 +58,14 @@ const Invitations: React.FC = () => {
   };
 
   const handleReject = async (invitationId: string) => {
-    if (!confirm('Are you sure you want to reject this invitation?')) {
+    if (!confirm('Weet u zeker dat u deze uitnodiging wilt afwijzen?')) {
       return;
     }
     try {
       await invitationsApi.reject(invitationId);
       await fetchInvitations();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to reject invitation');
+      alert(error.response?.data?.error || 'Uitnodiging afwijzen mislukt');
     }
   };
 
@@ -91,10 +91,16 @@ const Invitations: React.FC = () => {
       REJECTED: { bg: 'bg-red-100 dark:bg-red-900/40', text: 'text-red-800 dark:text-red-300' },
       EXPIRED: { bg: 'bg-gray-100 dark:bg-frost-850', text: 'text-gray-800 dark:text-slate-300' },
     };
+    const labels: Record<string, string> = {
+      PENDING: 'In afwachting',
+      ACCEPTED: 'Geaccepteerd',
+      REJECTED: 'Afgewezen',
+      EXPIRED: 'Verlopen',
+    };
     const badge = badges[status] || badges.PENDING;
     return (
       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${badge.bg} ${badge.text}`}>
-        {status}
+        {labels[status] || status}
       </span>
     );
   };
@@ -105,11 +111,11 @@ const Invitations: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Invitations</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-frost-100">Uitnodigingen</h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
           {user?.role === 'CUSTOMER' 
-            ? 'Manage technician invitations to access your cold cells'
-            : 'View invitations you have sent to customers'}
+            ? 'Beheer uitnodigingen van technici om toegang te krijgen tot uw koelcellen'
+            : 'Bekijk uitnodigingen die u naar klanten hebt verstuurd'}
         </p>
       </div>
 
@@ -121,7 +127,7 @@ const Invitations: React.FC = () => {
           {pendingInvitations.length > 0 && (
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">
-                Pending Invitations ({pendingInvitations.length})
+                Openstaande uitnodigingen ({pendingInvitations.length})
               </h2>
               <div className="space-y-4">
                 {pendingInvitations.map((invitation: any) => (
@@ -178,10 +184,10 @@ const Invitations: React.FC = () => {
                                 </div>
                               )}
                               <div className="mt-4 text-xs text-gray-500 dark:text-slate-400">
-                                Sent: {new Date(invitation.sentAt).toLocaleString()}
+                                Verzonden: {new Date(invitation.sentAt).toLocaleString('nl-BE')}
                                 {invitation.expiresAt && (
                                   <span className="ml-2">
-                                    • Expires: {new Date(invitation.expiresAt).toLocaleDateString()}
+                                    • Verloopt: {new Date(invitation.expiresAt).toLocaleDateString('nl-BE')}
                                   </span>
                                 )}
                               </div>
@@ -199,10 +205,10 @@ const Invitations: React.FC = () => {
                                 Contact: {invitation.customer?.contactName}
                               </div>
                               <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">
-                                Sent: {new Date(invitation.sentAt).toLocaleString()}
+                                Verzonden: {new Date(invitation.sentAt).toLocaleString('nl-BE')}
                                 {invitation.expiresAt && (
                                   <span className="ml-2">
-                                    • Expires: {new Date(invitation.expiresAt).toLocaleDateString()}
+                                    • Verloopt: {new Date(invitation.expiresAt).toLocaleDateString('nl-BE')}
                                   </span>
                                 )}
                               </div>
@@ -217,14 +223,14 @@ const Invitations: React.FC = () => {
                             className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 inline-flex items-center"
                           >
                             <CheckCircleIcon className="h-4 w-4 mr-2" />
-                            Accept
+                            Accepteren
                           </button>
                           <button
                             onClick={() => handleReject(invitation.id)}
                             className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 inline-flex items-center"
                           >
                             <XCircleIcon className="h-4 w-4 mr-2" />
-                            Reject
+                            Afwijzen
                           </button>
                         </div>
                       )}
@@ -239,23 +245,23 @@ const Invitations: React.FC = () => {
           {otherInvitations.length > 0 && (
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">
-                {user?.role === 'CUSTOMER' ? 'Previous Invitations' : 'Invitation History'}
+                {user?.role === 'CUSTOMER' ? 'Eerdere uitnodigingen' : 'Uitnodigingsgeschiedenis'}
               </h2>
               <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] overflow-x-auto border border-gray-100 dark:border-[rgba(100,200,255,0.08)] w-full">
                 <table className="w-full min-w-full table-fixed divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
                   <thead className="bg-gray-50 dark:bg-frost-850">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                        {user?.role === 'CUSTOMER' ? 'Technician' : 'Customer'}
+                        {user?.role === 'CUSTOMER' ? 'Technicus' : 'Klant'}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                         Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                        Sent
+                        Verzonden
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                        Responded
+                        Beantwoord
                       </th>
                     </tr>
                   </thead>
@@ -298,13 +304,13 @@ const Invitations: React.FC = () => {
               <EnvelopeIcon className="h-12 w-12 text-gray-400 dark:text-slate-400 mx-auto mb-4" />
               <p className="text-gray-500 dark:text-slate-300">
                 {user?.role === 'CUSTOMER' 
-                  ? 'No invitations received yet'
-                  : 'No invitations sent yet'}
+                  ? 'Nog geen uitnodigingen ontvangen'
+                  : 'Nog geen uitnodigingen verstuurd'}
               </p>
               <p className="text-sm text-gray-400 dark:text-slate-400 mt-2">
                 {user?.role === 'CUSTOMER' 
-                  ? 'When a technician sends you an invitation, it will appear here'
-                  : 'Send invitations to customers from the Manage Customers page'}
+                  ? 'Wanneer een technicus u een uitnodiging stuurt, verschijnt deze hier'
+                  : 'Verstuur uitnodigingen naar klanten via de pagina Klanten beheren'}
               </p>
             </div>
           )}
