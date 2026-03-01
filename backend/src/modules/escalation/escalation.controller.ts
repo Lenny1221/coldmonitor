@@ -29,23 +29,52 @@ function escapeTwiML(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/** Format seconden naar leesbare duur (bijv. "5 minuten") */
+function formatDoorDelay(seconds: number): string {
+  if (seconds < 60) return `${seconds} seconden`;
+  const min = Math.round(seconds / 60);
+  return min === 1 ? '1 minuut' : `${min} minuten`;
+}
+
 /** Bouw alarmtekst voor TTS/Say */
 function buildAlarmText(
-  alert: { value?: number | null; coldCell?: { name?: string | null; location?: { customer?: { companyName?: string | null } | null } | null } | null },
+  alert: {
+    type?: string;
+    value?: number | null;
+    coldCell?: {
+      name?: string | null;
+      doorAlarmDelaySeconds?: number;
+      location?: { customer?: { companyName?: string | null } | null } | null;
+    } | null;
+  },
   backup?: string,
   technician?: string
 ): string {
   const customer = alert.coldCell?.location?.customer;
   const coldCellName = alert.coldCell?.name ?? 'Onbekende cel';
   const temp = alert.value ?? 0;
+  const doorDelaySec = alert.coldCell?.doorAlarmDelaySeconds ?? 300;
+  const doorDelayText = formatDoorDelay(doorDelaySec);
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond';
 
+  const isDoorOpen = alert.type === 'DOOR_OPEN';
+
   if (technician === '1') {
+    if (isDoorOpen) {
+      return `${greeting}. IntelliFrost. URGENT: ${customer?.companyName} – koelcel ${coldCellName}. De deur staat te lang open. U wordt gevraagd om in te grijpen.`;
+    }
     return `${greeting}. IntelliFrost. URGENT: ${customer?.companyName} – koelcel ${coldCellName}, temperatuur ${temp} graden. U wordt gevraagd om in te grijpen.`;
   }
   if (backup === '1') {
+    if (isDoorOpen) {
+      return `${greeting}. IntelliFrost. Er is een kritisch alarm bij ${customer?.companyName} – koelcel ${coldCellName}. De deur staat te lang open. Neem contact op.`;
+    }
     return `${greeting}. IntelliFrost. Er is een kritisch alarm bij ${customer?.companyName} – koelcel ${coldCellName}. Temperatuur ${temp} graden. Neem contact op.`;
+  }
+  // Klant (met Druk 1/2)
+  if (isDoorOpen) {
+    return `${greeting}. Dit is IntelliFrost. De deur van uw koelcel ${coldCellName} staat te lang open. U heeft ingesteld dat de deur maximaal ${doorDelayText} mag openstaan. Druk 1 om te bevestigen dat u op de hoogte bent. Druk 2 om een technieker op te roepen.`;
   }
   return `${greeting}. Dit is IntelliFrost. Uw koelcel ${coldCellName} heeft een kritisch temperatuuralarm. De huidige temperatuur is ${temp} graden Celsius. Druk 1 om te bevestigen dat u op de hoogte bent. Druk 2 om een technieker op te roepen.`;
 }
