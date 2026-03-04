@@ -353,45 +353,51 @@ const ColdCellDetail: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-frost-850 rounded-md text-gray-900 dark:text-frost-100"
-            aria-label="Terug"
-          >
-            <ArrowLeftIcon className="h-6 w-6" />
-          </button>
-          {isTechnician && customer && (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <button
-              onClick={() => navigate(`/customers/${customer.id}`)}
-              className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-md"
-              aria-label="Terug naar klant"
+              onClick={() => navigate(-1)}
+              className="p-2 shrink-0 hover:bg-gray-100 dark:hover:bg-frost-850 rounded-md text-gray-900 dark:text-frost-100"
+              aria-label="Terug"
             >
-              <LinkIcon className="h-5 w-5 mr-2" />
-              Terug naar klant
+              <ArrowLeftIcon className="h-6 w-6" />
             </button>
-          )}
+            {isTechnician && customer && (
+              <button
+                onClick={() => navigate(`/customers/${customer.id}`)}
+                className="inline-flex items-center shrink-0 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md"
+                aria-label="Terug naar klant"
+              >
+                <LinkIcon className="h-5 w-5 mr-2" />
+                Terug naar klant
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="p-2 shrink-0 hover:bg-gray-100 dark:hover:bg-frost-850 rounded-md text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-frost-100"
+            aria-label="Alarminstellingen"
+            title="Alarminstellingen"
+          >
+            <Cog6ToothIcon className="h-6 w-6" />
+          </button>
         </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-frost-100 break-words">{coldCell.name}</h1>
-          <p className="text-sm text-gray-600 dark:text-slate-200 capitalize">{coldCell.type}</p>
+        <div className="w-full min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-frost-100 break-words">
+            {coldCell.name}
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-slate-200 capitalize mt-0.5">{coldCell.type}</p>
           {coldCell.location && (
-            <div className="flex items-center text-sm text-gray-500 dark:text-slate-300 mt-1">
-              <MapPinIcon className="h-4 w-4 mr-1.5 flex-shrink-0" />
-              {coldCell.location.locationName}
-              {coldCell.location.address && ` · ${coldCell.location.address}`}
+            <div className="flex items-start text-sm text-gray-500 dark:text-slate-300 mt-1">
+              <MapPinIcon className="h-4 w-4 mr-1.5 flex-shrink-0 mt-0.5" />
+              <span className="break-words">
+                {coldCell.location.locationName}
+                {coldCell.location.address && ` · ${coldCell.location.address}`}
+              </span>
             </div>
           )}
         </div>
-        <button
-          onClick={() => setShowSettings(true)}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-frost-850 rounded-md text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-frost-100"
-          aria-label="Alarminstellingen"
-          title="Alarminstellingen"
-        >
-          <Cog6ToothIcon className="h-6 w-6" />
-        </button>
       </div>
 
       {showSettings && (

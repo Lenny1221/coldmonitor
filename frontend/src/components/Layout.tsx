@@ -201,30 +201,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
 
-          {/* Theme toggle – verborgen in native app (altijd licht) */}
-          {!isNative && (
-            <button
-              onClick={toggleTheme}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150
-                text-gray-600 dark:text-slate-200
-                bg-gray-100 dark:bg-frost-850
-                hover:bg-gray-200 dark:hover:bg-[rgba(0,150,255,0.1)]
-                border border-gray-200 dark:border-[rgba(100,200,255,0.12)]"
-              aria-label="Thema wisselen"
-            >
-              {theme === 'dark' ? (
-                <>
-                  <SunIcon className="h-4 w-4 text-amber-400" />
-                  <span>Lichte modus</span>
-                </>
-              ) : (
-                <>
-                  <MoonIcon className="h-4 w-4 text-[#0080ff]" />
-                  <span>Donkere modus</span>
-                </>
-              )}
-            </button>
-          )}
+          {/* Theme toggle – boven uitloggen */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150
+              text-gray-600 dark:text-slate-200
+              bg-gray-100 dark:bg-frost-850
+              hover:bg-gray-200 dark:hover:bg-[rgba(0,150,255,0.1)]
+              border border-gray-200 dark:border-[rgba(100,200,255,0.12)]"
+            aria-label="Thema wisselen"
+          >
+            {theme === 'dark' ? (
+              <>
+                <SunIcon className="h-4 w-4 text-amber-400" />
+                <span>Lichte modus</span>
+              </>
+            ) : (
+              <>
+                <MoonIcon className="h-4 w-4 text-[#0080ff]" />
+                <span>Donkere modus</span>
+              </>
+            )}
+          </button>
 
           {/* Logout */}
           <button
@@ -273,20 +271,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </span>
             </div>
           </div>
-          {!isNative && (
-            <div className="flex items-center">
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-lg text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850"
-                aria-label="Thema wisselen"
-              >
-                {theme === 'dark'
-                  ? <SunIcon className="h-5 w-5 text-amber-400" />
-                  : <MoonIcon className="h-5 w-5 text-[#0080ff]" />
-                }
-              </button>
-            </div>
-          )}
+          <div className="flex items-center">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850"
+              aria-label="Thema wisselen"
+            >
+              {theme === 'dark'
+                ? <SunIcon className="h-5 w-5 text-amber-400" />
+                : <MoonIcon className="h-5 w-5 text-[#0080ff]" />
+              }
+            </button>
+          </div>
         </header>
 
         <main className={`flex-1 p-4 sm:p-6 lg:p-8 overflow-auto ${isNative ? 'pb-[max(1.5rem,env(safe-area-inset-bottom))]' : ''}`}>

@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { dashboardApi, alertsApi } from '../services/api';
 import { ResolveAlertModal } from '../components/ResolveAlertModal';
 import { 
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  XCircleIcon 
+  XCircleIcon,
+  BuildingOfficeIcon,
+  MapPinIcon,
+  CubeIcon,
 } from '@heroicons/react/24/outline';
 
 const TechnicianDashboard: React.FC = () => {
@@ -117,78 +121,125 @@ const TechnicianDashboard: React.FC = () => {
       {/* Customers List */}
       <div>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Klanten</h2>
-        <div className="bg-white dark:bg-frost-800 rounded-lg shadow overflow-x-auto w-full border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-          <table className="w-full min-w-full table-fixed divide-y divide-gray-200 dark:divide-frost-600">
-            <thead className="bg-gray-50 dark:bg-frost-850">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
-                  Bedrijf
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
-                  Contactpersoon
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
-                  Locaties
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
-                  Koelcellen
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
-                  Actieve alarmen
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
-                  Acties
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-frost-800 divide-y divide-gray-200 dark:divide-frost-600">
-              {data?.customers?.map((customer: any) => (
-                <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-frost-700/50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-frost-100">{customer.companyName}</div>
-                    <div className="text-sm text-gray-500">{customer.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-frost-100">{customer.contactName}</div>
-                    {customer.phone && (
-                      <div className="text-sm text-gray-500">{customer.phone}</div>
+        {Capacitor.isNativePlatform() ? (
+          <div className="space-y-3">
+            {data?.customers?.map((customer: any) => (
+              <div
+                key={customer.id}
+                className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] border border-gray-100 dark:border-[rgba(100,200,255,0.08)] p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <BuildingOfficeIcon className="h-5 w-5 text-gray-400 shrink-0" />
+                      <div className="font-medium text-gray-900 dark:text-frost-100 truncate">{customer.companyName}</div>
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400 mt-1 truncate">{customer.email}</div>
+                    {customer.contactName && (
+                      <div className="text-sm text-gray-600 dark:text-slate-300 mt-1">Contact: {customer.contactName}</div>
                     )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-frost-100">
-                    {customer.totalLocations}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-frost-100">
-                    {customer.totalCells}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  </div>
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="flex items-center gap-1 text-gray-500">
+                        <MapPinIcon className="h-4 w-4" />
+                        {customer.totalLocations}
+                      </span>
+                      <span className="flex items-center gap-1 text-gray-500">
+                        <CubeIcon className="h-4 w-4" />
+                        {customer.totalCells}
+                      </span>
+                    </div>
                     {customer.activeAlarms > 0 ? (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                        {customer.activeAlarms}
+                      <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
+                        {customer.activeAlarms} alarm(en)
                       </span>
                     ) : (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        0
+                      <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                        0 alarmen
                       </span>
                     )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
                       onClick={() => navigate(`/customers/${customer.id}`)}
-                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
                     >
                       Bekijken
                     </button>
-                  </td>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {(!data?.customers || data.customers.length === 0) && (
+              <div className="bg-white dark:bg-frost-800 rounded-lg shadow p-12 text-center">
+                <p className="text-gray-500 dark:text-frost-400">Nog geen klanten gekoppeld</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-frost-800 rounded-lg shadow overflow-x-auto w-full border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+            <table className="w-full min-w-[640px] divide-y divide-gray-200 dark:divide-frost-600">
+              <thead className="bg-gray-50 dark:bg-frost-850">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap">
+                    Bedrijf
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap">
+                    Contact
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap">
+                    Locaties
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap">
+                    Cellen
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap">
+                    Alarmen
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap">
+                    Acties
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {(!data?.customers || data.customers.length === 0) && (
-            <div className="text-center py-12 text-gray-500 dark:text-frost-400">
-              Nog geen klanten gekoppeld
-            </div>
-          )}
-        </div>
+              </thead>
+              <tbody className="bg-white dark:bg-frost-800 divide-y divide-gray-200 dark:divide-frost-600">
+                {data?.customers?.map((customer: any) => (
+                  <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-frost-700/50">
+                    <td className="px-4 py-4">
+                      <div className="text-sm font-medium text-gray-900 dark:text-frost-100">{customer.companyName}</div>
+                      <div className="text-sm text-gray-500 truncate max-w-[180px]">{customer.email}</div>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-frost-100">{customer.contactName || '—'}</td>
+                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-frost-100">{customer.totalLocations}</td>
+                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-frost-100">{customer.totalCells}</td>
+                    <td className="px-4 py-4">
+                      {customer.activeAlarms > 0 ? (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                          {customer.activeAlarms}
+                        </span>
+                      ) : (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          0
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <button
+                        onClick={() => navigate(`/customers/${customer.id}`)}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        Bekijken
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {(!data?.customers || data.customers.length === 0) && (
+              <div className="text-center py-12 text-gray-500 dark:text-frost-400">
+                Nog geen klanten gekoppeld
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Global Alerts */}

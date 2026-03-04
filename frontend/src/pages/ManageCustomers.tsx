@@ -501,25 +501,25 @@ const ManageCustomers: React.FC = () => {
             </div>
           ) : (
           <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] overflow-x-auto w-full border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-            <table className="w-full min-w-full table-fixed divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.12)]">
+            <table className="w-full min-w-[720px] divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.12)]">
               <thead className="bg-gray-50 dark:bg-[rgba(100,200,255,0.06)]">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap w-[20%]">
                     Bedrijf
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
-                    Contactpersoon
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap w-[18%]">
+                    Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap w-[10%]">
                     Locaties
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
-                    Koelcellen
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap w-[12%]">
+                    Cellen
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
-                    Actieve alarmen
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap w-[12%]">
+                    Alarmen
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-frost-400 uppercase tracking-wider whitespace-nowrap w-[15%]">
                     Acties
                   </th>
                 </tr>
@@ -527,17 +527,17 @@ const ManageCustomers: React.FC = () => {
               <tbody className="bg-white dark:bg-frost-800 divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.12)]">
                 {linkedCustomers.map((customer) => (
                   <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-[rgba(100,200,255,0.04)]">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2" />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-frost-100">{customer.companyName}</div>
-                          <div className="text-sm text-gray-500">{customer.email}</div>
+                    <td className="px-4 py-4 max-w-[200px]">
+                      <div className="flex items-center min-w-0">
+                        <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-gray-900 dark:text-frost-100 truncate">{customer.companyName}</div>
+                          <div className="text-sm text-gray-500 truncate">{customer.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-frost-100">{customer.contactName}</div>
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-gray-900 dark:text-frost-100">{customer.contactName || '—'}</div>
                       {customer.phone && (
                         <div className="text-sm text-gray-500 flex items-center">
                           <PhoneIcon className="h-3 w-3 mr-1" />
@@ -551,13 +551,13 @@ const ManageCustomers: React.FC = () => {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-frost-100">
+                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-frost-100">
                       {customer.locations?.length || 0}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-frost-100">
+                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-frost-100">
                       {getTotalColdCells(customer)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4">
                       {getActiveAlerts(customer) > 0 ? (
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                           {getActiveAlerts(customer)}
@@ -568,7 +568,7 @@ const ManageCustomers: React.FC = () => {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-4 py-4 text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => navigate(`/customers/${customer.id}`)}
