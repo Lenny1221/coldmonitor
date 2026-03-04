@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { XMarkIcon, PlusIcon, TrashIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { customersApi } from '../services/api';
 import { getErrorMessage } from '../services/api';
@@ -122,7 +123,7 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-frost-800 rounded-xl shadow-xl dark:shadow-[0_0_32px_rgba(0,0,0,0.4)] max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-[rgba(100,200,255,0.12)]">
+      <div className={`bg-white dark:bg-frost-800 rounded-xl shadow-xl dark:shadow-[0_0_32px_rgba(0,0,0,0.4)] max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-[rgba(100,200,255,0.12)] ${Capacitor.isNativePlatform() ? 'overflow-x-hidden' : ''}`}>
         <div className="sticky top-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-[rgba(100,200,255,0.12)] bg-white dark:bg-frost-800 z-10">
           <h2 className="text-xl font-bold text-gray-900 dark:text-frost-100 flex items-center gap-2">
             <Cog6ToothIcon className="h-6 w-6 text-gray-600 dark:text-slate-400" />
@@ -244,26 +245,26 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({ onClose }) => {
                 <p className="text-xs text-gray-500 dark:text-slate-400 mb-3">
                   Worden gebeld bij Laag 2/3 als u niet reageert
                 </p>
-                <div className="flex gap-2 mb-3">
+                <div className={`flex gap-2 mb-3 ${Capacitor.isNativePlatform() ? 'flex-col' : ''}`}>
                   <input
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="Naam"
-                    className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-[rgba(100,200,255,0.2)] bg-white dark:bg-frost-900 text-gray-900 dark:text-frost-100"
+                    className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 dark:border-[rgba(100,200,255,0.2)] bg-white dark:bg-frost-900 text-gray-900 dark:text-frost-100"
                   />
                   <input
                     type="tel"
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
                     placeholder="+32 123 45 67 89"
-                    className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-[rgba(100,200,255,0.2)] bg-white dark:bg-frost-900 text-gray-900 dark:text-frost-100"
+                    className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 dark:border-[rgba(100,200,255,0.2)] bg-white dark:bg-frost-900 text-gray-900 dark:text-frost-100"
                   />
                   <button
                     type="button"
                     onClick={handleAddBackup}
                     disabled={!newPhone.trim()}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium text-white bg-[#00c8ff] hover:bg-[#00a8dd] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-medium text-white bg-[#00c8ff] hover:bg-[#00a8dd] disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${Capacitor.isNativePlatform() ? 'w-full' : ''}`}
                   >
                     <PlusIcon className="h-5 w-5" />
                     Toevoegen
