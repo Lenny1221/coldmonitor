@@ -188,7 +188,71 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Cold Cells Overview – bovenaan */}
+      {/* Technician Info Card – boven koelcellen */}
+      {data.customer?.linkedTechnician && (
+        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-4 flex-1">
+              <div className="flex-shrink-0">
+                <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                  <UserIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">Jouw technicus</h3>
+                  <button
+                    onClick={() => setShowUnlinkModal(true)}
+                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium inline-flex items-center"
+                    title="Technicus ontkoppelen"
+                  >
+                    <XMarkIcon className="h-4 w-4 mr-1" />
+                    Ontkoppelen
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
+                  Neem contact op met je toegewezen technicus voor ondersteuning
+                </p>
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center text-sm text-gray-700 dark:text-slate-300">
+                    <UserIcon className="h-4 w-4 mr-2 text-gray-400 dark:text-slate-400" />
+                    <span className="font-medium">{data.customer.linkedTechnician.name}</span>
+                  </div>
+                  {data.customer.linkedTechnician.companyName && (
+                    <div className="text-sm text-gray-600 dark:text-slate-300 ml-6">
+                      {data.customer.linkedTechnician.companyName}
+                    </div>
+                  )}
+                  {data.customer.linkedTechnician.email && (
+                    <div className="flex items-center text-sm text-gray-700 dark:text-slate-300">
+                      <EnvelopeIcon className="h-4 w-4 mr-2 text-gray-400 dark:text-slate-400" />
+                      <a 
+                        href={`mailto:${data.customer.linkedTechnician.email}`}
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                      >
+                        {data.customer.linkedTechnician.email}
+                      </a>
+                    </div>
+                  )}
+                  {data.customer.linkedTechnician.phone && (
+                    <div className="flex items-center text-sm text-gray-700 dark:text-slate-300">
+                      <PhoneIcon className="h-4 w-4 mr-2 text-gray-400 dark:text-slate-400" />
+                      <a 
+                        href={`tel:${data.customer.linkedTechnician.phone}`}
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                      >
+                        {data.customer.linkedTechnician.phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cold Cells Overview */}
       <div>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Koelcellen</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -252,91 +316,13 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-          <div className="text-sm font-medium text-gray-500 dark:text-slate-300">Totaal locaties</div>
-          <div className="mt-2 text-3xl font-bold text-gray-900 dark:text-frost-100">
-            {data.summary?.totalLocations || 0}
-          </div>
-        </div>
-        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-          <div className="text-sm font-medium text-gray-500 dark:text-slate-300">Totaal koelcellen</div>
-          <div className="mt-2 text-3xl font-bold text-gray-900 dark:text-frost-100">
-            {data.summary?.totalColdCells || 0}
-          </div>
-        </div>
-        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-          <div className="text-sm font-medium text-gray-500 dark:text-slate-300">Actieve alarmen</div>
-          <div className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
-            {data.summary?.activeAlarms || 0}
-          </div>
+      {/* Actieve alarmen */}
+      <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+        <div className="text-sm font-medium text-gray-500 dark:text-slate-300">Actieve alarmen</div>
+        <div className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
+          {data.summary?.activeAlarms || 0}
         </div>
       </div>
-
-      {/* Technician Info Card */}
-      {data.customer?.linkedTechnician && (
-        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-4 flex-1">
-              <div className="flex-shrink-0">
-                <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-                  <UserIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">Jouw technicus</h3>
-                  <button
-                    onClick={() => setShowUnlinkModal(true)}
-                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium inline-flex items-center"
-                    title="Technicus ontkoppelen"
-                  >
-                    <XMarkIcon className="h-4 w-4 mr-1" />
-                    Ontkoppelen
-                  </button>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
-                  Neem contact op met je toegewezen technicus voor ondersteuning
-                </p>
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center text-sm text-gray-700 dark:text-slate-300">
-                    <UserIcon className="h-4 w-4 mr-2 text-gray-400 dark:text-slate-400" />
-                    <span className="font-medium">{data.customer.linkedTechnician.name}</span>
-                  </div>
-                  {data.customer.linkedTechnician.companyName && (
-                    <div className="text-sm text-gray-600 dark:text-slate-300 ml-6">
-                      {data.customer.linkedTechnician.companyName}
-                    </div>
-                  )}
-                  {data.customer.linkedTechnician.email && (
-                    <div className="flex items-center text-sm text-gray-700 dark:text-slate-300">
-                      <EnvelopeIcon className="h-4 w-4 mr-2 text-gray-400 dark:text-slate-400" />
-                      <a 
-                        href={`mailto:${data.customer.linkedTechnician.email}`}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                      >
-                        {data.customer.linkedTechnician.email}
-                      </a>
-                    </div>
-                  )}
-                  {data.customer.linkedTechnician.phone && (
-                    <div className="flex items-center text-sm text-gray-700 dark:text-slate-300">
-                      <PhoneIcon className="h-4 w-4 mr-2 text-gray-400 dark:text-slate-400" />
-                      <a 
-                        href={`tel:${data.customer.linkedTechnician.phone}`}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                      >
-                        {data.customer.linkedTechnician.phone}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Unlink Technician Modal */}
       {showUnlinkModal && (
