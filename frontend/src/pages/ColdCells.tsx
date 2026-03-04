@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { coldCellsApi, locationsApi } from '../services/api';
 import { CubeIcon, PlusIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
@@ -147,7 +148,11 @@ const ColdCells: React.FC = () => {
               {coldCells.map((cell) => {
                 const latestReading = cell.devices?.[0]?.sensorReadings?.[0];
                 return (
-                  <tr key={cell.id} className="hover:bg-gray-50 dark:hover:bg-frost-850">
+                  <tr
+                    key={cell.id}
+                    className={`hover:bg-gray-50 dark:hover:bg-frost-850 ${Capacitor.isNativePlatform() ? 'cursor-pointer active:bg-gray-100 dark:active:bg-frost-700' : ''}`}
+                    {...(Capacitor.isNativePlatform() ? { onClick: () => navigate(`/coldcell/${cell.id}`) } : {})}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <CubeIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
