@@ -188,6 +188,70 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Cold Cells Overview – bovenaan */}
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Koelcellen</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {data.summary?.coldCells?.map((cell: ColdCell) => (
+            <div
+              key={cell.id}
+              className={`bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] border-2 ${getStatusColor(cell.status)} p-6 cursor-pointer hover:shadow-lg dark:hover:shadow-[0_0_24px_rgba(0,0,0,0.3)] transition-shadow`}
+              onClick={() => navigate(`/coldcell/${cell.id}`)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">{cell.name}</h3>
+                  <p className="text-sm text-gray-600 dark:text-slate-300 capitalize">{cell.type}</p>
+                  {cell.location && (
+                    <div
+                      className="mt-1.5 flex items-center text-sm text-gray-500 dark:text-slate-400"
+                      title={cell.location.address ? `${cell.location.locationName} – ${cell.location.address}` : cell.location.locationName}
+                    >
+                      <MapPinIcon className="h-4 w-4 mr-1.5 text-gray-400 dark:text-slate-400 flex-shrink-0" />
+                      <span className="truncate">{cell.location.locationName}</span>
+                    </div>
+                  )}
+                </div>
+                {getStatusIcon(cell.status)}
+              </div>
+              
+              <div className="mt-4 space-y-2">
+                {cell.currentTemperature !== null ? (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-slate-300">Temperature</span>
+                    <span className="text-2xl font-bold text-gray-900 dark:text-frost-100">
+                      {cell.currentTemperature.toFixed(1)}°C
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-400 dark:text-slate-400">No data available</div>
+                )}
+                
+                {cell.lastReadingAt && (
+                  <div className="text-xs text-gray-500 dark:text-slate-400">
+                    Last reading: {new Date(cell.lastReadingAt).toLocaleString()}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium">
+                View Details
+                <ArrowRightIcon className="ml-2 h-4 w-4" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {(!data.summary?.coldCells || data.summary.coldCells.length === 0) && (
+          <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-12 text-center border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+            <p className="text-gray-500 dark:text-slate-300">No cold cells configured yet.</p>
+            <p className="text-sm text-gray-400 dark:text-slate-400 mt-2">
+              Voeg locaties en koelcellen toe om te beginnen met monitoren.
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
@@ -320,70 +384,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Cold Cells Overview */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Koelcellen</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.summary?.coldCells?.map((cell: ColdCell) => (
-            <div
-              key={cell.id}
-              className={`bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] border-2 ${getStatusColor(cell.status)} p-6 cursor-pointer hover:shadow-lg dark:hover:shadow-[0_0_24px_rgba(0,0,0,0.3)] transition-shadow`}
-              onClick={() => navigate(`/coldcell/${cell.id}`)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">{cell.name}</h3>
-                  <p className="text-sm text-gray-600 dark:text-slate-300 capitalize">{cell.type}</p>
-                  {cell.location && (
-                    <div
-                      className="mt-1.5 flex items-center text-sm text-gray-500 dark:text-slate-400"
-                      title={cell.location.address ? `${cell.location.locationName} – ${cell.location.address}` : cell.location.locationName}
-                    >
-                      <MapPinIcon className="h-4 w-4 mr-1.5 text-gray-400 dark:text-slate-400 flex-shrink-0" />
-                      <span className="truncate">{cell.location.locationName}</span>
-                    </div>
-                  )}
-                </div>
-                {getStatusIcon(cell.status)}
-              </div>
-              
-              <div className="mt-4 space-y-2">
-                {cell.currentTemperature !== null ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-slate-300">Temperature</span>
-                    <span className="text-2xl font-bold text-gray-900 dark:text-frost-100">
-                      {cell.currentTemperature.toFixed(1)}°C
-                    </span>
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-400 dark:text-slate-400">No data available</div>
-                )}
-                
-                {cell.lastReadingAt && (
-                  <div className="text-xs text-gray-500 dark:text-slate-400">
-                    Last reading: {new Date(cell.lastReadingAt).toLocaleString()}
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium">
-                View Details
-                <ArrowRightIcon className="ml-2 h-4 w-4" />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {(!data.summary?.coldCells || data.summary.coldCells.length === 0) && (
-          <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-12 text-center border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-            <p className="text-gray-500 dark:text-slate-300">No cold cells configured yet.</p>
-            <p className="text-sm text-gray-400 dark:text-slate-400 mt-2">
-              Voeg locaties en koelcellen toe om te beginnen met monitoren.
-            </p>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
