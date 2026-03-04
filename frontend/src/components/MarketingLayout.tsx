@@ -111,7 +111,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
 
   return (
     <div className="marketing-light min-h-screen bg-white text-[#212529]" data-marketing="true" style={{ colorScheme: 'light' }}>
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center gap-6 px-6 py-4 bg-white/95 backdrop-blur-md border-b border-gray-200">
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-4 px-6 py-4 bg-white/95 backdrop-blur-md border-b border-gray-200">
         <Link to="/" className="flex items-center gap-3 shrink-0">
           <IntelliFrostLogo size={40} />
           <div>
@@ -130,7 +130,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
           </div>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6 shrink-0">
+        <nav className="hidden md:flex items-center justify-center gap-6 flex-1 min-w-0">
           {navItems.map(({ to, label }) => (
             <Link
               key={to}
@@ -146,7 +146,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
           ))}
         </nav>
 
-        <div className="flex items-center gap-4 ml-auto shrink-0">
+        <div className="flex items-center gap-4 shrink-0">
           <MadeInBelgiumLogo compact className="hidden lg:flex" />
           <Link
             to="/login"
