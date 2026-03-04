@@ -133,6 +133,11 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const getTypeLabel = (type: string) => {
+    const labels: Record<string, string> = { fridge: 'Koelkast', freezer: 'Vriezer' };
+    return labels[type?.toLowerCase()] || type;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'OK':
@@ -265,7 +270,7 @@ const Dashboard: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">{cell.name}</h3>
-                  <p className="text-sm text-gray-600 dark:text-slate-300 capitalize">{cell.type}</p>
+                  <p className="text-sm text-gray-600 dark:text-slate-300">{getTypeLabel(cell.type)}</p>
                   {cell.location && (
                     <div
                       className="mt-1.5 flex items-center text-sm text-gray-500 dark:text-slate-400"
@@ -282,24 +287,24 @@ const Dashboard: React.FC = () => {
               <div className="mt-4 space-y-2">
                 {cell.currentTemperature !== null ? (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-slate-300">Temperature</span>
+                    <span className="text-sm text-gray-600 dark:text-slate-300">Temperatuur</span>
                     <span className="text-2xl font-bold text-gray-900 dark:text-frost-100">
                       {cell.currentTemperature.toFixed(1)}°C
                     </span>
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-400 dark:text-slate-400">No data available</div>
+                  <div className="text-sm text-gray-400 dark:text-slate-400">Geen data beschikbaar</div>
                 )}
                 
                 {cell.lastReadingAt && (
                   <div className="text-xs text-gray-500 dark:text-slate-400">
-                    Last reading: {new Date(cell.lastReadingAt).toLocaleString()}
+                    Laatste meting: {new Date(cell.lastReadingAt).toLocaleString()}
                   </div>
                 )}
               </div>
 
               <div className="mt-4 flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium">
-                View Details
+                Details bekijken
                 <ArrowRightIcon className="ml-2 h-4 w-4" />
               </div>
             </div>
@@ -308,7 +313,7 @@ const Dashboard: React.FC = () => {
 
         {(!data.summary?.coldCells || data.summary.coldCells.length === 0) && (
           <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-12 text-center border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-            <p className="text-gray-500 dark:text-slate-300">No cold cells configured yet.</p>
+            <p className="text-gray-500 dark:text-slate-300">Nog geen koelcellen geconfigureerd.</p>
             <p className="text-sm text-gray-400 dark:text-slate-400 mt-2">
               Voeg locaties en koelcellen toe om te beginnen met monitoren.
             </p>
