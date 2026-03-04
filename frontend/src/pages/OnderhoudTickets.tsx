@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { installationsApi, ticketsApi, techniciansApi, authApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getErrorMessage } from '../services/api';
@@ -255,33 +256,35 @@ const OnderhoudTickets: React.FC = () => {
       {activeTab === 'onderhoud' && onderhoudView === 'agenda' && (
         <div className="bg-white dark:bg-frost-800 shadow-xl rounded-xl overflow-hidden border border-gray-200 dark:border-frost-600">
           <div className="p-4 sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCalendarDate(calendarView === 'week' ? subWeeks(calendarDate, 1) : subMonths(calendarDate, 1))}
-                  className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-frost-700 transition-colors"
-                >
-                  <ChevronLeftIcon className="h-5 w-5" />
-                </button>
-                <span className="font-bold text-gray-900 dark:text-frost-100 min-w-[200px] text-center text-lg">
-                  {calendarView === 'week'
-                    ? `Week ${format(weekStart, 'd', { locale: nl })} – ${format(weekEnd, 'd MMM yyyy', { locale: nl })}`
-                    : format(calendarDate, 'MMMM yyyy', { locale: nl })}
-                </span>
-                <button
-                  onClick={() => setCalendarDate(calendarView === 'week' ? addWeeks(calendarDate, 1) : addMonths(calendarDate, 1))}
-                  className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-frost-700 transition-colors"
-                >
-                  <ChevronRightIcon className="h-5 w-5" />
-                </button>
+            <div className={`flex mb-6 gap-4 ${Capacitor.isNativePlatform() ? 'flex-col' : 'flex-wrap items-center justify-between'}`}>
+              <div className={`flex items-center gap-2 ${Capacitor.isNativePlatform() ? 'flex-col sm:flex-row' : ''}`}>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setCalendarDate(calendarView === 'week' ? subWeeks(calendarDate, 1) : subMonths(calendarDate, 1))}
+                    className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-frost-700 transition-colors"
+                  >
+                    <ChevronLeftIcon className="h-5 w-5" />
+                  </button>
+                  <span className="font-bold text-gray-900 dark:text-frost-100 min-w-[140px] sm:min-w-[200px] text-center text-lg">
+                    {calendarView === 'week'
+                      ? `Week ${format(weekStart, 'd', { locale: nl })} – ${format(weekEnd, 'd MMM yyyy', { locale: nl })}`
+                      : format(calendarDate, 'MMMM yyyy', { locale: nl })}
+                  </span>
+                  <button
+                    onClick={() => setCalendarDate(calendarView === 'week' ? addWeeks(calendarDate, 1) : addMonths(calendarDate, 1))}
+                    className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-frost-700 transition-colors"
+                  >
+                    <ChevronRightIcon className="h-5 w-5" />
+                  </button>
+                </div>
                 <button
                   onClick={() => setCalendarDate(new Date())}
-                  className="px-4 py-2 text-sm font-medium border-2 border-blue-600 text-blue-600 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                  className={`px-4 py-2 text-sm font-medium border-2 border-blue-600 text-blue-600 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors ${Capacitor.isNativePlatform() ? 'w-full' : 'shrink-0'}`}
                 >
                   Vandaag
                 </button>
               </div>
-              <div className="flex gap-1 p-1 bg-gray-100 dark:bg-frost-700 rounded-xl">
+              <div className={`flex gap-1 p-1 bg-gray-100 dark:bg-frost-700 rounded-xl ${Capacitor.isNativePlatform() ? 'self-start' : ''}`}>
                 <button
                   onClick={() => setCalendarView('week')}
                   className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${calendarView === 'week' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 dark:text-frost-300 hover:bg-gray-200 dark:hover:bg-frost-600'}`}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext';
 import { alertsApi } from '../services/api';
 import { ResolveAlertModal } from '../components/ResolveAlertModal';
@@ -174,103 +175,94 @@ const Alarmeringen: React.FC = () => {
           </div>
         ) : filteredAlerts.length > 0 ? (
           <div className="space-y-3">
-            {filteredAlerts.map((alert: any) => (
-              <div
-                key={alert.id}
-                className={`rounded-lg border-2 ${getAlertColor(alert.type)} p-4 flex items-start justify-between flex-wrap gap-3`}
-              >
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  {getAlertIcon(alert.type)}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-900 dark:text-frost-100">
-                      {getAlertTitle(alert.type)}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-slate-300 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                      {alert.coldCell?.location?.customer?.companyName && (
-                        <span>{alert.coldCell.location.customer.companyName}</span>
-                      )}
-                      {alert.coldCell?.location?.locationName && (
-                        <>
-                          <span className="text-gray-400">•</span>
-                          <span className="flex items-center gap-1">
-                            <MapPinIcon className="h-3.5 w-3.5" />
-                            {alert.coldCell.location.locationName}
-                          </span>
-                        </>
-                      )}
-                      {alert.coldCell?.name && (
-                        <>
-                          <span className="text-gray-400">•</span>
-                          <span className="flex items-center gap-1">
-                            <CubeIcon className="h-3.5 w-3.5" />
-                            {alert.coldCell.name}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    {alert.type === 'POWER_LOSS' ? (
-                      <div className="text-sm text-gray-600 dark:text-slate-300 mt-1">
-                        Device offline – stroom niet actief
+            {filteredAlerts.map((alert: any) => {
+              const isNative = Capacitor.isNativePlatform();
+              const cardContent = (
+                <>
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    {getAlertIcon(alert.type)}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 dark:text-frost-100">
+                        {getAlertTitle(alert.type)}
                       </div>
-                    ) : alert.value != null ? (
-                      <div className="text-sm text-gray-600 dark:text-slate-300 mt-1">
-                        Waarde: {alert.value} °C
-                        {alert.threshold != null && ` (drempel: ${alert.threshold} °C)`}
+                      <div className="text-sm text-gray-600 dark:text-slate-300 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        {alert.coldCell?.location?.customer?.companyName && (
+                          <span>{alert.coldCell.location.customer.companyName}</span>
+                        )}
+                        {alert.coldCell?.location?.locationName && (
+                          <>
+                            <span className="text-gray-400">•</span>
+                            <span className="flex items-center gap-1">
+                              <MapPinIcon className="h-3.5 w-3.5" />
+                              {alert.coldCell.location.locationName}
+                            </span>
+                          </>
+                        )}
+                        {alert.coldCell?.name && (
+                          <>
+                            <span className="text-gray-400">•</span>
+                            <span className="flex items-center gap-1">
+                              <CubeIcon className="h-3.5 w-3.5" />
+                              {alert.coldCell.name}
+                            </span>
+                          </>
+                        )}
                       </div>
-                    ) : null}
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      {alert.layer && (alert.status === 'ACTIVE' || alert.status === 'ESCALATING') && (
-                        <span
-                          title={
-                            alert.layer === 'LAYER_1'
-                              ? 'Laag 1: E-mail + push'
-                              : alert.layer === 'LAYER_2'
-                                ? 'Laag 2: SMS + backup contact'
-                                : 'Laag 3: AI-telefoon + technicus'
-                          }
-                          className={`text-xs px-2.5 py-1 rounded font-semibold ${
-                            alert.layer === 'LAYER_3'
-                              ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
-                              : alert.layer === 'LAYER_2'
-                                ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
-                                : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
-                          }`}
-                        >
-                          {alert.layer === 'LAYER_1' ? 'Laag 1' : alert.layer === 'LAYER_2' ? 'Laag 2' : 'Laag 3'}
-                        </span>
-                      )}
-                      {(alert.layer2At || alert.layer3At) && (
+                      {alert.type === 'POWER_LOSS' ? (
+                        <div className="text-sm text-gray-600 dark:text-slate-300 mt-1">
+                          Device offline – stroom niet actief
+                        </div>
+                      ) : alert.value != null ? (
+                        <div className="text-sm text-gray-600 dark:text-slate-300 mt-1">
+                          Waarde: {alert.value} °C
+                          {alert.threshold != null && ` (drempel: ${alert.threshold} °C)`}
+                        </div>
+                      ) : null}
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {alert.layer && (alert.status === 'ACTIVE' || alert.status === 'ESCALATING') && (
+                          <span
+                            title={
+                              alert.layer === 'LAYER_1'
+                                ? 'Laag 1: E-mail + push'
+                                : alert.layer === 'LAYER_2'
+                                  ? 'Laag 2: SMS + backup contact'
+                                  : 'Laag 3: AI-telefoon + technicus'
+                            }
+                            className={`text-xs px-2.5 py-1 rounded font-semibold ${
+                              alert.layer === 'LAYER_3'
+                                ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                                : alert.layer === 'LAYER_2'
+                                  ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300'
+                                  : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                            }`}
+                          >
+                            {alert.layer === 'LAYER_1' ? 'Laag 1' : alert.layer === 'LAYER_2' ? 'Laag 2' : 'Laag 3'}
+                          </span>
+                        )}
+                        {(alert.layer2At || alert.layer3At) && (
+                          <span className="text-xs text-gray-500 dark:text-slate-400">
+                            {alert.layer2At && (
+                              <>→ Laag 2 {format(parseISO(alert.layer2At), 'dd/MM HH:mm')}</>
+                            )}
+                            {alert.layer2At && alert.layer3At && ' · '}
+                            {alert.layer3At && (
+                              <>→ Laag 3 {format(parseISO(alert.layer3At), 'dd/MM HH:mm')}</>
+                            )}
+                          </span>
+                        )}
                         <span className="text-xs text-gray-500 dark:text-slate-400">
-                          {alert.layer2At && (
-                            <>→ Laag 2 {format(parseISO(alert.layer2At), 'dd/MM HH:mm')}</>
-                          )}
-                          {alert.layer2At && alert.layer3At && ' · '}
-                          {alert.layer3At && (
-                            <>→ Laag 3 {format(parseISO(alert.layer3At), 'dd/MM HH:mm')}</>
-                          )}
+                          {alert.status === 'RESOLVED' && alert.resolvedAt
+                            ? `Opgelost: ${format(parseISO(alert.resolvedAt), 'dd/MM/yyyy HH:mm')}`
+                            : `Getriggerd: ${format(parseISO(alert.triggeredAt), 'dd/MM/yyyy HH:mm')}`}
                         </span>
-                      )}
-                      <span className="text-xs text-gray-500 dark:text-slate-400">
-                        {alert.status === 'RESOLVED' && alert.resolvedAt
-                          ? `Opgelost: ${format(parseISO(alert.resolvedAt), 'dd/MM/yyyy HH:mm')}`
-                          : `Getriggerd: ${format(parseISO(alert.triggeredAt), 'dd/MM/yyyy HH:mm')}`}
-                      </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {alert.coldCellId && (
-                    <button
-                      onClick={() => navigate(`/coldcell/${alert.coldCellId}`)}
-                      className="px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/25 rounded-md transition-colors"
-                    >
-                      Bekijk cel
-                    </button>
-                  )}
                   {(alert.status === 'ACTIVE' || alert.status === 'ESCALATING') && (
-                    <>
+                    <div className={`flex gap-2 shrink-0 ${isNative ? 'flex-col w-full mt-3' : 'flex-row items-center'}`}>
                       <button
-                        onClick={async () => {
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           await alertsApi.acknowledge(alert.id);
                           fetchAlerts();
                         }}
@@ -279,7 +271,8 @@ const Alarmeringen: React.FC = () => {
                         Bevestigen
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           const requireReason = alert.coldCell?.requireResolutionReason !== false;
                           if (requireReason) {
                             setResolveAlert(alert);
@@ -291,11 +284,29 @@ const Alarmeringen: React.FC = () => {
                       >
                         Oplossen
                       </button>
-                    </>
+                    </div>
                   )}
+                </>
+              );
+              return (
+                <div
+                  key={alert.id}
+                  className={`rounded-lg border-2 ${getAlertColor(alert.type)} p-4 flex flex-col gap-3 ${
+                    isNative && alert.coldCellId ? 'cursor-pointer' : ''
+                  } ${isNative ? '' : 'flex-wrap items-start justify-between'}`}
+                  onClick={
+                    isNative && alert.coldCellId
+                      ? (e) => {
+                          if ((e.target as HTMLElement).closest('button')) return;
+                          navigate(`/coldcell/${alert.coldCellId}`);
+                        }
+                      : undefined
+                  }
+                >
+                  {cardContent}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="py-12 text-center">

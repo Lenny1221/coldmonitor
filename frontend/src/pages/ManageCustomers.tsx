@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext';
 import { techniciansApi, customersApi, authApi, invitationsApi } from '../services/api';
 import { 
@@ -436,6 +437,69 @@ const ManageCustomers: React.FC = () => {
         {loading ? (
           <div className="text-center py-12 text-gray-500">Klanten laden...</div>
         ) : linkedCustomers.length > 0 ? (
+          Capacitor.isNativePlatform() ? (
+            <div className="space-y-3">
+              {linkedCustomers.map((customer) => (
+                <div
+                  key={customer.id}
+                  className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] border border-gray-100 dark:border-[rgba(100,200,255,0.08)] p-4"
+                >
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <BuildingOfficeIcon className="h-5 w-5 text-gray-400 shrink-0" />
+                        <div className="font-medium text-gray-900 dark:text-frost-100">{customer.companyName}</div>
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1 ml-7">{customer.email}</div>
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-frost-400 ml-7 space-y-1">
+                      {customer.contactName && <div>Contact: {customer.contactName}</div>}
+                      {customer.phone && (
+                        <div className="flex items-center gap-1">
+                          <PhoneIcon className="h-3 w-3" />
+                          {customer.phone}
+                        </div>
+                      )}
+                      {customer.address && (
+                        <div className="flex items-center gap-1">
+                          <MapPinIcon className="h-3 w-3" />
+                          {customer.address}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 ml-7">
+                      <span className="text-xs text-gray-500">Locaties: {customer.locations?.length || 0}</span>
+                      <span className="text-xs text-gray-500">Koelcellen: {getTotalColdCells(customer)}</span>
+                      {getActiveAlerts(customer) > 0 ? (
+                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                          {getActiveAlerts(customer)} alarm(en)
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          0 alarmen
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-frost-700">
+                      <button
+                        onClick={() => navigate(`/customers/${customer.id}`)}
+                        className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                      >
+                        Bekijken
+                      </button>
+                      <button
+                        onClick={() => handleUnlinkClick(customer)}
+                        className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 inline-flex items-center"
+                      >
+                        <TrashIcon className="h-4 w-4 mr-1" />
+                        Ontkoppelen
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] overflow-x-auto w-full border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
             <table className="w-full min-w-full table-fixed divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.12)]">
               <thead className="bg-gray-50 dark:bg-[rgba(100,200,255,0.06)]">
@@ -526,6 +590,7 @@ const ManageCustomers: React.FC = () => {
               </tbody>
             </table>
           </div>
+          )
         ) : (
           <div className="bg-white dark:bg-frost-800 rounded-lg shadow p-12 text-center">
             <p className="text-gray-500 dark:text-frost-400">Nog geen klanten gekoppeld</p>
