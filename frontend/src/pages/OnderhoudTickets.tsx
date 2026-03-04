@@ -233,21 +233,21 @@ const OnderhoudTickets: React.FC = () => {
       <div className="flex gap-2 border-b border-gray-200 dark:border-frost-600">
         <button
           onClick={() => { setActiveTab('onderhoud'); setOnderhoudView('agenda'); }}
-          className={`px-4 py-2 font-medium flex items-center gap-2 ${activeTab === 'onderhoud' && onderhoudView === 'agenda' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+          className={`px-4 py-2 font-medium flex items-center gap-2 ${activeTab === 'onderhoud' && onderhoudView === 'agenda' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-slate-400'}`}
         >
           <CalendarDaysIcon className="h-5 w-5" />
           Agenda
         </button>
         <button
           onClick={() => { setActiveTab('onderhoud'); setOnderhoudView('lijst'); }}
-          className={`px-4 py-2 font-medium flex items-center gap-2 ${activeTab === 'onderhoud' && onderhoudView === 'lijst' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+          className={`px-4 py-2 font-medium flex items-center gap-2 ${activeTab === 'onderhoud' && onderhoudView === 'lijst' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-slate-400'}`}
         >
           <ListBulletIcon className="h-5 w-5" />
           Lijst
         </button>
         <button
           onClick={() => setActiveTab('tickets')}
-          className={`px-4 py-2 font-medium ${activeTab === 'tickets' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+          className={`px-4 py-2 font-medium ${activeTab === 'tickets' ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-slate-400'}`}
         >
           Tickets ({tickets.length})
         </button>
@@ -320,7 +320,7 @@ const OnderhoudTickets: React.FC = () => {
                     ))}
                   </div>
                   <div className="grid grid-cols-8 border-b border-gray-200 dark:border-frost-600">
-                    <div className="p-2 border-r border-gray-200 dark:border-frost-600 bg-gray-50 dark:bg-frost-800 text-xs font-medium text-gray-500">
+                    <div className="p-2 border-r border-gray-200 dark:border-frost-600 bg-gray-50 dark:bg-frost-800 text-xs font-medium text-gray-500 dark:text-slate-400">
                       Hele dag
                     </div>
                     {days.map((day) => {
@@ -349,7 +349,7 @@ const OnderhoudTickets: React.FC = () => {
                   </div>
                   {AGENDA_HOURS.map((hour) => (
                     <div key={hour} className="grid grid-cols-8 border-b last:border-b-0 border-gray-200 dark:border-frost-600">
-                      <div className="p-1.5 border-r border-gray-200 dark:border-frost-600 bg-gray-50 dark:bg-frost-800 text-xs font-medium text-gray-500 shrink-0">
+                      <div className="p-1.5 border-r border-gray-200 dark:border-frost-600 bg-gray-50 dark:bg-frost-800 text-xs font-medium text-gray-500 dark:text-slate-400 shrink-0">
                         {hour}:00
                       </div>
                       {days.map((day) => {
@@ -412,7 +412,7 @@ const OnderhoudTickets: React.FC = () => {
                           </button>
                         ))}
                         {dayItems.length > 4 && (
-                          <div className="text-xs text-gray-500 font-medium">+{dayItems.length - 4}</div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400 font-medium">+{dayItems.length - 4}</div>
                         )}
                       </div>
                     </div>
@@ -446,11 +446,11 @@ const OnderhoudTickets: React.FC = () => {
               <span className={`px-3 py-1 rounded-lg text-sm font-bold text-white ${selectedAgendaItem.color}`}>
                 {selectedAgendaItem.type === 'onderhoud' ? 'Onderhoud' : 'Ticket'}
               </span>
-              <button onClick={() => setSelectedAgendaItem(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+              <button onClick={() => setSelectedAgendaItem(null)} className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-frost-100 text-2xl leading-none">&times;</button>
             </div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-frost-100 mb-1">{selectedAgendaItem.title}</h3>
             <p className="text-gray-600 dark:text-frost-400 mb-4">{selectedAgendaItem.subtitle}</p>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-2 text-sm text-gray-700 dark:text-frost-300">
               <p><strong>Datum:</strong> {format(selectedAgendaItem.date, 'EEEE d MMMM yyyy', { locale: nl })}</p>
               {selectedAgendaItem.hour != null && <p><strong>Tijd:</strong> {selectedAgendaItem.hour}:00</p>}
               {selectedAgendaItem.type === 'onderhoud' && selectedAgendaItem.badge && (
@@ -484,35 +484,35 @@ const OnderhoudTickets: React.FC = () => {
               )}
             </div>
             {loading ? (
-              <div className="text-center py-8 text-gray-500">Laden...</div>
+              <div className="text-center py-8 text-gray-500 dark:text-slate-400">Laden...</div>
             ) : installations.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">Geen installaties. Voeg installaties toe via klantbeheer.</div>
+              <div className="text-center py-8 text-gray-500 dark:text-slate-400">Geen installaties. Voeg installaties toe via klantbeheer.</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-frost-600">
                   <thead>
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Klant / Installatie</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Volgend onderhoud</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Frequentie</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Klant / Installatie</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Type</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Volgend onderhoud</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Frequentie</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-frost-600">
                     {installations.map((i) => (
                       <tr key={i.id} className="hover:bg-gray-50 dark:hover:bg-frost-700/50">
                         <td className="px-4 py-3">
-                          <div className="font-medium">{i.name}</div>
-                          <div className="text-sm text-gray-500">{i.customer?.companyName}</div>
+                          <div className="font-medium text-gray-900 dark:text-frost-100">{i.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-slate-400">{i.customer?.companyName}</div>
                         </td>
-                        <td className="px-4 py-3 text-sm">{INSTALLATION_TYPE_LABELS[i.type] ?? i.type}</td>
-                        <td className="px-4 py-3 text-sm">
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-frost-100">{INSTALLATION_TYPE_LABELS[i.type] ?? i.type}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-frost-100">
                           {i.nextMaintenanceDate
                             ? format(new Date(i.nextMaintenanceDate), 'dd/MM/yyyy')
                             : '—'}
                         </td>
-                        <td className="px-4 py-3 text-sm max-w-[280px]">
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-frost-100 max-w-[280px]">
                           {i.maintenanceRules?.[0]?.label ?? '—'}
                         </td>
                         <td className="px-4 py-3">
@@ -543,11 +543,11 @@ const OnderhoudTickets: React.FC = () => {
                     <div
                       key={t.id}
                       onClick={() => setSelectedTicket(t)}
-                      className="bg-white dark:bg-frost-700 rounded p-3 cursor-pointer hover:ring-2 ring-blue-500"
+                      className="bg-white dark:bg-frost-850 rounded p-3 cursor-pointer hover:ring-2 ring-blue-500 border border-gray-200 dark:border-[rgba(100,200,255,0.1)]"
                     >
-                      <div className="font-medium text-sm truncate">{t.customer?.companyName}</div>
-                      <div className="text-xs text-gray-500">{TICKET_TYPE_LABELS[t.type] ?? t.type}</div>
-                      <div className="text-xs mt-1 line-clamp-2">{t.description}</div>
+                      <div className="font-medium text-sm truncate text-gray-900 dark:text-frost-100">{t.customer?.companyName}</div>
+                      <div className="text-xs text-gray-500 dark:text-slate-400">{TICKET_TYPE_LABELS[t.type] ?? t.type}</div>
+                      <div className="text-xs mt-1 line-clamp-2 text-gray-600 dark:text-slate-300">{t.description}</div>
                     </div>
                   ))}
                 </div>
@@ -558,9 +558,9 @@ const OnderhoudTickets: React.FC = () => {
           {selectedTicket && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
               <div className="bg-white dark:bg-frost-800 rounded-lg max-w-lg w-full p-6 max-h-[90vh] overflow-auto">
-                <h3 className="text-lg font-medium mb-4">Ticket: {selectedTicket.customer?.companyName}</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-4">Ticket: {selectedTicket.customer?.companyName}</h3>
                 <p className="text-sm text-gray-600 dark:text-frost-400 mb-4">{selectedTicket.description}</p>
-                <div className="text-sm space-y-2 mb-4">
+                <div className="text-sm space-y-2 mb-4 text-gray-700 dark:text-frost-300">
                   <p><strong>Type:</strong> {TICKET_TYPE_LABELS[selectedTicket.type] ?? selectedTicket.type}</p>
                   <p><strong>Ernst:</strong> {selectedTicket.urgency}</p>
                   <p><strong>Voorgestelde tijden:</strong></p>
@@ -600,7 +600,7 @@ const OnderhoudTickets: React.FC = () => {
                   )}
                   <button
                     onClick={() => setSelectedTicket(null)}
-                    className="px-3 py-1.5 border border-gray-300 rounded text-sm"
+                    className="px-3 py-1.5 border border-gray-300 dark:border-frost-600 rounded text-sm text-gray-700 dark:text-frost-200 bg-white dark:bg-frost-850 hover:bg-gray-50 dark:hover:bg-frost-700"
                   >
                     Sluiten
                   </button>
@@ -614,7 +614,7 @@ const OnderhoudTickets: React.FC = () => {
       {showAddInstallation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white dark:bg-frost-800 rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-medium mb-4">Installatie toevoegen</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-4">Installatie toevoegen</h3>
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -631,12 +631,12 @@ const OnderhoudTickets: React.FC = () => {
               className="space-y-3"
             >
               <div>
-                <label className="block text-sm font-medium mb-1">Klant</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Klant</label>
                 <select
                   value={addForm.customerId}
                   onChange={(e) => setAddForm({ ...addForm, customerId: e.target.value })}
                   required
-                  className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                  className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 >
                   <option value="">— Selecteer —</option>
                   {customers.map((c) => (
@@ -645,21 +645,21 @@ const OnderhoudTickets: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Naam</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Naam</label>
                 <input
                   value={addForm.name}
                   onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
                   required
-                  className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                  className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                   placeholder="bv. Koelcel 1"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Type</label>
                 <select
                   value={addForm.type}
                   onChange={(e) => setAddForm({ ...addForm, type: e.target.value })}
-                  className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                  className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 >
                   {INSTALLATION_TYPES.map((t) => (
                     <option key={t} value={t}>{INSTALLATION_TYPE_LABELS[t] ?? t}</option>
@@ -667,11 +667,11 @@ const OnderhoudTickets: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Koelmiddel (type)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Koelmiddel (type)</label>
                 <select
                   value={addForm.refrigerantType}
                   onChange={(e) => setAddForm({ ...addForm, refrigerantType: e.target.value })}
-                  className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                  className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 >
                   {REFRIGERANTS.map((r) => (
                     <option key={r} value={r}>{r}</option>
@@ -679,26 +679,26 @@ const OnderhoudTickets: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Koelmiddel (kg)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Koelmiddel (kg)</label>
                 <input
                   type="number"
                   step="0.1"
                   value={addForm.refrigerantKg}
                   onChange={(e) => setAddForm({ ...addForm, refrigerantKg: parseFloat(e.target.value) || 0 })}
-                  className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                  className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Koelvermogen (kW)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Koelvermogen (kW)</label>
                 <input
                   type="number"
                   step="0.1"
                   value={addForm.nominalCoolingKw}
                   onChange={(e) => setAddForm({ ...addForm, nominalCoolingKw: parseFloat(e.target.value) || 0 })}
-                  className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                  className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 />
               </div>
-              <label className="flex items-center gap-2">
+              <label className="flex items-center gap-2 text-gray-700 dark:text-frost-200">
                 <input
                   type="checkbox"
                   checked={addForm.hasLeakDetection}
@@ -708,7 +708,7 @@ const OnderhoudTickets: React.FC = () => {
               </label>
               <div className="flex gap-2 pt-2">
                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg">Toevoegen</button>
-                <button type="button" onClick={() => setShowAddInstallation(false)} className="px-4 py-2 border rounded-lg">Annuleren</button>
+                <button type="button" onClick={() => setShowAddInstallation(false)} className="px-4 py-2 border border-gray-300 dark:border-frost-600 rounded-lg text-gray-700 dark:text-frost-200 bg-white dark:bg-frost-850 hover:bg-gray-50 dark:hover:bg-frost-700">Annuleren</button>
               </div>
             </form>
           </div>

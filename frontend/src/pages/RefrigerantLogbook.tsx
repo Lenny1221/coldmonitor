@@ -157,9 +157,9 @@ const RefrigerantLogbook: React.FC = () => {
               <h2 className="font-semibold text-gray-900 dark:text-frost-100">Installaties</h2>
             </div>
             {loading ? (
-              <div className="p-6 text-center text-gray-500">Laden...</div>
+              <div className="p-6 text-center text-gray-500 dark:text-slate-400">Laden...</div>
             ) : installations.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">Geen installaties. Voeg installaties toe via Onderhoud & Tickets.</div>
+              <div className="p-6 text-center text-gray-500 dark:text-slate-400">Geen installaties. Voeg installaties toe via Onderhoud & Tickets.</div>
             ) : (
               <div className="divide-y divide-gray-200 dark:divide-frost-600 max-h-[500px] overflow-y-auto">
                 {installations.map((i) => {
@@ -174,13 +174,13 @@ const RefrigerantLogbook: React.FC = () => {
                       }`}
                     >
                       <div className="font-medium text-gray-900 dark:text-frost-100 truncate">{i.name}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{i.customer?.companyName}</div>
+                      <div className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{i.customer?.companyName}</div>
                       <div className="flex items-center gap-2 mt-2">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${badge.bg}`}>
                           <Icon className="h-3.5 w-3.5" />
                           {badge.label}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-slate-400">
                           {i.refrigerantType} • {(i.co2EquivalentTon ?? 0).toFixed(2)} ton CO₂-eq
                         </span>
                       </div>
@@ -198,7 +198,7 @@ const RefrigerantLogbook: React.FC = () => {
               <div className="px-4 py-3 border-b border-gray-200 dark:border-frost-600 flex justify-between items-center">
                 <div>
                   <h2 className="font-semibold text-gray-900 dark:text-frost-100">{selectedInstallation.name}</h2>
-                  <p className="text-sm text-gray-500">{selectedInstallation.customer?.companyName}</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">{selectedInstallation.customer?.companyName}</p>
                 </div>
                 <button
                   onClick={() => setShowAddForm(true)}
@@ -226,7 +226,7 @@ const RefrigerantLogbook: React.FC = () => {
                       className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-frost-850 rounded"
                     >
                       <div className="shrink-0">
-                        <span className="text-xs font-medium text-gray-500 uppercase">
+                        <span className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
                           {LOG_CATEGORIES.find((c) => c.id === entry.category)?.label ?? entry.category}
                         </span>
                         <div className="text-sm font-medium text-gray-900 dark:text-frost-100">
@@ -238,7 +238,7 @@ const RefrigerantLogbook: React.FC = () => {
                         {entry.technicianCertNr && ` (${entry.technicianCertNr})`}
                         {entry.notes && <p className="mt-1">{entry.notes}</p>}
                         {entry.data && Object.keys(entry.data).length > 0 && (
-                          <pre className="mt-2 text-xs text-gray-500 overflow-x-auto max-h-24 overflow-y-auto">
+                          <pre className="mt-2 text-xs text-gray-500 dark:text-slate-400 overflow-x-auto max-h-24 overflow-y-auto">
                             {JSON.stringify(entry.data, null, 2)}
                           </pre>
                         )}
@@ -246,13 +246,13 @@ const RefrigerantLogbook: React.FC = () => {
                     </div>
                   ))}
                   {entries.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">Nog geen logboekregistraties.</div>
+                    <div className="text-center py-8 text-gray-500 dark:text-slate-400">Nog geen logboekregistraties.</div>
                   )}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bg-white dark:bg-frost-800 shadow rounded-lg p-12 text-center text-gray-500">
+            <div className="bg-white dark:bg-frost-800 shadow rounded-lg p-12 text-center text-gray-500 dark:text-slate-400">
               Selecteer een installatie om het logboek te bekijken.
             </div>
           )}
@@ -262,14 +262,14 @@ const RefrigerantLogbook: React.FC = () => {
       {showAddForm && selectedInstallation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white dark:bg-frost-800 rounded-lg p-6 max-w-lg w-full shadow-xl max-h-[90vh] overflow-auto">
-            <h3 className="text-lg font-medium mb-4">Nieuwe logboekregistratie</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-4">Nieuwe logboekregistratie</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Categorie</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Categorie</label>
                 <select
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                  className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 >
                   {LOG_CATEGORIES.map((c) => (
                     <option key={c.id} value={c.id}>{c.label}</option>
@@ -277,39 +277,39 @@ const RefrigerantLogbook: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Datum en tijd</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Datum en tijd</label>
                 <input
                   type="datetime-local"
                   value={form.performedAt}
                   onChange={(e) => setForm({ ...form, performedAt: e.target.value })}
                   required
-                  className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                  className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Naam technicus</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Naam technicus</label>
                 <input
                   value={form.technicianName}
                   onChange={(e) => setForm({ ...form, technicianName: e.target.value })}
                   required
-                  className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                  className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Certificaatnummer (BRL200/STEK)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Certificaatnummer (BRL200/STEK)</label>
                 <input
                   value={form.technicianCertNr}
                   onChange={(e) => setForm({ ...form, technicianCertNr: e.target.value })}
-                  className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                  className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 />
               </div>
               {form.category === 'LEKCONTROLE' && (
                 <div>
-                  <label className="block text-sm font-medium mb-1">Resultaat</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Resultaat</label>
                   <select
                     value={form.data.result || 'GEEN_LEK'}
                     onChange={(e) => setForm({ ...form, data: { ...form.data, result: e.target.value } })}
-                    className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                    className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                   >
                     <option value="GEEN_LEK">Geen lek gevonden</option>
                     <option value="LEK_GEVONDEN">Lek gevonden</option>
@@ -319,21 +319,21 @@ const RefrigerantLogbook: React.FC = () => {
               {form.category === 'BIJVULLING' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Hoeveelheid bijgevuld (kg)</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Hoeveelheid bijgevuld (kg)</label>
                     <input
                       type="number"
                       step="0.01"
                       value={form.data.amountKg || ''}
                       onChange={(e) => setForm({ ...form, data: { ...form.data, amountKg: parseFloat(e.target.value) || 0 } })}
-                      className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                      className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Herkomst</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Herkomst</label>
                     <select
                       value={form.data.origin || 'NIEUW'}
                       onChange={(e) => setForm({ ...form, data: { ...form.data, origin: e.target.value } })}
-                      className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                      className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                     >
                       <option value="NIEUW">Nieuw</option>
                       <option value="GERECYCLEERD">Gerecycleerd</option>
@@ -343,19 +343,19 @@ const RefrigerantLogbook: React.FC = () => {
                 </>
               )}
               <div>
-                <label className="block text-sm font-medium mb-1">Opmerkingen</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Opmerkingen</label>
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   rows={3}
-                  className="w-full rounded border-gray-300 dark:border-frost-600 dark:bg-frost-700"
+                  className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 />
               </div>
               <div className="flex gap-2">
                 <button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
                   {submitting ? 'Bezig...' : 'Toevoegen'}
                 </button>
-                <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 border rounded-lg">
+                <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 border border-gray-300 dark:border-frost-600 rounded-lg text-gray-700 dark:text-frost-200 bg-white dark:bg-frost-850 hover:bg-gray-50 dark:hover:bg-frost-700">
                   Annuleren
                 </button>
               </div>
