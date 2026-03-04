@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import {
@@ -69,6 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isNative = Capacitor.isNativePlatform();
 
   const handleLogout = () => {
     logout();
@@ -132,8 +134,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        {/* Sidebar Header – Logo */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-[rgba(100,200,255,0.1)] shrink-0">
+        {/* Sidebar Header – Logo (Capacitor: safe area voor notch/Dynamic Island) */}
+        <div className={`flex items-center justify-between px-4 border-b border-gray-200 dark:border-[rgba(100,200,255,0.1)] shrink-0 ${
+          isNative ? 'h-auto min-h-[4rem] pt-[env(safe-area-inset-top)] pb-4' : 'h-16'
+        }`}>
           <div className="flex items-center gap-2.5">
             <IntelliFrostLogo size={32} />
             <div className="leading-none">
@@ -197,28 +201,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
 
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150
-              text-gray-600 dark:text-slate-200
-              bg-gray-100 dark:bg-frost-850
-              hover:bg-gray-200 dark:hover:bg-[rgba(0,150,255,0.1)]
-              border border-gray-200 dark:border-[rgba(100,200,255,0.12)]"
-            aria-label="Thema wisselen"
-          >
-            {theme === 'dark' ? (
-              <>
-                <SunIcon className="h-4 w-4 text-amber-400" />
-                <span>Lichte modus</span>
-              </>
-            ) : (
-              <>
-                <MoonIcon className="h-4 w-4 text-[#0080ff]" />
-                <span>Donkere modus</span>
-              </>
-            )}
-          </button>
+          {/* Theme toggle – verborgen in native app (altijd licht) */}
+          {!isNative && (
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150
+                text-gray-600 dark:text-slate-200
+                bg-gray-100 dark:bg-frost-850
+                hover:bg-gray-200 dark:hover:bg-[rgba(0,150,255,0.1)]
+                border border-gray-200 dark:border-[rgba(100,200,255,0.12)]"
+              aria-label="Thema wisselen"
+            >
+              {theme === 'dark' ? (
+                <>
+                  <SunIcon className="h-4 w-4 text-amber-400" />
+                  <span>Lichte modus</span>
+                </>
+              ) : (
+                <>
+                  <MoonIcon className="h-4 w-4 text-[#0080ff]" />
+                  <span>Donkere modus</span>
+                </>
+              )}
+            </button>
+          )}
 
           {/* Logout */}
           <button
@@ -233,21 +239,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile top bar */}
-        <header className="lg:hidden sticky top-0 z-30 flex items-center h-14 px-4
-          bg-white dark:bg-frost-800
-          border-b border-gray-200 dark:border-[rgba(100,200,255,0.1)]
-          shadow-sm shrink-0">
+        {/* Mobile top bar – Capacitor: safe area, grotere touch targets, logo uit Dynamic Island */}
+        <header
+          className={`lg:hidden sticky top-0 z-30 flex items-center px-4
+            bg-white dark:bg-frost-800
+            border-b border-gray-200 dark:border-[rgba(100,200,255,0.1)]
+            shadow-sm shrink-0
+            ${isNative ? 'min-h-[56px] pt-[env(safe-area-inset-top)] pl-[max(1rem,env(safe-area-inset-left))]' : 'h-14'}`}
+        >
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 -ml-2 rounded-md text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-frost-900"
+            className={`flex items-center justify-center rounded-lg text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-frost-900 active:bg-gray-200 dark:active:bg-frost-850
+              ${isNative ? 'min-w-[44px] min-h-[44px] -ml-1' : 'p-2 -ml-2'}`}
+            style={isNative ? { WebkitTapHighlightColor: 'transparent' } : undefined}
             aria-label="Menu openen"
           >
             <Bars3Icon className="h-6 w-6" />
           </button>
-          <div className="ml-3 flex items-center gap-2">
+          <div className={`flex items-center gap-2 flex-1 min-w-0 ${isNative ? 'ml-2 mr-2 justify-start' : 'ml-3'}`}>
             <IntelliFrostLogo size={22} />
-            <div className="flex items-baseline">
+            <div className="flex items-baseline shrink-0">
               <span className="font-['Exo_2'] font-light text-base text-gray-800 dark:text-frost-100">Intelli</span>
               <span
                 className="font-['Exo_2'] font-black text-base"
@@ -262,21 +273,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </span>
             </div>
           </div>
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-md text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850"
-              aria-label="Thema wisselen"
-            >
-              {theme === 'dark'
-                ? <SunIcon className="h-5 w-5 text-amber-400" />
-                : <MoonIcon className="h-5 w-5 text-[#0080ff]" />
-              }
-            </button>
-          </div>
+          {!isNative && (
+            <div className="flex items-center">
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850"
+                aria-label="Thema wisselen"
+              >
+                {theme === 'dark'
+                  ? <SunIcon className="h-5 w-5 text-amber-400" />
+                  : <MoonIcon className="h-5 w-5 text-[#0080ff]" />
+                }
+              </button>
+            </div>
+          )}
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
+        <main className={`flex-1 p-4 sm:p-6 lg:p-8 overflow-auto ${isNative ? 'pb-[max(1.5rem,env(safe-area-inset-bottom))]' : ''}`}>
           {children}
         </main>
       </div>

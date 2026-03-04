@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
@@ -206,14 +207,19 @@ function AppRoutes() {
         </>
       )}
 
-      {/* Marketing pages (publiek) */}
-      <Route path="/" element={user ? <NavigateToDashboard /> : <MarketingLayout><Home /></MarketingLayout>} />
-      <Route path="/product" element={<MarketingLayout><Product /></MarketingLayout>} />
-      <Route path="/oplossingen" element={<MarketingLayout><Oplossingen /></MarketingLayout>} />
-      <Route path="/prijzen" element={<MarketingLayout><Prijzen /></MarketingLayout>} />
-      <Route path="/handleidingen" element={<MarketingLayout><Handleidingen /></MarketingLayout>} />
-      <Route path="/faq" element={<MarketingLayout><FAQ /></MarketingLayout>} />
-      <Route path="/contact" element={<MarketingLayout><Contact /></MarketingLayout>} />
+      {/* Marketing pages (publiek) – in native app start direct op login */}
+      <Route path="/" element={
+        user ? <NavigateToDashboard /> 
+        : Capacitor.isNativePlatform() 
+          ? <Navigate to="/login" replace /> 
+          : <MarketingLayout><Home /></MarketingLayout>
+      } />
+      <Route path="/product" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Product /></MarketingLayout>} />
+      <Route path="/oplossingen" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Oplossingen /></MarketingLayout>} />
+      <Route path="/prijzen" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Prijzen /></MarketingLayout>} />
+      <Route path="/handleidingen" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Handleidingen /></MarketingLayout>} />
+      <Route path="/faq" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><FAQ /></MarketingLayout>} />
+      <Route path="/contact" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Contact /></MarketingLayout>} />
     </Routes>
   );
 }

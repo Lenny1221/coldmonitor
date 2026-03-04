@@ -1,4 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { useAuth } from '../contexts/AuthContext';
 import {
   locationsApi,
@@ -232,6 +235,17 @@ const HACCPAuditReport: React.FC = () => {
     endDate,
   ]);
 
+  const blobToBase64 = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        resolve(result.split(',')[1] || '');
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
   const handleDownload = async (format: 'pdf' | 'excel') => {
     if (isTechnicianOrAdmin && !selectedCustomerId) {
       setError('Selecteer eerst een klant');
@@ -245,14 +259,34 @@ const HACCPAuditReport: React.FC = () => {
         format === 'pdf'
           ? await haccpReportsApi.downloadPdf(params)
           : await haccpReportsApi.downloadExcel(params);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `HACCP-audit-${startDate}-${endDate}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const ext = format === 'pdf' ? 'pdf' : 'xlsx';
+      const filename = `HACCP-audit-${startDate}-${endDate}.${ext}`;
+
+      if (Capacitor.isNativePlatform()) {
+        const base64 = await blobToBase64(blob);
+        const path = `HACCP/${filename}`;
+        await Filesystem.writeFile({
+          path,
+          data: base64,
+          directory: Directory.Documents,
+          recursive: true,
+        });
+        const { uri } = await Filesystem.getUri({ path, directory: Directory.Documents });
+        await Share.share({
+          title: 'HACCP Audit Rapport',
+          url: uri,
+          dialogTitle: 'Rapport opslaan of delen',
+        });
+      } else {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
     } catch (e) {
       setError(getErrorMessage(e, `Download ${format.toUpperCase()} mislukt`));
     } finally {

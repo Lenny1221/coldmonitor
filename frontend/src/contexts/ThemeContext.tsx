@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 type Theme = 'dark' | 'light';
 
@@ -15,22 +16,28 @@ const ThemeContext = createContext<ThemeContextType>({
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isNative = Capacitor.isNativePlatform();
   const [theme, setTheme] = useState<Theme>(() => {
+    if (isNative) return 'light';
     const saved = localStorage.getItem('intellifrost-theme');
     return (saved as Theme) || 'light';
   });
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') {
+    const effectiveTheme = isNative ? 'light' : theme;
+    if (effectiveTheme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem('intellifrost-theme', theme);
-  }, [theme]);
+    if (!isNative) localStorage.setItem('intellifrost-theme', theme);
+  }, [theme, isNative]);
 
-  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  const toggleTheme = () => {
+    if (isNative) return;
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

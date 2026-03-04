@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext';
 import { invitationsApi } from '../services/api';
 import { 
@@ -247,55 +248,92 @@ const Invitations: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">
                 {user?.role === 'CUSTOMER' ? 'Eerdere uitnodigingen' : 'Uitnodigingsgeschiedenis'}
               </h2>
-              <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] overflow-x-auto border border-gray-100 dark:border-[rgba(100,200,255,0.08)] w-full">
-                <table className="w-full min-w-full table-fixed divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
-                  <thead className="bg-gray-50 dark:bg-frost-850">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                        {user?.role === 'CUSTOMER' ? 'Technicus' : 'Klant'}
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                        Verzonden
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
-                        Beantwoord
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-frost-800 divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
-                    {otherInvitations.map((invitation: any) => (
-                      <tr key={invitation.id} className="hover:bg-gray-50 dark:hover:bg-frost-850">
-                        <td className="px-6 py-4 whitespace-nowrap">
+              {Capacitor.isNativePlatform() ? (
+                <div className="space-y-3">
+                  {otherInvitations.map((invitation: any) => (
+                    <div
+                      key={invitation.id}
+                      className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] border border-gray-100 dark:border-[rgba(100,200,255,0.08)] p-4"
+                    >
+                      <div className="flex flex-col gap-2">
+                        <div>
                           <div className="text-sm font-medium text-gray-900 dark:text-frost-100">
-                            {user?.role === 'CUSTOMER' 
+                            {user?.role === 'CUSTOMER'
                               ? invitation.technician?.name
                               : invitation.customer?.companyName}
                           </div>
-                          <div className="text-sm text-gray-500 dark:text-slate-400">
-                            {user?.role === 'CUSTOMER' 
+                          <div className="text-sm text-gray-500 dark:text-slate-400 truncate">
+                            {user?.role === 'CUSTOMER'
                               ? invitation.technician?.email
                               : invitation.customer?.contactName}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
                           {getStatusBadge(invitation.status)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
-                          {new Date(invitation.sentAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
-                          {invitation.respondedAt 
-                            ? new Date(invitation.respondedAt).toLocaleDateString()
-                            : '-'}
-                        </td>
+                          <span className="text-xs text-gray-500 dark:text-slate-400">
+                            Verzonden: {new Date(invitation.sentAt).toLocaleDateString()}
+                          </span>
+                          {invitation.respondedAt && (
+                            <span className="text-xs text-gray-500 dark:text-slate-400">
+                              • Beantwoord: {new Date(invitation.respondedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] overflow-x-auto border border-gray-100 dark:border-[rgba(100,200,255,0.08)] w-full">
+                  <table className="w-full min-w-full table-fixed divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
+                    <thead className="bg-gray-50 dark:bg-frost-850">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
+                          {user?.role === 'CUSTOMER' ? 'Technicus' : 'Klant'}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
+                          Verzonden
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
+                          Beantwoord
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white dark:bg-frost-800 divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
+                      {otherInvitations.map((invitation: any) => (
+                        <tr key={invitation.id} className="hover:bg-gray-50 dark:hover:bg-frost-850">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900 dark:text-frost-100">
+                              {user?.role === 'CUSTOMER'
+                                ? invitation.technician?.name
+                                : invitation.customer?.companyName}
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-slate-400">
+                              {user?.role === 'CUSTOMER'
+                                ? invitation.technician?.email
+                                : invitation.customer?.contactName}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getStatusBadge(invitation.status)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
+                            {new Date(invitation.sentAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
+                            {invitation.respondedAt
+                              ? new Date(invitation.respondedAt).toLocaleDateString()
+                              : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 

@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     // Voor development: uncomment om de live webapp te laden
-     url: 'http://192.168.1.208:5173',
+     url: 'http://localhost:5173',
     // cleartext: true,
   },
 };

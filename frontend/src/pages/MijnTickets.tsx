@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { ticketsApi, installationsApi } from '../services/api';
 import { getErrorMessage } from '../services/api';
 import {
@@ -427,12 +428,16 @@ const MijnTickets: React.FC = () => {
               {tickets.map((t) => (
                 <div
                   key={t.id}
-                  className="border border-gray-200 dark:border-frost-600 rounded-lg p-4 flex flex-wrap justify-between items-start gap-4"
+                  className={`border border-gray-200 dark:border-frost-600 rounded-lg p-4 gap-4 ${
+                    Capacitor.isNativePlatform()
+                      ? 'flex flex-col'
+                      : 'flex flex-wrap justify-between items-start'
+                  }`}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{TICKET_TYPES.find((x) => x.id === t.type)?.label ?? t.type}</span>
-                      <span className={`px-2 py-0.5 rounded text-xs ${
+                      <span className={`px-2 py-0.5 rounded text-xs shrink-0 ${
                         t.urgency === 'DRINGEND' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
                         t.urgency === 'NORMAAL' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' : 'bg-gray-100 text-gray-800 dark:bg-frost-700 dark:text-frost-300'
                       }`}>
@@ -447,7 +452,7 @@ const MijnTickets: React.FC = () => {
                     </p>
                   </div>
                   {!['AFGEROND', 'GESLOTEN'].includes(t.status) && (
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex gap-2 shrink-0 flex-wrap">
                       {['NIEUW', 'IN_BEHANDELING', 'INGEPLAND'].includes(t.status) && (
                         <button
                           onClick={() => openEditForm(t)}
