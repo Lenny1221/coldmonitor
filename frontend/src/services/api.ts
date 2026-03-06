@@ -195,6 +195,8 @@ export const techniciansApi = {
     email: string;
     phone?: string;
     address?: string;
+    locationName?: string;
+    locationAddress?: string;
   }) => {
     const response = await api.post(`/technicians/${technicianId}/customers`, data);
     return response.data;

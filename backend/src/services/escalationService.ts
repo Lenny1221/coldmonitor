@@ -20,6 +20,7 @@ import { sendLayer3Notifications } from './notifications/layer3';
 const ESCALATION_WAIT_MS = {
   LAYER_1_TO_2: 20 * 60 * 1000, // 20 min (OPEN_HOURS)
   LAYER_2_TO_3: 15 * 60 * 1000, // 15 min
+  LAYER_3_REPEAT: 5 * 60 * 1000, // 5 min – herhaal bellen bij layer 3 (alle alarmtypes)
 };
 
 export type AlertWithRelations = Awaited<
@@ -148,8 +149,19 @@ export async function runEscalationCron(): Promise<void> {
         if (elapsed >= ESCALATION_WAIT_MS.LAYER_2_TO_3) {
           await escalateToLayer3(alert);
         }
+      } else if (alert.layer === 'LAYER_3') {
+        // Herhaal layer 3-oproepen: elke 5 minuten (alle alarmtypes)
+        const lastPhoneLog = await prisma.escalationLog.findFirst({
+          where: { alarmId: alert.id, layer: 'LAYER_3', channel: 'PHONE' },
+          orderBy: { sentAt: 'desc' },
+        });
+        if (lastPhoneLog) {
+          const elapsed = now.getTime() - lastPhoneLog.sentAt.getTime();
+          if (elapsed >= ESCALATION_WAIT_MS.LAYER_3_REPEAT) {
+            await executeLayer3(alert as AlertWithRelations);
+          }
+        }
       }
-      // Layer 3: geen verdere escalatie
     } catch (err) {
       logger.error('Escalatie fout voor alarm', err as Error, { alertId: alert.id });
     }

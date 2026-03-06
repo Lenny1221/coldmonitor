@@ -16,6 +16,9 @@ const createCustomerSchema = z.object({
   email: z.string().email('Ongeldig e-mailadres'),
   phone: z.string().optional(),
   address: z.string().optional(),
+  locationName: z.string().optional(),
+  locationAddress: z.string().optional(),
+  locationAddress: z.string().optional(),
 });
 
 /**
@@ -116,20 +119,36 @@ router.post('/:id/customers', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), a
       });
     }
 
-    const customer = await prisma.customer.create({
-      data: {
-        companyName: data.companyName,
-        contactName: data.contactName,
-        email: data.email,
-        phone: data.phone ?? '',
-        address: data.address ?? '',
-        linkedTechnicianId: technicianId,
-        emailVerified: false,
-        userId: null,
-      },
-      include: {
-        locations: true,
-      },
+    const customer = await prisma.$transaction(async (tx) => {
+      const cust = await tx.customer.create({
+        data: {
+          companyName: data.companyName,
+          contactName: data.contactName,
+          email: data.email,
+          phone: data.phone ?? '',
+          address: data.address ?? '',
+          linkedTechnicianId: technicianId,
+          emailVerified: false,
+          userId: null,
+        },
+      });
+
+      if (data.locationName?.trim()) {
+        await tx.location.create({
+          data: {
+            customerId: cust.id,
+            locationName: data.locationName.trim(),
+            address: data.locationAddress?.trim() || null,
+          },
+        });
+      }
+
+      const result = await tx.customer.findUnique({
+        where: { id: cust.id },
+        include: { locations: true },
+      });
+      if (!result) throw new Error('Customer creation failed');
+      return result;
     });
 
     res.status(201).json(customer);

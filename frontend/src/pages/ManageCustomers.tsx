@@ -33,6 +33,8 @@ const ManageCustomers: React.FC = () => {
     email: '',
     phone: '',
     address: '',
+    locationName: '',
+    locationAddress: '',
   });
   const [addCustomerLoading, setAddCustomerLoading] = useState(false);
   const [addCustomerError, setAddCustomerError] = useState('');
@@ -217,9 +219,11 @@ const ManageCustomers: React.FC = () => {
         email: addCustomerForm.email.trim(),
         phone: addCustomerForm.phone.trim() || undefined,
         address: addCustomerForm.address.trim() || undefined,
+        locationName: addCustomerForm.locationName.trim() || undefined,
+        locationAddress: addCustomerForm.locationAddress.trim() || undefined,
       });
       setShowAddCustomerModal(false);
-      setAddCustomerForm({ companyName: '', contactName: '', email: '', phone: '', address: '' });
+      setAddCustomerForm({ companyName: '', contactName: '', email: '', phone: '', address: '', locationName: '', locationAddress: '' });
       await fetchLinkedCustomers();
     } catch (error: any) {
       const msg = error.response?.data?.error || error.response?.data?.message || 'Klant toevoegen mislukt';
@@ -774,6 +778,32 @@ const ManageCustomers: React.FC = () => {
                     className="block w-full px-3 py-2 border border-gray-300 dark:border-frost-600 rounded-lg bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                     placeholder="Straat 123, 1000 Brussel"
                   />
+                </div>
+                <div className="pt-2 border-t border-gray-200 dark:border-frost-600">
+                  <p className="text-sm font-medium text-gray-700 dark:text-frost-300 mb-2">Locatie (voor installaties & koudemiddel logboek)</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-frost-400 mb-1">Locatienaam *</label>
+                      <input
+                        type="text"
+                        required
+                        value={addCustomerForm.locationName}
+                        onChange={(e) => setAddCustomerForm((f) => ({ ...f, locationName: e.target.value }))}
+                        className="block w-full px-3 py-2 border border-gray-300 dark:border-frost-600 rounded-lg bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
+                        placeholder="bv. Hoofdvestiging"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-frost-400 mb-1">Locatie-adres</label>
+                      <input
+                        type="text"
+                        value={addCustomerForm.locationAddress}
+                        onChange={(e) => setAddCustomerForm((f) => ({ ...f, locationAddress: e.target.value }))}
+                        className="block w-full px-3 py-2 border border-gray-300 dark:border-frost-600 rounded-lg bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
+                        placeholder="Straat 123, 1000 Brussel"
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button
