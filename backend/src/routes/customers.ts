@@ -21,6 +21,7 @@ router.get('/search', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (re
     
     const customers = await prisma.customer.findMany({
       where: {
+        userId: { not: null },
         OR: [
           { companyName: { contains: searchTerm, mode: 'insensitive' } },
           { contactName: { contains: searchTerm, mode: 'insensitive' } },

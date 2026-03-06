@@ -26,6 +26,16 @@ const ManageCustomers: React.FC = () => {
   const [searching, setSearching] = useState(false);
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
   const [customerToUnlink, setCustomerToUnlink] = useState<any>(null);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [addCustomerForm, setAddCustomerForm] = useState({
+    companyName: '',
+    contactName: '',
+    email: '',
+    phone: '',
+    address: '',
+  });
+  const [addCustomerLoading, setAddCustomerLoading] = useState(false);
+  const [addCustomerError, setAddCustomerError] = useState('');
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -36,17 +46,16 @@ const ManageCustomers: React.FC = () => {
 
   // Close modal on ESC key
   useEffect(() => {
-    if (!showUnlinkModal) return;
-    
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setShowUnlinkModal(false);
         setCustomerToUnlink(null);
+        setShowAddCustomerModal(false);
       }
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [showUnlinkModal]);
+  }, [showUnlinkModal, showAddCustomerModal]);
 
   const fetchInvitations = async () => {
     try {
@@ -192,6 +201,34 @@ const ManageCustomers: React.FC = () => {
     setCustomerToUnlink(null);
   };
 
+  const handleAddCustomerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddCustomerError('');
+    setAddCustomerLoading(true);
+    try {
+      const technicianId = await getTechnicianId();
+      if (!technicianId) {
+        setAddCustomerError('Technicus-ID niet gevonden. Log uit en opnieuw in.');
+        return;
+      }
+      await techniciansApi.createCustomer(technicianId, {
+        companyName: addCustomerForm.companyName.trim(),
+        contactName: addCustomerForm.contactName.trim(),
+        email: addCustomerForm.email.trim(),
+        phone: addCustomerForm.phone.trim() || undefined,
+        address: addCustomerForm.address.trim() || undefined,
+      });
+      setShowAddCustomerModal(false);
+      setAddCustomerForm({ companyName: '', contactName: '', email: '', phone: '', address: '' });
+      await fetchLinkedCustomers();
+    } catch (error: any) {
+      const msg = error.response?.data?.error || error.response?.data?.message || 'Klant toevoegen mislukt';
+      setAddCustomerError(msg);
+    } finally {
+      setAddCustomerLoading(false);
+    }
+  };
+
   const getTotalColdCells = (customer: any) => {
     return customer.locations?.reduce((sum: number, loc: any) => sum + (loc.coldCells?.length || 0), 0) || 0;
   };
@@ -217,7 +254,21 @@ const ManageCustomers: React.FC = () => {
 
       {/* Add Customer Section */}
       <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">Klant toevoegen</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-frost-100">Klant toevoegen</h2>
+          <button
+            type="button"
+            onClick={() => setShowAddCustomerModal(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors"
+            style={{ background: 'linear-gradient(135deg, #00c8ff 0%, #0080ff 100%)' }}
+          >
+            <PlusIcon className="h-5 w-5" />
+            Nieuwe klant toevoegen
+          </button>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-frost-400 mb-4">
+          Voeg een klant toe zonder IntelliFrost-account voor onderhoud, installaties en koudemiddel logboek.
+        </p>
         <div className="relative" ref={dropdownRef}>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -643,6 +694,105 @@ const ManageCustomers: React.FC = () => {
                 <TrashIcon className="h-4 w-4 mr-2" />
                 Ja, ontkoppelen
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Customer Modal */}
+      {showAddCustomerModal && (
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
+          onClick={() => setShowAddCustomerModal(false)}
+        >
+          <div
+            className="relative bg-white dark:bg-frost-800 rounded-lg shadow-xl max-w-md w-full border border-gray-100 dark:border-[rgba(100,200,255,0.08)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100 mb-4">
+                Nieuwe klant toevoegen
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-frost-400 mb-4">
+                Klant zonder IntelliFrost-account (voor onderhoud, installaties, koudemiddel logboek).
+              </p>
+              <form onSubmit={handleAddCustomerSubmit} className="space-y-4">
+                {addCustomerError && (
+                  <div className="p-3 text-sm text-red-700 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg">
+                    {addCustomerError}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">Bedrijfsnaam *</label>
+                  <input
+                    type="text"
+                    required
+                    value={addCustomerForm.companyName}
+                    onChange={(e) => setAddCustomerForm((f) => ({ ...f, companyName: e.target.value }))}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-frost-600 rounded-lg bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
+                    placeholder="bv. Bakkerij Janssen"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">Contactpersoon *</label>
+                  <input
+                    type="text"
+                    required
+                    value={addCustomerForm.contactName}
+                    onChange={(e) => setAddCustomerForm((f) => ({ ...f, contactName: e.target.value }))}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-frost-600 rounded-lg bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
+                    placeholder="bv. Jan Janssen"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">E-mail *</label>
+                  <input
+                    type="email"
+                    required
+                    value={addCustomerForm.email}
+                    onChange={(e) => setAddCustomerForm((f) => ({ ...f, email: e.target.value }))}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-frost-600 rounded-lg bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
+                    placeholder="contact@bedrijf.be"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">Telefoon</label>
+                  <input
+                    type="tel"
+                    value={addCustomerForm.phone}
+                    onChange={(e) => setAddCustomerForm((f) => ({ ...f, phone: e.target.value }))}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-frost-600 rounded-lg bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
+                    placeholder="+32 123 45 67 89"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-1">Adres</label>
+                  <input
+                    type="text"
+                    value={addCustomerForm.address}
+                    onChange={(e) => setAddCustomerForm((f) => ({ ...f, address: e.target.value }))}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-frost-600 rounded-lg bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
+                    placeholder="Straat 123, 1000 Brussel"
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCustomerModal(false)}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-frost-200 bg-gray-100 dark:bg-frost-700 rounded-lg hover:bg-gray-200 dark:hover:bg-frost-600"
+                  >
+                    Annuleren
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={addCustomerLoading}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #00c8ff 0%, #0080ff 100%)' }}
+                  >
+                    {addCustomerLoading ? 'Bezig...' : 'Toevoegen'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

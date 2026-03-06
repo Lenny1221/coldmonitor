@@ -10,6 +10,14 @@ const linkCustomerSchema = z.object({
   customerId: z.string().min(1),
 });
 
+const createCustomerSchema = z.object({
+  companyName: z.string().min(1, 'Bedrijfsnaam is verplicht'),
+  contactName: z.string().min(1, 'Contactpersoon is verplicht'),
+  email: z.string().email('Ongeldig e-mailadres'),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+});
+
 /**
  * GET /technicians/search
  * Search technicians by name or email (public endpoint for registration)
@@ -86,14 +94,52 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
 
 /**
  * POST /technicians/:id/customers
- * DEPRECATED: Use /api/invitations instead
- * This endpoint is kept for backward compatibility but should use invitations
+ * Create a new customer without IntelliFrost account and link to technician.
+ * For onderhoud, koudemiddel logboek, installaties – klant hoeft geen account te hebben.
  */
 router.post('/:id/customers', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (req: AuthRequest, res) => {
-  return res.status(410).json({ 
-    error: 'This endpoint is deprecated. Please use /api/invitations to send an invitation to the customer.',
-    message: 'Customers must accept invitations before being linked.',
-  });
+  try {
+    const technicianId = req.params.id;
+    const data = createCustomerSchema.parse(req.body);
+
+    if (req.userRole === 'TECHNICIAN' && req.technicianId !== technicianId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const existing = await prisma.customer.findUnique({
+      where: { email: data.email },
+    });
+    if (existing) {
+      return res.status(400).json({
+        error: 'Er bestaat al een klant met dit e-mailadres',
+        code: 'EMAIL_EXISTS',
+      });
+    }
+
+    const customer = await prisma.customer.create({
+      data: {
+        companyName: data.companyName,
+        contactName: data.contactName,
+        email: data.email,
+        phone: data.phone ?? '',
+        address: data.address ?? '',
+        linkedTechnicianId: technicianId,
+        emailVerified: false,
+        userId: null,
+      },
+      include: {
+        locations: true,
+      },
+    });
+
+    res.status(201).json(customer);
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Ongeldige gegevens', details: error.errors });
+    }
+    console.error('Create customer error:', error);
+    res.status(500).json({ error: 'Klant aanmaken mislukt' });
+  }
 });
 
 /**

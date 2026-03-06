@@ -30,6 +30,11 @@ router.post('/', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (req: Au
       return res.status(404).json({ error: 'Customer not found' });
     }
 
+    // Customer must have an account to receive invitation (technician-managed customers are linked directly)
+    if (!customer.userId) {
+      return res.status(400).json({ error: 'Deze klant heeft geen IntelliFrost-account en kan geen uitnodiging ontvangen' });
+    }
+
     // Check if customer is already linked to this technician
     if (customer.linkedTechnicianId === technicianId) {
       return res.status(400).json({ error: 'Customer is already linked to you' });

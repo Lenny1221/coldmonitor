@@ -189,6 +189,16 @@ export const techniciansApi = {
     const response = await api.get(`/technicians/${technicianId}/customers`);
     return response.data;
   },
+  createCustomer: async (technicianId: string, data: {
+    companyName: string;
+    contactName: string;
+    email: string;
+    phone?: string;
+    address?: string;
+  }) => {
+    const response = await api.post(`/technicians/${technicianId}/customers`, data);
+    return response.data;
+  },
   unlinkCustomer: async (technicianId: string, customerId: string) => {
     const response = await api.delete(`/technicians/${technicianId}/customers/${customerId}`);
     return response.data;

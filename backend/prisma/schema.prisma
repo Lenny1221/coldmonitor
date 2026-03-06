@@ -136,8 +136,8 @@ model Customer {
   emailVerified Boolean  @default(false)
 
   // Relations
-  userId           String      @unique
-  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String?     @unique  // Null = klant zonder IntelliFrost-account (technicus-beheerd)
+  user             User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
   linkedTechnicianId String?
   linkedTechnician   Technician? @relation(fields: [linkedTechnicianId], references: [id], onDelete: SetNull)
   
