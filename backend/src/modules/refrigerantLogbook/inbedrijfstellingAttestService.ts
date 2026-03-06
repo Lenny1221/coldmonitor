@@ -124,8 +124,8 @@ export async function generateInbedrijfstellingAttestPdf(data: Inbedrijfstelling
     },
   };
 
-  return new Promise((resolve, reject) => {
-    const pdfDoc = printer.createPdfKitDocument(docDef);
+  const pdfDoc = await printer.createPdfKitDocument(docDef);
+  return new Promise<Buffer>((resolve, reject) => {
     const chunks: Buffer[] = [];
     pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
     pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
