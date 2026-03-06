@@ -204,18 +204,15 @@ void setup() {
   // Initialize components
   logger.info("Initializing hardware...");
   
-  // BMP180 (I²C) + DHT11 + deurstatus
-  if (sensors.init()) {
-    logger.info("Sensors (BMP180, DHT11, door) initialized");
-  } else {
-    logger.warn("Sensors init failed, falling back to MAX31865");
-  }
+  // Deurstatus (BMP180/DHT11 optioneel – temperatuur via MAX31865)
+  sensors.init();
+  logger.info("Sensors (door) initialized");
   
-  // MAX31865 (SPI) - optioneel, alleen als geen nieuwe sensoren
+  // MAX31865 (SPI) – primaire temperatuursensor (PT1000)
   if (!tempSensor.init(config.getSPIConfig())) {
-    logger.debug("MAX31865 not used (optional)");
+    logger.warn("MAX31865 init failed – geen temperatuurvoeler");
   } else {
-    logger.info("MAX31865 initialized");
+    logger.info("MAX31865 (PT1000) initialized – primaire temperatuursensor");
   }
   
   // Initialize RS485: Carel PJEZ (supervisie) OF Modbus RTU
@@ -503,7 +500,6 @@ void sensorTask(void *parameter) {
   unsigned long lastDoorCheck = 0;
   unsigned long interval = config.getReadingInterval() * 1000; // ms
   static float lastKnownTemp = 0.0f;
-  static float lastKnownHumidity = 0.0f;
   static bool hasValidReading = false;
   
   while (true) {
@@ -525,30 +521,28 @@ void sensorTask(void *parameter) {
       lastDoorCheck = now;
     }
     
-    // Volledige sensorread op interval (temp, humidity, deur)
+    // Volledige sensorread op interval (temp via MAX31865, deur)
     if (now - lastReading >= interval) {
       SensorData data = sensors.read();
       
-      // Fallback naar MAX31865 als nieuwe sensoren falen
-      if (!data.valid && tempSensor.isValid()) {
+      // MAX31865 (PT1000) is primaire temperatuursensor
+      if (tempSensor.isValid()) {
         data.temperature = tempSensor.readTemperature();
         data.valid = true;
       }
+      // Anders fallback naar BMP/DHT indien beschikbaar
       
       if (data.valid) {
         lastKnownTemp = data.temperature;
-        lastKnownHumidity = data.humidity;
         hasValidReading = true;
         
         // Altijd op monitor tonen (INFO); pin=0/1 om deurcontact te debuggen
-        logger.info("Data | Temp: " + String(data.temperature, 2) + "°C | Hum: " +
-                    String(data.humidity, 1) + "% | Deur: " + (data.doorOpen ? "OPEN" : "dicht") +
+        logger.info("Data | Temp: " + String(data.temperature, 2) + "°C | Deur: " + (data.doorOpen ? "OPEN" : "dicht") +
                     " (pin=" + String(data.doorPinHigh ? 1 : 0) + ")");
 
         DynamicJsonDocument doc(512);
         doc["deviceId"] = getEffectiveDeviceSerial();
         doc["temperature"] = round(data.temperature * 10) / 10.0;  // 1 decimaal
-        doc["humidity"] = round(data.humidity * 10) / 10.0;
         doc["doorStatus"] = data.doorOpen;
         doc["powerStatus"] = true;  // Stroom OK (geen detectie nu)
         doc["batteryLevel"] = batteryMonitor.getPercentage();
