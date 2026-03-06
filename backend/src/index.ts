@@ -43,13 +43,13 @@ const PORT = config.port;
 app.set('trust proxy', 1);
 
 // CORS - ondersteunt meerdere origins (lokaal + cloud + Capacitor iOS)
-const CAPACITOR_ORIGINS = ['capacitor://localhost', 'ionic://localhost'];
+const isCapacitorOrigin = (o: string) => o?.startsWith('capacitor://') || o?.startsWith('ionic://');
 app.use(
   cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
       if (config.frontendUrls.includes(origin)) return cb(null, true);
-      if (CAPACITOR_ORIGINS.includes(origin)) return cb(null, true);
+      if (isCapacitorOrigin(origin)) return cb(null, true);
       // Log geweigerde origin (zichtbaar in Railway logs) om FRONTEND_URL te controleren
       logger.warn('CORS geweigerd – zet FRONTEND_URL op Railway op deze exacte waarde', { receivedOrigin: origin, allowed: config.frontendUrls });
       cb(null, false);
