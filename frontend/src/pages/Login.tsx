@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { techniciansApi, getErrorMessage } from '../services/api';
@@ -74,6 +75,7 @@ const Login: React.FC = () => {
   const [showRegister, setShowRegister] = useState(false);
   const [registerType, setRegisterType] = useState<RegisterType>('customer');
   const { theme, toggleTheme } = useTheme();
+  const isCapacitor = Capacitor.isNativePlatform();
   const [technicianSearch, setTechnicianSearch] = useState('');
   const [technicianResults, setTechnicianResults] = useState<any[]>([]);
   const [selectedTechnician, setSelectedTechnician] = useState<any | null>(null);
@@ -236,17 +238,19 @@ const Login: React.FC = () => {
         <title>Inloggen – IntelliFrost</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
-      {/* Theme toggle top-right */}
-      <button
-        onClick={toggleTheme}
-        className="fixed top-4 right-4 p-2.5 rounded-xl border border-gray-200 dark:border-[rgba(100,200,255,0.15)] bg-white dark:bg-frost-800 text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850 shadow-sm transition-all"
-        aria-label="Thema wisselen"
-      >
-        {theme === 'dark'
-          ? <SunIcon className="h-5 w-5 text-amber-400" />
-          : <MoonIcon className="h-5 w-5 text-[#0080ff]" />
-        }
-      </button>
+      {/* Theme toggle top-right – alleen op web, niet op Capacitor (pas na inloggen) */}
+      {!isCapacitor && (
+        <button
+          onClick={toggleTheme}
+          className="fixed top-4 right-4 p-2.5 rounded-xl border border-gray-200 dark:border-[rgba(100,200,255,0.15)] bg-white dark:bg-frost-800 text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850 shadow-sm transition-all"
+          aria-label="Thema wisselen"
+        >
+          {theme === 'dark'
+            ? <SunIcon className="h-5 w-5 text-amber-400" />
+            : <MoonIcon className="h-5 w-5 text-[#0080ff]" />
+          }
+        </button>
+      )}
 
       <div className="max-w-md w-full space-y-6">
         {/* Header */}
