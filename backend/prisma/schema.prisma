@@ -433,6 +433,7 @@ model Installation {
   firstUseDate            DateTime?         // Eerste ingebruikname
   lastMaintenanceDate     DateTime?
   nextMaintenanceDate     DateTime?
+  nextEpbdDate            DateTime?         // Volgende EPBD-energiekeuring (airco > 70 kW)
   status                  InstallationStatus @default(ACTIEF)
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt

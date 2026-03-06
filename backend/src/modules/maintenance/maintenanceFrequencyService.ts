@@ -126,6 +126,19 @@ export function calculateNextMaintenanceDate(
   return next;
 }
 
+/** Bepaal of EPBD-energiekeuring van toepassing is (airco > 70 kW) */
+export function isEpbdRequired(installationType: string, nominalCoolingKw: number): boolean {
+  return installationType === 'AIRCO' && (nominalCoolingKw ?? 0) > 70;
+}
+
+/** Bereken datum volgende EPBD-energiekeuring (elke 5 jaar na eerste ingebruikname) */
+export function calculateNextEpbdDate(firstUseDate: Date | null, fallbackDate?: Date | null): Date {
+  const base = firstUseDate ?? fallbackDate ?? new Date();
+  const next = new Date(base);
+  next.setMonth(next.getMonth() + 60); // 5 jaar
+  return next;
+}
+
 /** Badge-status: IN_ORDE | BINNENKORT | VERVALLEN */
 export type MaintenanceBadge = 'IN_ORDE' | 'BINNENKORT' | 'VERVALLEN';
 

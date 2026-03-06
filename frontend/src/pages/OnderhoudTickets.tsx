@@ -134,7 +134,7 @@ const OnderhoudTickets: React.FC = () => {
     return acc;
   }, {} as Record<string, any[]>);
 
-  /** Agenda-items voor kalender: onderhoudsdata + ingeplande tickets */
+  /** Agenda-items voor kalender: onderhoudsdata + EPBD + ingeplande tickets */
   const agendaItems: AgendaItem[] = useMemo(() => {
     const items: AgendaItem[] = [];
     installations.forEach((i) => {
@@ -148,6 +148,19 @@ const OnderhoudTickets: React.FC = () => {
           subtitle: i.customer?.companyName ?? '',
           badge: i.badge,
           color: i.badge === 'VERVALLEN' ? 'bg-red-500' : i.badge === 'BINNENKORT' ? 'bg-amber-500' : 'bg-emerald-500',
+          raw: i,
+        });
+      }
+      if (i.nextEpbdDate) {
+        const d = new Date(i.nextEpbdDate);
+        items.push({
+          id: `epbd-${i.id}`,
+          type: 'onderhoud',
+          date: d,
+          title: `${i.name} (EPBD)`,
+          subtitle: i.customer?.companyName ?? 'EPBD-energiekeuring',
+          badge: 'IN_ORDE',
+          color: 'bg-indigo-500',
           raw: i,
         });
       }
@@ -513,7 +526,14 @@ const OnderhoudTickets: React.FC = () => {
                             : '—'}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 dark:text-frost-100 max-w-[280px]">
-                          {i.maintenanceRules?.[0]?.label ?? '—'}
+                          <div>
+                            {i.maintenanceRules?.[0]?.label ?? '—'}
+                            {i.nextEpbdDate && (
+                              <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                                EPBD: {format(new Date(i.nextEpbdDate), 'dd/MM/yyyy')}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${BADGE_COLORS[i.badge] ?? 'bg-gray-100'}`}>

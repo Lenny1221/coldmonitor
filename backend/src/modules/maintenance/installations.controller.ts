@@ -11,6 +11,8 @@ import {
   getStrictestFrequency,
   calculateNextMaintenanceDate,
   getMaintenanceBadge,
+  isEpbdRequired,
+  calculateNextEpbdDate,
 } from './maintenanceFrequencyService';
 import { CustomError } from '../../middleware/errorHandler';
 import { InstallationType } from '@prisma/client';
@@ -67,9 +69,10 @@ router.get('/', requireAuth, requireRole('TECHNICIAN', 'ADMIN', 'CUSTOMER'), asy
     });
 
     const withBadge = installations.map((i) => {
+      const co2Eq = i.co2EquivalentTon ?? calculateCo2Equivalent(i.refrigerantKg, i.refrigerantType);
       const rules = getMaintenanceFrequency({
         refrigerantKg: i.refrigerantKg,
-        co2EquivalentTon: i.co2EquivalentTon ?? undefined,
+        co2EquivalentTon: co2Eq,
         nominalCoolingKw: i.nominalCoolingKw ?? undefined,
         installationType: i.type,
         hasLeakDetection: i.hasLeakDetection,
@@ -113,9 +116,10 @@ router.get('/:id', requireAuth, requireRole('TECHNICIAN', 'ADMIN', 'CUSTOMER'), 
       if (!hasAccess) throw new CustomError('Geen toegang', 403, 'ACCESS_DENIED');
     }
 
+    const co2Eq = inst.co2EquivalentTon ?? calculateCo2Equivalent(inst.refrigerantKg, inst.refrigerantType);
     const rules = getMaintenanceFrequency({
       refrigerantKg: inst.refrigerantKg,
-      co2EquivalentTon: inst.co2EquivalentTon ?? undefined,
+      co2EquivalentTon: co2Eq,
       nominalCoolingKw: inst.nominalCoolingKw ?? undefined,
       installationType: inst.type,
       hasLeakDetection: inst.hasLeakDetection,
@@ -156,6 +160,10 @@ router.post('/', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (req: Au
     const freqMonths = getStrictestFrequency(rules);
     const firstUse = body.firstUseDate ? new Date(body.firstUseDate) : null;
     const nextMaintenance = calculateNextMaintenanceDate(null, firstUse, freqMonths);
+    const nominalKw = body.nominalCoolingKw ?? 0;
+    const nextEpbd = isEpbdRequired(body.type, nominalKw)
+      ? calculateNextEpbdDate(firstUse, new Date())
+      : null;
 
     const installation = await prisma.installation.create({
       data: {
@@ -168,6 +176,7 @@ router.post('/', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (req: Au
         hasLeakDetection: body.hasLeakDetection,
         firstUseDate: firstUse,
         nextMaintenanceDate: nextMaintenance,
+        nextEpbdDate: nextEpbd,
         locationId: body.locationId,
         customerId: custId,
       },
@@ -223,20 +232,28 @@ router.patch('/:id', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (req
       const type = body.refrigerantType ?? existing.refrigerantType;
       updateData.co2EquivalentTon = calculateCo2Equivalent(kg, type);
     }
-    if (body.refrigerantKg !== undefined || body.refrigerantType !== undefined || body.nominalCoolingKw !== undefined || body.hasLeakDetection !== undefined) {
+    if (body.refrigerantKg !== undefined || body.refrigerantType !== undefined || body.nominalCoolingKw !== undefined || body.hasLeakDetection !== undefined || body.type !== undefined || body.firstUseDate !== undefined) {
+      const kg = updateData.refrigerantKg ?? existing.refrigerantKg;
+      const type = updateData.type ?? existing.type;
+      const co2Eq = updateData.co2EquivalentTon ?? existing.co2EquivalentTon ?? calculateCo2Equivalent(kg, updateData.refrigerantType ?? existing.refrigerantType);
+      const nominalKw = updateData.nominalCoolingKw ?? existing.nominalCoolingKw ?? 0;
+      const firstUse = updateData.firstUseDate ? new Date(updateData.firstUseDate) : existing.firstUseDate;
       const rules = getMaintenanceFrequency({
-        refrigerantKg: updateData.refrigerantKg ?? existing.refrigerantKg,
-        co2EquivalentTon: updateData.co2EquivalentTon ?? existing.co2EquivalentTon ?? undefined,
-        nominalCoolingKw: updateData.nominalCoolingKw ?? existing.nominalCoolingKw ?? undefined,
-        installationType: updateData.type ?? existing.type,
+        refrigerantKg: kg,
+        co2EquivalentTon: co2Eq,
+        nominalCoolingKw: nominalKw,
+        installationType: type,
         hasLeakDetection: updateData.hasLeakDetection ?? existing.hasLeakDetection,
       });
       const freqMonths = getStrictestFrequency(rules);
       updateData.nextMaintenanceDate = calculateNextMaintenanceDate(
         existing.lastMaintenanceDate,
-        updateData.firstUseDate ? new Date(updateData.firstUseDate) : existing.firstUseDate,
+        firstUse,
         freqMonths
       );
+      updateData.nextEpbdDate = isEpbdRequired(type, nominalKw)
+        ? calculateNextEpbdDate(firstUse, new Date())
+        : null;
     }
     delete updateData.technicianIds;
     delete updateData.customerId;
