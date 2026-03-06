@@ -7,11 +7,17 @@ export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   apiUrl: process.env.API_URL || process.env.BACKEND_URL || `http://localhost:3001`,
-  // Comma-separated voor meerdere origins (bv. lokaal + Vercel)
-  frontendUrls: (process.env.FRONTEND_URL || 'http://localhost:5173')
-    .split(',')
-    .map((u) => u.trim())
-    .filter(Boolean),
+  // Comma-separated voor meerdere origins (bv. lokaal + Vercel + Railway zelf)
+  frontendUrls: (() => {
+    const fromEnv = (process.env.FRONTEND_URL || 'http://localhost:5173')
+      .split(',')
+      .map((u) => u.trim())
+      .filter(Boolean);
+    const apiUrl = process.env.API_URL || process.env.BACKEND_URL || '';
+    const apiOrigin = apiUrl ? new URL(apiUrl).origin : '';
+    if (apiOrigin && !fromEnv.includes(apiOrigin)) fromEnv.push(apiOrigin);
+    return fromEnv;
+  })(),
   frontendUrl: (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0]?.trim() || 'http://localhost:5173',
 
   // JWT

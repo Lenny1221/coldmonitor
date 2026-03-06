@@ -1,0 +1,8 @@
+# Railway: alles via één service (backend + frontend)
+# Zet Root Directory = "." (project root) in Railway dashboard
+
+[build]
+buildCommand = "cd backend && npm ci && npx prisma@5.22.0 generate && npm run build"
+
+[deploy]
+startCommand = "cd backend && npx prisma@5.22.0 migrate deploy && node dist/index.js"

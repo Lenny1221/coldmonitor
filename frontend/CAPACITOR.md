@@ -52,6 +52,21 @@ Daarna opnieuw bouwen: `npm run cap:sync`
 
 **Tip:** na elke wijziging aan de webapp eerst `npm run cap:sync` draaien, dan in Xcode opnieuw builden.
 
+## Productie (alles via Railway)
+
+De app verbindt met `https://web-production-e67f4.up.railway.app/api`. Railway serveert backend + web frontend. Voor inloggen moet Railway correct geconfigureerd zijn:
+
+- **Railway:** `DATABASE_URL` (Supabase pooler), `FRONTEND_URL`, `JWT_SECRET`, `API_URL`
+- **Info.plist:** `NSAllowsArbitraryLoads` staat aan voor netwerktoegang
+
+## Troubleshooting
+
+| Fout | Oplossing |
+|------|-----------|
+| "Kan geen verbinding maken met de server" | `Info.plist` heeft `NSAllowsArbitraryLoads: true`. Clean build en opnieuw runnen. |
+| CORS / login faalt | Backend heeft `capacitor://localhost` in CORS. Controleer Railway deploy. |
+| Database error | Supabase: restore project als gepauzeerd. Railway: `DATABASE_URL` met pooler-URL. |
+
 ## App Store publiceren
 
 1. Apple Developer-account actief maken

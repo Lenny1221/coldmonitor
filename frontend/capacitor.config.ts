@@ -4,11 +4,7 @@ const config: CapacitorConfig = {
   appId: 'io.projectlogger.coldmonitor',
   appName: 'IntelliFrost',
   webDir: 'dist',
-  server: {
-    // Voor development: uncomment om de live webapp te laden
-     url: 'http://localhost:5173',
-    // cleartext: true,
-  },
+  // Geen server.url = laadt gebundelde app die via Railway (intellifrost.be) verbindt
 };
 
 export default config;

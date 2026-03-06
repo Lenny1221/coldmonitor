@@ -1,4 +1,6 @@
 import express from 'express';
+import path from 'path';
+import fs from 'fs';
 import cors from 'cors';
 import session from 'express-session';
 import passport from 'passport';
@@ -121,12 +123,22 @@ app.use('/api/coldcells', coldCellRoutes);
 app.use('/api/technicians', technicianRoutes);
 app.use('/api/invitations', invitationRoutes);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Route not found',
-    path: req.path,
+// Serve frontend (wanneer gebouwd met backend - alles via Railway)
+const publicDir = path.join(__dirname, '../public');
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(publicDir, 'index.html'));
   });
+}
+
+// 404 handler
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'Route not found', path: req.path });
+  }
+  next();
 });
 
 // Error handler (must be last middleware)

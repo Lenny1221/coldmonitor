@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "npm run build:frontend && tsc",
+    "build:frontend": "if [ -d ../frontend ]; then (cd ../frontend && npm ci && VITE_API_URL=/api npm run build && mkdir -p ../backend/public && cp -r dist/* ../backend/public/); fi",
     "start": "node dist/index.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
