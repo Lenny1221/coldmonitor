@@ -18,7 +18,6 @@ const createCustomerSchema = z.object({
   address: z.string().optional(),
   locationName: z.string().optional(),
   locationAddress: z.string().optional(),
-  locationAddress: z.string().optional(),
 });
 
 /**
