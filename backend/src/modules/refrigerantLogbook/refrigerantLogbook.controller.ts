@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { requireAuth, requireRole, AuthRequest } from '../../middleware/auth';
 import { prisma } from '../../config/database';
 import { CustomError } from '../../middleware/errorHandler';
+import { logger } from '../../utils/logger';
 import {
   calculateCo2EquivalentTon,
   getLeakCheckFrequencyMonths,
@@ -263,6 +264,7 @@ router.get(
       }
 
       const inst = entry.installation;
+      if (!inst?.customer) throw new CustomError('Installatie of klant niet gevonden', 404, 'NOT_FOUND');
       if (req.userRole === 'CUSTOMER' && inst.customerId !== req.customerId) {
         throw new CustomError('Geen toegang', 403, 'ACCESS_DENIED');
       }
@@ -276,18 +278,19 @@ router.get(
       }
 
       const d = (entry.data as any) || {};
+      const refrigerantKg = Number(d.refrigerantKg ?? d.initialKg ?? inst.refrigerantKg) || inst.refrigerantKg || 0;
       const pdfBuffer = await generateInbedrijfstellingAttestPdf({
-        installationName: inst.name,
-        customerName: inst.customer.companyName,
-        customerAddress: inst.customer.address ?? undefined,
+        installationName: String(inst.name ?? ''),
+        customerName: String(inst.customer.companyName ?? ''),
+        customerAddress: inst.customer.address ? String(inst.customer.address) : undefined,
         performedAt: new Date(entry.performedAt),
-        technicianName: entry.technicianName,
-        technicianCertNr: entry.technicianCertNr ?? undefined,
-        refrigerantType: d.refrigerantType ?? inst.refrigerantType,
-        refrigerantKg: Number(d.refrigerantKg ?? d.initialKg ?? inst.refrigerantKg) || inst.refrigerantKg,
-        pressureTestResult: d.pressureTestResult ?? (d.pressureTest ? 'Uitgevoerd – geen lekken' : '—'),
-        leakTestResult: d.leakTestResult ?? (d.leakTest ? 'Uitgevoerd – geen lekken' : '—'),
-        notes: entry.notes ?? undefined,
+        technicianName: String(entry.technicianName ?? ''),
+        technicianCertNr: entry.technicianCertNr ? String(entry.technicianCertNr) : undefined,
+        refrigerantType: String(d.refrigerantType ?? inst.refrigerantType ?? ''),
+        refrigerantKg,
+        pressureTestResult: String(d.pressureTestResult ?? (d.pressureTest ? 'Uitgevoerd – geen lekken' : '—')),
+        leakTestResult: String(d.leakTestResult ?? (d.leakTest ? 'Uitgevoerd – geen lekken' : '—')),
+        notes: entry.notes ? String(entry.notes) : undefined,
       });
 
       const filename = `inbedrijfstelling-attest-${inst.name.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date(entry.performedAt).toISOString().split('T')[0]}.pdf`;
@@ -295,6 +298,7 @@ router.get(
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.send(pdfBuffer);
     } catch (e) {
+      logger.error('Attest PDF download mislukt', e as Error, { entryId: req.params.id });
       next(e);
     }
   }
