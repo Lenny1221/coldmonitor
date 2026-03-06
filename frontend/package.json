@@ -13,9 +13,8 @@
   "dependencies": {
     "@capacitor/cli": "^8.0.2",
     "@capacitor/core": "^8.0.2",
-    "@capacitor/filesystem": "^8.1.2",
     "@capacitor/ios": "^8.0.2",
-    "@capacitor/share": "^8.0.1",
+    "@capacitor/preferences": "^8.0.1",
     "@heroicons/react": "^2.1.1",
     "axios": "^1.6.2",
     "date-fns": "^3.0.6",

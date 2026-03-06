@@ -9,15 +9,6 @@
         "revision" : "13a39179b3df796f3bb2e70c47ccdd92593f34d2",
         "version" : "8.0.2"
       }
-    },
-    {
-      "identity" : "ion-ios-filesystem",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ionic-team/ion-ios-filesystem.git",
-      "state" : {
-        "revision" : "c35d468ded28a19e6322de8553c21578455aa554",
-        "version" : "1.1.1"
-      }
     }
   ],
   "version" : 3

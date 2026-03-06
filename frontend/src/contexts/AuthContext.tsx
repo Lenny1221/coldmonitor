@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { authApi } from '../services/api';
-import Cookies from 'js-cookie';
+import { tokenStorage } from '../utils/tokenStorage';
 
 interface User {
   id: string;
@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const storedToken = Cookies.get('token');
+      const storedToken = await tokenStorage.getToken();
       if (storedToken) {
         setToken(storedToken);
         tokenRef.current = storedToken;
@@ -59,13 +59,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       }
     };
-    
+
     initializeAuth();
-    
-    // Listen for storage events to sync auth state across tabs
-    const handleStorageChange = (e: StorageEvent) => {
+
+    // Listen for storage events to sync auth state across tabs (web only)
+    const handleStorageChange = async (e: StorageEvent) => {
       if (e.key === 'token' || e.key === 'refreshToken') {
-        const newToken = Cookies.get('token');
+        const newToken = await tokenStorage.getToken();
         const currentToken = tokenRef.current;
         if (newToken && newToken !== currentToken) {
           setToken(newToken);
@@ -73,7 +73,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           authApi.setToken(newToken);
           fetchUser(newToken);
         } else if (!newToken && currentToken) {
-          // Token was removed in another tab
           setUser(null);
           setToken(null);
           tokenRef.current = null;
@@ -81,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
@@ -97,17 +96,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       authApi.setToken(authToken);
       const userData = await authApi.getCurrentUser();
-      // Only update user if token hasn't changed during fetch
-      const currentToken = Cookies.get('token');
-      if (currentToken === authToken) {
-        setUser(userData);
-      }
+      const currentToken = await tokenStorage.getToken();
+      if (currentToken === authToken) setUser(userData);
     } catch (error) {
       console.error('Failed to fetch user:', error);
-      const currentToken = Cookies.get('token');
-      // Only clear if token hasn't changed (another tab might have logged in)
+      const currentToken = await tokenStorage.getToken();
       if (currentToken === authToken) {
-        Cookies.remove('token');
+        await tokenStorage.removeToken();
+        await tokenStorage.removeRefreshToken();
         setToken(null);
         authApi.setToken(null);
       }
@@ -119,21 +115,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     const response = await authApi.login(email, password);
     const accessToken = response.accessToken || response.token;
-    // Update in correct order: token first, then user
-    Cookies.set('token', accessToken, { expires: 7 });
-    if (response.refreshToken) {
-      Cookies.set('refreshToken', response.refreshToken, { expires: 7 });
-    }
+    await tokenStorage.setToken(accessToken);
+    if (response.refreshToken) await tokenStorage.setRefreshToken(response.refreshToken);
     authApi.setToken(accessToken);
     setToken(accessToken);
     tokenRef.current = accessToken;
     setUser(response.user);
-    // Trigger storage event for other tabs
     window.dispatchEvent(new Event('storage'));
   };
 
   const loginWithToken = async (accessToken: string) => {
-    Cookies.set('token', accessToken, { expires: 7 });
+    await tokenStorage.setToken(accessToken);
     authApi.setToken(accessToken);
     setToken(accessToken);
     tokenRef.current = accessToken;
@@ -166,13 +158,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    Cookies.remove('token');
-    Cookies.remove('refreshToken');
+    void tokenStorage.removeToken();
+    void tokenStorage.removeRefreshToken();
     authApi.setToken(null);
     setUser(null);
     setToken(null);
     tokenRef.current = null;
-    // Trigger storage event for other tabs
     window.dispatchEvent(new Event('storage'));
   };
 

@@ -1,7 +1,9 @@
 import axios from 'axios';
-import Cookies from 'js-cookie';
+import { Capacitor } from '@capacitor/core';
+import { tokenStorage } from '../utils/tokenStorage';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/+$/, '');
+const isNative = () => Capacitor.isNativePlatform();
 
 /** Safely extract a displayable string from API error (avoids React error #31) */
 export function getErrorMessage(err: unknown, fallback: string): string {
@@ -48,16 +50,13 @@ export const setAuthToken = (token: string | null) => {
 
 // Interceptor to add token to requests
 api.interceptors.request.use((config) => {
-  // Always check cookie for token (in case of page refresh)
-  const cookieToken = Cookies.get('token');
-  const tokenToUse = authToken || cookieToken;
-  
+  // Web: check cookie on refresh. Native: use authToken (set by AuthContext from Preferences)
+  const storedToken = !isNative() ? tokenStorage.getTokenSync() : null;
+  const tokenToUse = authToken || storedToken;
+
   if (tokenToUse) {
     config.headers.Authorization = `Bearer ${tokenToUse}`;
-    // Update authToken in memory if we got it from cookie
-    if (!authToken && cookieToken) {
-      authToken = cookieToken;
-    }
+    if (!authToken && storedToken) authToken = storedToken;
   }
   return config;
 });
@@ -75,7 +74,9 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = Cookies.get('refreshToken');
+      const refreshToken = isNative()
+        ? await tokenStorage.getRefreshToken()
+        : tokenStorage.getRefreshTokenSync();
       if (refreshToken) {
         try {
           // Use existing refresh promise if one is in progress
@@ -87,17 +88,14 @@ api.interceptors.response.use(
                 });
 
                 const { accessToken, refreshToken: newRefreshToken } = response.data;
-                Cookies.set('token', accessToken, { expires: 7 });
-                if (newRefreshToken) {
-                  Cookies.set('refreshToken', newRefreshToken, { expires: 7 });
-                }
-                
+                await tokenStorage.setToken(accessToken);
+                if (newRefreshToken) await tokenStorage.setRefreshToken(newRefreshToken);
+
                 authToken = accessToken;
                 api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-                
+
                 return accessToken;
               } finally {
-                // Clear promise after completion
                 refreshTokenPromise = null;
               }
             })();
@@ -108,10 +106,9 @@ api.interceptors.response.use(
 
           return api(originalRequest);
         } catch (refreshError) {
-          // Refresh failed, clear tokens and redirect to login
           refreshTokenPromise = null;
-          Cookies.remove('token');
-          Cookies.remove('refreshToken');
+          await tokenStorage.removeToken();
+          await tokenStorage.removeRefreshToken();
           authToken = null;
           api.defaults.headers.common['Authorization'] = '';
           if (typeof window !== 'undefined') {
