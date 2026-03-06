@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+frontend/ios/App/CapacitorPreferences/
 .npm-cache/
 .pnp
 .pnp.js

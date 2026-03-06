@@ -6,6 +6,7 @@ import { installationsApi, refrigerantLogbookApi } from '../services/api';
 import { getErrorMessage } from '../services/api';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 const LOG_CATEGORY_LABELS: Record<string, string> = {
   LEKCONTROLE: 'Lekcontrole',
@@ -23,6 +24,7 @@ const RefrigerantLogbookClient: React.FC = () => {
   const [error, setError] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [logData, setLogData] = useState<{ installation: any; entries: any[] } | null>(null);
+  const [downloadingAttest, setDownloadingAttest] = useState<string | null>(null);
 
   useEffect(() => {
     fetchInstallations();
@@ -37,6 +39,23 @@ const RefrigerantLogbookClient: React.FC = () => {
       setLogData(null);
     }
   }, [selectedId]);
+
+  const handleDownloadAttest = async (entryId: string) => {
+    setDownloadingAttest(entryId);
+    try {
+      const blob = await refrigerantLogbookApi.downloadAttest(entryId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `inbedrijfstelling-attest-${entryId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(getErrorMessage(e, 'Attest downloaden mislukt'));
+    } finally {
+      setDownloadingAttest(null);
+    }
+  };
 
   const fetchInstallations = async () => {
     setLoading(true);
@@ -124,12 +143,29 @@ const RefrigerantLogbookClient: React.FC = () => {
                         {entry.technicianCertNr && ` (cert. ${entry.technicianCertNr})`}
                       </div>
                       {entry.notes && <p className="text-sm text-gray-600 dark:text-frost-400 mt-1">{entry.notes}</p>}
-                      {entry.data && Object.keys(entry.data).length > 0 && (
+                      {entry.category === 'EERSTE_INBEDRIJFSTELLING' && entry.data && (
+                        <div className="mt-2 text-xs space-y-1">
+                          {entry.data.refrigerantType && <p>Koelmiddel: {entry.data.refrigerantType} • {entry.data.refrigerantKg ?? entry.data.initialKg} kg</p>}
+                          {entry.data.pressureTestResult && <p>Druktest: {entry.data.pressureTestResult}</p>}
+                          {entry.data.leakTestResult && <p>Lekkagetest: {entry.data.leakTestResult}</p>}
+                        </div>
+                      )}
+                      {entry.data && Object.keys(entry.data).length > 0 && entry.category !== 'EERSTE_INBEDRIJFSTELLING' && (
                         <div className="mt-2 text-xs text-gray-500 space-y-1">
                           {Object.entries(entry.data).map(([k, v]) => (
                             <div key={k}><strong>{k}:</strong> {String(v)}</div>
                           ))}
                         </div>
+                      )}
+                      {entry.category === 'EERSTE_INBEDRIJFSTELLING' && (
+                        <button
+                          onClick={() => handleDownloadAttest(entry.id)}
+                          disabled={downloadingAttest === entry.id}
+                          className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          <ArrowDownTrayIcon className="h-3.5 w-3.5" />
+                          {downloadingAttest === entry.id ? 'Bezig...' : 'Attest PDF downloaden'}
+                        </button>
                       )}
                     </div>
                   ))}

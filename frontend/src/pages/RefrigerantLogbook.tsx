@@ -12,6 +12,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   XCircleIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 
 const LOG_CATEGORIES = [
@@ -48,6 +49,7 @@ const RefrigerantLogbook: React.FC = () => {
     data: {} as Record<string, any>,
   });
   const [submitting, setSubmitting] = useState(false);
+  const [downloadingAttest, setDownloadingAttest] = useState<string | null>(null);
 
   useEffect(() => {
     fetchInstallations();
@@ -114,6 +116,23 @@ const RefrigerantLogbook: React.FC = () => {
     }
   };
 
+  const handleDownloadAttest = async (entryId: string) => {
+    setDownloadingAttest(entryId);
+    try {
+      const blob = await refrigerantLogbookApi.downloadAttest(entryId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `inbedrijfstelling-attest-${entryId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(getErrorMessage(e, 'Attest downloaden mislukt'));
+    } finally {
+      setDownloadingAttest(null);
+    }
+  };
+
   const getCategoryData = (category: string, data: Record<string, any>): Record<string, any> => {
     switch (category) {
       case 'LEKCONTROLE':
@@ -129,7 +148,12 @@ const RefrigerantLogbook: React.FC = () => {
       case 'BUITENDIENSTSTELLING':
         return { reason: data.reason || '', recoveredKg: data.recoveredKg || 0, final: data.final || false };
       case 'EERSTE_INBEDRIJFSTELLING':
-        return { initialKg: data.initialKg || 0, pressureTest: data.pressureTest || false };
+        return {
+          refrigerantType: data.refrigerantType || '',
+          refrigerantKg: data.refrigerantKg ?? data.initialKg ?? 0,
+          pressureTestResult: data.pressureTestResult || '',
+          leakTestResult: data.leakTestResult || '',
+        };
       default:
         return data;
     }
@@ -237,10 +261,27 @@ const RefrigerantLogbook: React.FC = () => {
                         {entry.technicianName}
                         {entry.technicianCertNr && ` (${entry.technicianCertNr})`}
                         {entry.notes && <p className="mt-1">{entry.notes}</p>}
-                        {entry.data && Object.keys(entry.data).length > 0 && (
+                        {entry.category === 'EERSTE_INBEDRIJFSTELLING' && entry.data && (
+                          <div className="mt-2 text-xs">
+                            {entry.data.refrigerantType && <p>Koelmiddel: {entry.data.refrigerantType} • {entry.data.refrigerantKg ?? entry.data.initialKg} kg</p>}
+                            {entry.data.pressureTestResult && <p>Druktest: {entry.data.pressureTestResult}</p>}
+                            {entry.data.leakTestResult && <p>Lekkagetest: {entry.data.leakTestResult}</p>}
+                          </div>
+                        )}
+                        {entry.data && Object.keys(entry.data).length > 0 && entry.category !== 'EERSTE_INBEDRIJFSTELLING' && (
                           <pre className="mt-2 text-xs text-gray-500 dark:text-slate-400 overflow-x-auto max-h-24 overflow-y-auto">
                             {JSON.stringify(entry.data, null, 2)}
                           </pre>
+                        )}
+                        {entry.category === 'EERSTE_INBEDRIJFSTELLING' && (
+                          <button
+                            onClick={() => handleDownloadAttest(entry.id)}
+                            disabled={downloadingAttest === entry.id}
+                            className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            <ArrowDownTrayIcon className="h-3.5 w-3.5" />
+                            {downloadingAttest === entry.id ? 'Bezig...' : 'Attest PDF downloaden'}
+                          </button>
                         )}
                       </div>
                     </div>
@@ -268,7 +309,20 @@ const RefrigerantLogbook: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Categorie</label>
                 <select
                   value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  onChange={(e) => {
+                    const cat = e.target.value;
+                    setForm({
+                      ...form,
+                      category: cat,
+                      data: cat === 'EERSTE_INBEDRIJFSTELLING' && selectedInstallation
+                        ? {
+                            ...form.data,
+                            refrigerantType: form.data.refrigerantType || selectedInstallation.refrigerantType || '',
+                            refrigerantKg: form.data.refrigerantKg ?? form.data.initialKg ?? selectedInstallation.refrigerantKg ?? 0,
+                          }
+                        : form.data,
+                    });
+                  }}
                   className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
                 >
                   {LOG_CATEGORIES.map((c) => (
@@ -339,6 +393,47 @@ const RefrigerantLogbook: React.FC = () => {
                       <option value="GERECYCLEERD">Gerecycleerd</option>
                       <option value="GEREGENEREERD">Geregenereerd</option>
                     </select>
+                  </div>
+                </>
+              )}
+              {form.category === 'EERSTE_INBEDRIJFSTELLING' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Type koelmiddel</label>
+                    <input
+                      value={form.data.refrigerantType ?? selectedInstallation?.refrigerantType ?? ''}
+                      onChange={(e) => setForm({ ...form, data: { ...form.data, refrigerantType: e.target.value } })}
+                      placeholder="bv. R410A"
+                      className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Hoeveelheid koelmiddel (kg)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={form.data.refrigerantKg ?? form.data.initialKg ?? selectedInstallation?.refrigerantKg ?? ''}
+                      onChange={(e) => setForm({ ...form, data: { ...form.data, refrigerantKg: parseFloat(e.target.value) || 0 } })}
+                      className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Druktest resultaten</label>
+                    <input
+                      value={form.data.pressureTestResult || ''}
+                      onChange={(e) => setForm({ ...form, data: { ...form.data, pressureTestResult: e.target.value } })}
+                      placeholder="bv. Uitgevoerd – geen lekken"
+                      className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-frost-200 mb-1">Lekkagetest bij installatie</label>
+                    <input
+                      value={form.data.leakTestResult || ''}
+                      onChange={(e) => setForm({ ...form, data: { ...form.data, leakTestResult: e.target.value } })}
+                      placeholder="bv. Uitgevoerd – geen lekken"
+                      className="w-full rounded border border-gray-300 dark:border-[rgba(100,200,255,0.2)] p-2 bg-white dark:bg-frost-850 text-gray-900 dark:text-frost-100"
+                    />
                   </div>
                 </>
               )}

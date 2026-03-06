@@ -16,6 +16,7 @@ import {
   GWP_TABLE,
 } from './refrigerantLogbookService';
 import { calculateNextMaintenanceDate } from '../maintenance/maintenanceFrequencyService';
+import { generateInbedrijfstellingAttestPdf } from './inbedrijfstellingAttestService';
 import { RefrigerantLogCategory } from '@prisma/client';
 
 const router = Router();
@@ -222,7 +223,77 @@ router.post(
         }
       }
 
+      // Bij EERSTE_INBEDRIJFSTELLING: zet firstUseDate + nextMaintenanceDate (eerste lekcontrole na 1 jaar)
+      if (body.category === 'EERSTE_INBEDRIJFSTELLING') {
+        const co2 = inst.co2EquivalentTon ?? calculateCo2EquivalentTon(inst.refrigerantKg, inst.refrigerantType);
+        const freqMonths = getLeakCheckFrequencyMonths(co2, inst.hasLeakDetection);
+        const nextDate = calculateNextMaintenanceDate(performedAt, null, freqMonths);
+        await prisma.installation.update({
+          where: { id },
+          data: {
+            firstUseDate: performedAt,
+            lastMaintenanceDate: performedAt,
+            nextMaintenanceDate: nextDate,
+          },
+        });
+      }
+
       res.status(201).json(entry);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/** GET /refrigerant-logbook/entries/:id/attest – download inbedrijfstellingsattest PDF */
+router.get(
+  '/entries/:id/attest',
+  requireAuth,
+  requireRole('TECHNICIAN', 'ADMIN', 'CUSTOMER'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const entry = await prisma.refrigerantLogEntry.findUnique({
+        where: { id },
+        include: { installation: { include: { customer: true } } },
+      });
+      if (!entry) throw new CustomError('Logboekregistratie niet gevonden', 404, 'NOT_FOUND');
+      if (entry.category !== 'EERSTE_INBEDRIJFSTELLING') {
+        throw new CustomError('Alleen eerste inbedrijfstelling heeft een attest', 400, 'INVALID_CATEGORY');
+      }
+
+      const inst = entry.installation;
+      if (req.userRole === 'CUSTOMER' && inst.customerId !== req.customerId) {
+        throw new CustomError('Geen toegang', 403, 'ACCESS_DENIED');
+      }
+      if (req.userRole === 'TECHNICIAN') {
+        const hasAccess =
+          inst.customer.linkedTechnicianId === req.technicianId ||
+          (await prisma.installationTechnician.findFirst({
+            where: { installationId: inst.id, technicianId: req.technicianId! },
+          }));
+        if (!hasAccess) throw new CustomError('Geen toegang', 403, 'ACCESS_DENIED');
+      }
+
+      const d = (entry.data as any) || {};
+      const pdfBuffer = await generateInbedrijfstellingAttestPdf({
+        installationName: inst.name,
+        customerName: inst.customer.companyName,
+        customerAddress: inst.customer.address ?? undefined,
+        performedAt: new Date(entry.performedAt),
+        technicianName: entry.technicianName,
+        technicianCertNr: entry.technicianCertNr ?? undefined,
+        refrigerantType: d.refrigerantType ?? inst.refrigerantType,
+        refrigerantKg: Number(d.refrigerantKg ?? d.initialKg ?? inst.refrigerantKg) || inst.refrigerantKg,
+        pressureTestResult: d.pressureTestResult ?? (d.pressureTest ? 'Uitgevoerd – geen lekken' : '—'),
+        leakTestResult: d.leakTestResult ?? (d.leakTest ? 'Uitgevoerd – geen lekken' : '—'),
+        notes: entry.notes ?? undefined,
+      });
+
+      const filename = `inbedrijfstelling-attest-${inst.name.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date(entry.performedAt).toISOString().split('T')[0]}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(pdfBuffer);
     } catch (e) {
       next(e);
     }

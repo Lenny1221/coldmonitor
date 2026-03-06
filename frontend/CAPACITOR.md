@@ -66,6 +66,7 @@ De app verbindt met `https://web-production-e67f4.up.railway.app/api`. Railway s
 | "Kan geen verbinding maken met de server" | `Info.plist` heeft `NSAllowsArbitraryLoads: true`. Clean build en opnieuw runnen. |
 | CORS / login faalt | Backend heeft `capacitor://localhost` in CORS. Controleer Railway deploy. |
 | Database error | Supabase: restore project als gepauzeerd. Railway: `DATABASE_URL` met pooler-URL. |
+| **"Missing package product CapacitorPreferences"** | Gebruik `npm run cap:sync` (niet alleen `npx cap sync`). Dit kopieert de plugin lokaal en past het pad aan. Daarna in Xcode: **File → Packages → Reset Package Caches**. |
 
 ## App Store publiceren
 

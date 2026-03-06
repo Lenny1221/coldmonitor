@@ -632,6 +632,12 @@ export const refrigerantLogbookApi = {
     const response = await api.post(`/refrigerant-logbook/installations/${installationId}/entries`, data);
     return response.data;
   },
+  downloadAttest: async (entryId: string) => {
+    const response = await api.get(`/refrigerant-logbook/entries/${entryId}/attest`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 
 // Readings API
