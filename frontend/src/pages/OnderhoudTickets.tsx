@@ -19,7 +19,7 @@ import {
   isToday,
 } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, ListBulletIcon } from '@heroicons/react/24/outline';
+import { ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, ListBulletIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 const BADGE_COLORS: Record<string, string> = {
   IN_ORDE: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
@@ -98,6 +98,7 @@ const OnderhoudTickets: React.FC = () => {
   const [onderhoudView, setOnderhoudView] = useState<'agenda' | 'lijst'>('agenda');
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [selectedAgendaItem, setSelectedAgendaItem] = useState<AgendaItem | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
@@ -126,6 +127,19 @@ const OnderhoudTickets: React.FC = () => {
       setError(getErrorMessage(e, 'Data laden mislukt'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteInstallation = async (id: string, name: string) => {
+    if (!window.confirm(`Installatie "${name}" verwijderen? Dit kan niet ongedaan worden.`)) return;
+    setDeletingId(id);
+    try {
+      await installationsApi.delete(id);
+      setInstallations((prev) => prev.filter((i) => i.id !== id));
+    } catch (e) {
+      setError(getErrorMessage(e, 'Verwijderen mislukt'));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -510,6 +524,9 @@ const OnderhoudTickets: React.FC = () => {
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Volgend onderhoud</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Frequentie</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Status</th>
+                      {(user?.role === 'TECHNICIAN' || user?.role === 'ADMIN') && (
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase w-12"></th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-frost-600">
@@ -542,6 +559,18 @@ const OnderhoudTickets: React.FC = () => {
                             {i.badge === 'VERVALLEN' && '🔴 Vervallen'}
                           </span>
                         </td>
+                        {(user?.role === 'TECHNICIAN' || user?.role === 'ADMIN') && (
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              onClick={() => handleDeleteInstallation(i.id, i.name)}
+                              disabled={deletingId === i.id}
+                              className="p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50"
+                              title="Installatie verwijderen"
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
