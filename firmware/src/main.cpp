@@ -504,8 +504,8 @@ void loop() {
     deepSleepIfNeeded();
   }
   
-    // Snellere loop bij deur-events (25ms) voor directe live-update in app
-    delay(doorEventManager.hasPending() ? 25 : 100);
+    // Snellere loop bij deur-events (10ms) voor directe live-update in app (<500ms)
+    delay(doorEventManager.hasPending() ? 10 : 100);
 }
 
 void sensorTask(void *parameter) {
@@ -520,9 +520,26 @@ void sensorTask(void *parameter) {
   while (true) {
     unsigned long now = millis();
     
-    // Deur elke 25ms checken met debounce (50ms); bij state change direct event in queue (live app-update)
-    if (now - lastDoorCheck >= 25) {
+    // Eerste run: sync deur-state met hardware (voorkomt spurious event)
+    static bool doorInitDone = false;
+    if (!doorInitDone) {
+      doorInitDone = true;
+      delay(100);  // Korte stabilisatie na boot
+      bool initDoor = sensors.readDoorOnly();
+      doorEventManager.setInitialState(initDoor);
+      logger.info("Deur init: " + String(initDoor ? "OPEN" : "DICHT") + " (GPIO" + String(PIN_DOOR) + ")");
+    }
+    
+    // Deur elke 15ms checken met debounce (30ms); bij state change direct event in queue (<500ms naar frontend)
+    if (now - lastDoorCheck >= 15) {
       bool doorOpen = sensors.readDoorOnly();
+      // Debug: elke 5s raw pin loggen (GPIO32) – controleer of pin verandert bij schakelen
+      static unsigned long lastDoorDebug = 0;
+      if (now - lastDoorDebug >= 5000) {
+        lastDoorDebug = now;
+        bool pinHigh = (digitalRead(PIN_DOOR) == HIGH);
+        logger.info("Deur debug: pin=" + String(pinHigh ? 1 : 0) + " doorOpen=" + String(doorOpen ? 1 : 0) + " (GPIO" + String(PIN_DOOR) + ")");
+      }
       if (doorEventManager.poll(doorOpen)) {
         DoorEvent ev;
         ev.isOpen = doorOpen;

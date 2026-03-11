@@ -261,7 +261,7 @@ const ColdCellDetail: React.FC = () => {
     }
   };
 
-  // latestReading wordt elke 5s bijgewerkt; liveDoorState = realtime via SSE
+  // Deur: liveDoorState (SSE + 500ms polling) overschrijft alles – binnen ~500ms na schakelen
   const latestReading = coldCell?.latestReading;
   const displayDoorState = liveDoorState?.doorState ?? coldCell?.doorState?.doorState ?? (latestReading?.doorStatus === true ? 'OPEN' : latestReading?.doorStatus === false ? 'CLOSED' : null);
   const displayDoorChangedAt = liveDoorState?.doorLastChangedAt ?? coldCell?.doorState?.doorLastChangedAt ?? latestReading?.recordedAt;

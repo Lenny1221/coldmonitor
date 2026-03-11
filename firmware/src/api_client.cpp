@@ -353,7 +353,7 @@ bool APIClient::uploadDoorEvent(const char* state, uint32_t seq, uint64_t timest
   if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
   
   unsigned long now = millis();
-  const unsigned long doorCooldown = 150;  // Korter voor live deur-update
+  const unsigned long doorCooldown = 50;  // Minimaal voor live deur-update (<500ms naar frontend)
   if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < doorCooldown) {
     delay(doorCooldown - (now - lastHttpEndMs));
   }

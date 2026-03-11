@@ -2,8 +2,10 @@
 #define DOOR_EVENTS_H
 
 #include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
-#define DOOR_DEBOUNCE_MS 50
+#define DOOR_DEBOUNCE_MS 30
 #define DOOR_EVENT_QUEUE_SIZE 32
 #define DOOR_MAX_EVENTS_PER_SECOND 5
 
@@ -19,6 +21,9 @@ class DoorEventManager {
 public:
   DoorEventManager();
   
+  // Sync met huidige hardware-state bij boot (voorkomt spurious event)
+  void setInitialState(bool currentDoorOpen);
+  
   // Debounced read: returns true if state changed (after debounce)
   bool poll(bool currentDoorOpen);
   
@@ -31,13 +36,14 @@ public:
   // Dequeue multiple events into array, max N. Returns count.
   int dequeueMany(DoorEvent* out, int maxCount);
   
-  bool hasPending() const { return queueCount > 0; }
-  int getQueueCount() const { return queueCount; }
+  bool hasPending();
+  int getQueueCount();
   
   uint32_t getNextSeq() { return ++seqCounter; }
   uint32_t getSeq() const { return seqCounter; }
 
 private:
+  SemaphoreHandle_t queueMutex;
   unsigned long lastStableTime;
   bool lastStableState;
   bool lastReportedState;
