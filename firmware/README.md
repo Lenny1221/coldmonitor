@@ -67,10 +67,9 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 - Minimum 4MB Flash
 - PSRAM recommended
 
-### MAX31865 RTD-to-Digital Converter
-- SPI interface
-- PT1000 RTD sensor (4-wire recommended)
-- Reference resistor: 4.3kΩ
+### MAX31865 RTD-to-Digital Converter (Adafruit library)
+- SPI interface, PT1000 (2-wire)
+- PT1000 op F+/F- (of R1/R2), 4.3kΩ referentieweerstand tussen Rref+/Rref-
 
 ### RS485 Module (Optional)
 - MAX485 or similar RS485 transceiver
@@ -104,11 +103,8 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 
 **Real-time deur-events:** Debounce 50 ms, direct event naar backend bij state change. Offline queue (32 events), rate limit 5/s.
 
-### SPI (MAX31865) – optioneel
-- **CS Pin**: GPIO 5 (configurable)
-- **MOSI**: GPIO 23 (SPI default)
-- **MISO**: GPIO 19 (SPI default)
-- **SCK**: GPIO 18 (SPI default)
+### SPI (MAX31865) – primaire temperatuursensor
+- **CS**: GPIO 5 | **MOSI**: GPIO 23 | **MISO**: GPIO 19 | **SCK**: GPIO 18
 
 ### RS485 (Optional)
 - **RO** (Receiver Output → ESP32 RX): GPIO 16

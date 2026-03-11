@@ -293,6 +293,7 @@ model SensorReading {
   powerStatus Boolean  @default(true)
   doorStatus  Boolean? // true = open, false = closed
   batteryLevel Int?    // Battery percentage (0-100)
+  batteryCharging Boolean? // true = aan het opladen (USB + batterij < 100%)
   recordedAt  DateTime @default(now())
   createdAt   DateTime @default(now())
 

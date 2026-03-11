@@ -21,6 +21,7 @@ const readingSchema = z.object({
   powerStatus: z.boolean().optional(),
   doorStatus: z.boolean().optional(),
   batteryLevel: z.number().min(0).max(100).optional(),
+  batteryCharging: z.boolean().optional(),
 });
 
 /**
@@ -54,6 +55,7 @@ router.post(
           powerStatus: data.powerStatus ?? true,
           doorStatus: data.doorStatus ?? null,
           batteryLevel: data.batteryLevel ?? null,
+          batteryCharging: data.batteryCharging ?? null,
           recordedAt: new Date(),
         },
         include: {

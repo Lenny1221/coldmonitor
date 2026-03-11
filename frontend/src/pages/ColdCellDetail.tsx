@@ -23,6 +23,7 @@ import {
   CloudIcon,
   ArrowRightOnRectangleIcon,
   BoltIcon,
+  Battery100Icon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
   UserGroupIcon,
@@ -555,7 +556,7 @@ const ColdCellDetail: React.FC = () => {
       {/* Huidige status: alleen sensoren die data hebben, stroom altijd Actief */}
       <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Huidige status</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {latestReading?.temperature != null && (
             <div className="border border-gray-200 dark:border-[rgba(100,200,255,0.12)] rounded-lg p-4">
               <div className="flex items-center text-gray-600 dark:text-slate-300 mb-1">
@@ -674,14 +675,15 @@ const ColdCellDetail: React.FC = () => {
               )}
             </div>
           )}
-          <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center text-gray-600 mb-1">
+          <div className="border border-gray-200 dark:border-[rgba(100,200,255,0.12)] rounded-lg p-4">
+            <div className="flex items-center text-gray-600 dark:text-slate-300 mb-1">
               <BoltIcon className="h-5 w-5 mr-2" />
               <span className="text-sm font-medium">Stroom</span>
             </div>
             {(() => {
+              const powerStatus = latestReading?.powerStatus;
+              const hasPowerData = powerStatus !== undefined && powerStatus !== null;
               const devices = coldCell?.devices || [];
-              const anyOnline = devices.some((d: any) => d.status === 'ONLINE');
               const lastSeen = devices
                 .filter((d: any) => d.lastSeenAt)
                 .map((d: any) => new Date(d.lastSeenAt).getTime())
@@ -689,21 +691,52 @@ const ColdCellDetail: React.FC = () => {
               return (
                 <>
                   <div className="flex items-center gap-2">
-                    {anyOnline ? (
-                      <>
-                        <span className="text-green-600 font-semibold">Actief</span>
-                        <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                      </>
+                    {hasPowerData ? (
+                      powerStatus ? (
+                        <>
+                          <span className="text-green-600 dark:text-green-400 font-semibold">Actief</span>
+                          <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-amber-600 dark:text-amber-400 font-semibold">Niet actief</span>
+                          <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
+                        </>
+                      )
                     ) : (
-                      <>
-                        <span className="text-amber-600 font-semibold">Niet actief</span>
-                        <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
-                      </>
+                      <span className="text-gray-500 dark:text-slate-400 font-medium">Geen data</span>
                     )}
                   </div>
                   {lastSeen && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                       Laatst gezien: {format(new Date(lastSeen), 'dd/MM/yyyy HH:mm')}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+          <div className="border border-gray-200 dark:border-[rgba(100,200,255,0.12)] rounded-lg p-4">
+            <div className="flex items-center text-gray-600 dark:text-slate-300 mb-1">
+              <Battery100Icon className="h-5 w-5 mr-2" />
+              <span className="text-sm font-medium">Batterij</span>
+            </div>
+            {(() => {
+              const batLevel = latestReading?.batteryLevel;
+              const charging = latestReading?.batteryCharging;
+              const hasBatteryData = batLevel !== undefined && batLevel !== null;
+              return (
+                <>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-frost-100">
+                    {hasBatteryData ? `${batLevel} %` : '—'}
+                  </div>
+                  {hasBatteryData && (
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                      {charging ? (
+                        <span className="text-green-600 dark:text-green-400 font-medium">Aan het opladen</span>
+                      ) : (
+                        <span className="text-gray-500 dark:text-slate-400">Niet aan het opladen</span>
+                      )}
                     </p>
                   )}
                 </>

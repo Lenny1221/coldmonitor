@@ -14,13 +14,14 @@
 #include "provisioning.h"
 #include "reset_button.h"
 #include "sensors.h"
-#include "max31865_driver.h"
+#include <Adafruit_MAX31865.h>
 #include "rs485_modbus.h"
 #include "carel_protocol.h"
 #include "data_buffer.h"
 #include "wifi_manager.h"
 #include "api_client.h"
 #include "battery_monitor.h"
+#include "power_monitor.h"
 #include "door_events.h"
 #include "boot_state.h"
 #include "time_utils.h"
@@ -34,13 +35,18 @@ ProvisioningManager provisioning;
 // Two-step reset: BOOT button (GPIO 0) + RESET button (GPIO 0, same pin) within 10 seconds
 ResetButtonHandler resetButton(DEFAULT_BOOT_PIN, DEFAULT_RESET_PIN, BOOT_WINDOW_MS, RESET_HOLD_TIME_MS);
 Sensors sensors;
-MAX31865Driver tempSensor;
+// MAX31865: CS=5, MOSI=23, MISO=19, SCK=18 (ESP32 default SPI)
+Adafruit_MAX31865 thermo = Adafruit_MAX31865(5, 23, 19, 18);
+#define RREF      4300.0
+#define RNOMINAL  1000.0
+static bool max31865Initialized = false;
 RS485Modbus modbus;
 CarelProtocol carel;
 DataBuffer dataBuffer;
 WiFiManagerWrapper wifiManager;
 APIClient apiClient;
 BatteryMonitor batteryMonitor;
+PowerMonitor powerMonitor;
 OTAUpdate otaUpdate;
 PowerManager powerManager;
 DoorEventManager doorEventManager;
@@ -208,11 +214,15 @@ void setup() {
   sensors.init();
   logger.info("Sensors (door) initialized");
   
-  // MAX31865 (SPI) – primaire temperatuursensor (PT1000)
-  if (!tempSensor.init(config.getSPIConfig())) {
-    logger.warn("MAX31865 init failed – geen temperatuurvoeler");
+  // MAX31865 (SPI) – primaire temperatuursensor (PT1000, 2-wire)
+  thermo.begin(MAX31865_2WIRE);
+  delay(100);
+  float testTemp = thermo.temperature(RNOMINAL, RREF);
+  if (!isnan(testTemp) && testTemp > -200 && testTemp < 200) {
+    max31865Initialized = true;
+    logger.info("MAX31865 (PT1000, 2-wire) initialized – primaire temperatuursensor");
   } else {
-    logger.info("MAX31865 (PT1000) initialized – primaire temperatuursensor");
+    logger.warn("MAX31865 init failed – geen temperatuurvoeler (check Rref 4.3kΩ, PT1000 op F+/F-)");
   }
   
   // Initialize RS485: Carel PJEZ (supervisie) OF Modbus RTU
@@ -238,7 +248,9 @@ void setup() {
   
   // Initialize battery monitor
   batteryMonitor.init();
-  logger.info("Battery monitor initialized");
+  
+  // Initialize power monitor (USB detection on GPIO 35)
+  powerMonitor.init();
   
   // Initialize power manager
   powerManager.init();
@@ -330,6 +342,9 @@ void loop() {
   static int deviceDoorAlarmDelaySec = 300;
   
   unsigned long now = millis();
+  
+  // USB-detectie (GPIO 35) – logt bij aan/uit
+  powerMonitor.update();
   
   // NTP sync bij WiFi‑connect (ook na reconnect)
   static bool ntpInitDone = false;
@@ -525,28 +540,43 @@ void sensorTask(void *parameter) {
     if (now - lastReading >= interval) {
       SensorData data = sensors.read();
       
-      // MAX31865 (PT1000) is primaire temperatuursensor
-      if (tempSensor.isValid()) {
-        data.temperature = tempSensor.readTemperature();
+      // MAX31865 (PT1000, 2-wire) is primaire temperatuursensor
+      float max31865Temp = thermo.temperature(RNOMINAL, RREF);
+      uint8_t max31865Fault = thermo.readFault();
+      bool max31865Ok = max31865Initialized && (max31865Fault == 0) && !isnan(max31865Temp) && max31865Temp > -200 && max31865Temp < 200;
+      
+      if (max31865Fault) thermo.clearFault();
+      
+      if (max31865Ok) {
+        data.temperature = max31865Temp;
         data.valid = true;
+        logger.info("MAX31865 | Temp: " + String(data.temperature, 2) + " °C | Deur: " + (data.doorOpen ? "OPEN" : "dicht"));
+      } else {
+        // Altijd MAX31865-status én deur tonen in Serial Monitor voor debugging
+        logger.warn("MAX31865 | GEEN DATA | fault=0x" + String(max31865Fault, HEX) + 
+                    " temp=" + String(max31865Temp, 1) + " | Deur: " + (data.doorOpen ? "OPEN" : "dicht") +
+                    " (pin=" + String(data.doorPinHigh ? 1 : 0) + ")");
+        // Fallback naar BMP/DHT indien beschikbaar
       }
-      // Anders fallback naar BMP/DHT indien beschikbaar
       
       if (data.valid) {
         lastKnownTemp = data.temperature;
         hasValidReading = true;
-        
-        // Altijd op monitor tonen (INFO); pin=0/1 om deurcontact te debuggen
-        logger.info("Data | Temp: " + String(data.temperature, 2) + "°C | Deur: " + (data.doorOpen ? "OPEN" : "dicht") +
-                    " (pin=" + String(data.doorPinHigh ? 1 : 0) + ")");
+
+        batteryMonitor.update();
+        powerMonitor.update();
+        bool usbConnected = powerMonitor.isUsbConnected();
+        int batPct = batteryMonitor.getPercentage();
+        bool charging = usbConnected && (batPct < 100);
 
         DynamicJsonDocument doc(512);
         doc["deviceId"] = getEffectiveDeviceSerial();
         doc["temperature"] = round(data.temperature * 10) / 10.0;  // 1 decimaal
         doc["doorStatus"] = data.doorOpen;
-        doc["powerStatus"] = true;  // Stroom OK (geen detectie nu)
-        doc["batteryLevel"] = batteryMonitor.getPercentage();
+        doc["powerStatus"] = usbConnected;  // true = USB/stroom, false = batterij
+        doc["batteryLevel"] = batPct;
         doc["batteryVoltage"] = batteryMonitor.getVoltage();
+        doc["batteryCharging"] = charging;
         doc["timestamp"] = now;
         if (data.pressure > 0) doc["pressure"] = round(data.pressure * 10) / 10.0;
         
@@ -556,7 +586,7 @@ void sensorTask(void *parameter) {
         
         logger.debug("Reading buffered");
       } else {
-        logger.warn("No valid sensor reading!");
+        logger.warn(String("No valid sensor reading! Deur: ") + (data.doorOpen ? "OPEN" : "dicht") + " (pin=" + String(data.doorPinHigh ? 1 : 0) + ")");
       }
       
       lastReading = now;
