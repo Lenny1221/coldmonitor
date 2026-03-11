@@ -93,10 +93,10 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 | | GND → GND | - |
 | | DATA → **GPIO 27** | DATA (10kΩ pull-up naar 3V3 indien niet onboard) |
 | **Deurstatus** (droog contact) | COM → GND | - |
-| | NO (normally open) → **GPIO 25** | INPUT_PULLUP |
+| | NO (normally open) → **GPIO 32** | INPUT_PULLUP |
 
 **Deurstatus:**
-- Juiste aansluiting: één draad schakelaar → GPIO 25, andere draad → GND (niet 3V3).
+- Juiste aansluiting: één draad schakelaar → GPIO 32, andere draad → GND (niet 3V3).
 - Contact gesloten (deur dicht) → GPIO leest **LOW**
 - Contact open (deur open) → GPIO leest **HIGH**. In Serial Monitor: pin=0 of pin=1. Melding verkeerd om? In sensors.h: PIN_DOOR_INVERTED 1
 - Tip: NC (normally closed) is fail-safe: kabelbreuk = “deur open” alarm

@@ -5,7 +5,7 @@
 
 // Pin configuratie (ESP32)
 #define PIN_DHT_DATA     27   // DHT11 DATA
-#define PIN_DOOR         25   // Deurstatus: één draad naar GPIO25, andere naar GND (schakelaar ertussen)
+#define PIN_DOOR         32   // Deurstatus: één draad naar GPIO32, andere naar GND (toggle switch ertussen)
 #define I2C_SDA          21   // BMP180 I²C SDA
 #define I2C_SCL          22   // BMP180 I²C SCL
 

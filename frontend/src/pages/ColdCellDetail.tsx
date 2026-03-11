@@ -556,7 +556,7 @@ const ColdCellDetail: React.FC = () => {
       {/* Huidige status: alleen sensoren die data hebben, stroom altijd Actief */}
       <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Huidige status</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {latestReading?.temperature != null && (
             <div className="border border-gray-200 dark:border-[rgba(100,200,255,0.12)] rounded-lg p-4">
               <div className="flex items-center text-gray-600 dark:text-slate-300 mb-1">
