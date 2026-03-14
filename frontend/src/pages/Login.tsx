@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { tokenStorage } from '../utils/tokenStorage';
 import { techniciansApi, getErrorMessage } from '../services/api';
-import { MagnifyingGlassIcon, PhoneIcon, EnvelopeIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PhoneIcon, EnvelopeIcon, SunIcon, MoonIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 type RegisterType = 'customer' | 'technician';
 
@@ -246,18 +246,27 @@ const Login: React.FC = () => {
         <title>Inloggen – IntelliFrost</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
-      {/* Theme toggle top-right – alleen op web, niet op Capacitor (pas na inloggen) */}
+      {/* Terug naar website + theme toggle – alleen op web */}
       {!isCapacitor && (
-        <button
-          onClick={toggleTheme}
-          className="fixed top-4 right-4 p-2.5 rounded-xl border border-gray-200 dark:border-[rgba(100,200,255,0.15)] bg-white dark:bg-frost-800 text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850 shadow-sm transition-all"
-          aria-label="Thema wisselen"
-        >
-          {theme === 'dark'
-            ? <SunIcon className="h-5 w-5 text-amber-400" />
-            : <MoonIcon className="h-5 w-5 text-[#0080ff]" />
-          }
-        </button>
+        <div className="fixed top-4 left-4 right-4 flex justify-between items-center z-10">
+          <Link
+            to="/"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-[rgba(100,200,255,0.15)] bg-white dark:bg-frost-800 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850 shadow-sm transition-all text-sm font-medium"
+          >
+            <ArrowLeftIcon className="h-5 w-5" />
+            Terug naar website
+          </Link>
+          <button
+            onClick={toggleTheme}
+            className="p-2.5 rounded-xl border border-gray-200 dark:border-[rgba(100,200,255,0.15)] bg-white dark:bg-frost-800 text-gray-500 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-frost-850 shadow-sm transition-all"
+            aria-label="Thema wisselen"
+          >
+            {theme === 'dark'
+              ? <SunIcon className="h-5 w-5 text-amber-400" />
+              : <MoonIcon className="h-5 w-5 text-[#0080ff]" />
+            }
+          </button>
+        </div>
       )}
 
       <div className="max-w-md w-full space-y-6">
