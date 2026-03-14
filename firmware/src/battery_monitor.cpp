@@ -3,7 +3,7 @@
 
 extern Logger logger;
 
-BatteryMonitor::BatteryMonitor() : voltage(0.0), percentage(0), lastUpdate(0), updateInterval(1000) {
+BatteryMonitor::BatteryMonitor() : voltage(0.0), percentage(0), lastUpdate(0), updateInterval(1000), voltageInitialized(false) {
 }
 
 BatteryMonitor::~BatteryMonitor() {
@@ -18,7 +18,13 @@ bool BatteryMonitor::init() {
 }
 
 float BatteryMonitor::readVoltage() {
-  int adcValue = analogRead(BATTERY_ADC_PIN);
+  // Gemiddelde van 5 metingen om ADC-ruis te verminderen
+  long sum = 0;
+  for (int i = 0; i < 5; i++) {
+    sum += analogRead(BATTERY_ADC_PIN);
+    delay(2);
+  }
+  int adcValue = sum / 5;
   float v = (float)adcValue * BATTERY_VOLTAGE_DIVIDER_RATIO * BATTERY_VREF / 4095.0;
   return v;
 }
@@ -43,8 +49,24 @@ void BatteryMonitor::update() {
   unsigned long now = millis();
   
   if (now - lastUpdate >= updateInterval) {
-    voltage = readVoltage();
-    percentage = calculatePercentage(voltage);
+    float rawVoltage = readVoltage();
+    
+    // Exponentieel gemiddelde voor spanning (smooth bij USB in/uit)
+    if (!voltageInitialized) {
+      voltage = rawVoltage;
+      voltageInitialized = true;
+    } else {
+      voltage = voltage * (1.0f - BATTERY_SMOOTH_ALPHA) + rawVoltage * BATTERY_SMOOTH_ALPHA;
+    }
+    voltage *= BATTERY_CALIBRATION_FACTOR;  // Compenseer ADC-afwijking
+    
+    int rawPercent = calculatePercentage(voltage);
+    // Rate limit: max BATTERY_MAX_PCT_CHANGE per seconde (voorkomt sprongen bij USB in/uit)
+    int delta = rawPercent - percentage;
+    if (delta > BATTERY_MAX_PCT_CHANGE) delta = BATTERY_MAX_PCT_CHANGE;
+    if (delta < -BATTERY_MAX_PCT_CHANGE) delta = -BATTERY_MAX_PCT_CHANGE;
+    percentage = constrain(percentage + delta, 0, 100);
+    
     lastUpdate = now;
   }
 }

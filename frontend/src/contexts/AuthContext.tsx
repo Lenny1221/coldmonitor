@@ -117,6 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const accessToken = response.accessToken || response.token;
     await tokenStorage.setToken(accessToken);
     if (response.refreshToken) await tokenStorage.setRefreshToken(response.refreshToken);
+    await tokenStorage.setRememberedEmail(email); // Onthoud e-mail voor volgende keer (web + iOS)
     authApi.setToken(accessToken);
     setToken(accessToken);
     tokenRef.current = accessToken;
@@ -160,6 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     void tokenStorage.removeToken();
     void tokenStorage.removeRefreshToken();
+    // E-mail blijft bewaard voor "onthoud mij" – alleen tokens worden gewist
     authApi.setToken(null);
     setUser(null);
     setToken(null);

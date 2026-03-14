@@ -20,7 +20,7 @@ import { sendLayer3Notifications } from './notifications/layer3';
 const ESCALATION_WAIT_MS = {
   LAYER_1_TO_2: 20 * 60 * 1000, // 20 min (OPEN_HOURS)
   LAYER_2_TO_3: 15 * 60 * 1000, // 15 min
-  LAYER_3_REPEAT: 5 * 60 * 1000, // 5 min – herhaal bellen bij layer 3 (alle alarmtypes)
+  LAYER_3_REPEAT: 15 * 60 * 1000, // 15 min – herhaal bellen bij layer 3 (alle alarmtypes)
 };
 
 export type AlertWithRelations = Awaited<

@@ -12,6 +12,9 @@
 #define BATTERY_VREF 3.3
 #define BATTERY_FULL_VOLTAGE 4.2
 #define BATTERY_EMPTY_VOLTAGE 3.0
+#define BATTERY_SMOOTH_ALPHA 0.2f      // Exponentieel gemiddelde: 20% nieuw, 80% oud
+#define BATTERY_MAX_PCT_CHANGE 3      // Max %-punt verandering per seconde (stabiliseert bij USB in/uit)
+#define BATTERY_CALIBRATION_FACTOR 1.084f  // Compenseer ADC-afwijking (4.01V echt vs 3.7V gelezen)
 
 class BatteryMonitor {
 private:
@@ -19,6 +22,7 @@ private:
   int percentage;
   unsigned long lastUpdate;
   unsigned long updateInterval;
+  bool voltageInitialized;
   
   float readVoltage();
   int calculatePercentage(float voltage);

@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { tokenStorage } from '../utils/tokenStorage';
 import { techniciansApi, getErrorMessage } from '../services/api';
 import { MagnifyingGlassIcon, PhoneIcon, EnvelopeIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 
@@ -85,6 +86,13 @@ const Login: React.FC = () => {
   const { login, loginWithToken, registerCustomer, registerTechnician } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  // Laad opgeslagen e-mail voor pre-fill (web + iOS app)
+  useEffect(() => {
+    tokenStorage.getRememberedEmail().then((saved) => {
+      if (saved) setEmail(saved);
+    });
+  }, []);
 
   // Berichten van e-mailverificatie of registratie
   const verifiedMsg = searchParams.get('verified') === '1' ? 'Je e-mail is bevestigd. Je kunt nu inloggen.' : null;
