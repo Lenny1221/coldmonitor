@@ -130,7 +130,7 @@ const LocationDetail: React.FC = () => {
 
         {coldCells.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {coldCells.map((cell) => {
+            {coldCells.map((cell: any) => {
               const latestReading = cell.devices?.[0]?.sensorReadings?.[0];
               return (
                 <div
