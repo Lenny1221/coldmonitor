@@ -23,6 +23,9 @@
 #define DEFAULT_DEEP_SLEEP_DURATION 3600   // seconds (1 hour)
 #define DEFAULT_OTA_PASSWORD "coldmonitor"
 
+// WiFi setup AP (configuratieportal)
+#define WIFI_SETUP_AP_SSID "IntelliFrost-Setup"
+
 // SPI Configuration for MAX31865
 struct SPIConfig {
   uint8_t csPin;

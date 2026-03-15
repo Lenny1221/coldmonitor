@@ -53,6 +53,7 @@ const Alarmeringen: React.FC = () => {
       case 'LOW_TEMP':
         return <ExclamationTriangleIcon className="h-5 w-5 text-orange-500 dark:text-orange-400" />;
       case 'POWER_LOSS':
+      case 'WIFI_LOSS':
       case 'SENSOR_ERROR':
         return <XCircleIcon className="h-5 w-5 text-red-500 dark:text-red-400" />;
       case 'DOOR_OPEN':
@@ -68,6 +69,7 @@ const Alarmeringen: React.FC = () => {
       case 'LOW_TEMP':
         return 'bg-orange-50 dark:bg-orange-900/25 border-orange-200 dark:border-orange-800/50';
       case 'POWER_LOSS':
+      case 'WIFI_LOSS':
       case 'SENSOR_ERROR':
         return 'bg-red-50 dark:bg-red-900/25 border-red-200 dark:border-red-800/50';
       case 'DOOR_OPEN':
@@ -81,6 +83,8 @@ const Alarmeringen: React.FC = () => {
     switch (type) {
       case 'POWER_LOSS':
         return 'Stroomuitval';
+      case 'WIFI_LOSS':
+        return 'Geen wifi signaal meer';
       case 'DOOR_OPEN':
         return 'Deur open';
       case 'HIGH_TEMP':
@@ -210,7 +214,11 @@ const Alarmeringen: React.FC = () => {
                       </div>
                       {alert.type === 'POWER_LOSS' ? (
                         <div className="text-sm text-gray-600 dark:text-slate-300 mt-1">
-                          Device offline – stroom niet actief
+                          USB uitgetrokken – stroom uitgevallen
+                        </div>
+                      ) : alert.type === 'WIFI_LOSS' ? (
+                        <div className="text-sm text-gray-600 dark:text-slate-300 mt-1">
+                          Geen wifi signaal meer – device offline
                         </div>
                       ) : alert.value != null ? (
                         <div className="text-sm text-gray-600 dark:text-slate-300 mt-1">

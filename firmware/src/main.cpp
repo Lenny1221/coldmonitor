@@ -1015,7 +1015,7 @@ void setupWiFi() {
   
   if (needsConfigPortal) {
     logger.warn("========================================");
-    logger.warn("BOOT: Eerste start: geen configuratie -> start ColdMonitor-Setup");
+    logger.warn("BOOT: Eerste start: geen configuratie -> start " WIFI_SETUP_AP_SSID);
     if (!hasAPI) logger.warn("BOOT: API config ontbreekt (api_url/api_key)");
     logger.warn("  Provisioned: " + String(isProvisioned ? "JA" : "NEE"));
     logger.warn("  WiFi credentials: " + String(hasWiFi ? "JA" : "NEE"));
@@ -1051,7 +1051,7 @@ void setupWiFi() {
     // Start config portal (it will handle WiFi mode internally)
     logger.info("PORTAL: Starten config portal...");
     
-    bool portalStarted = wifiManager.startConfigPortal("ColdMonitor-Setup");
+    bool portalStarted = wifiManager.startConfigPortal(WIFI_SETUP_AP_SSID);
     
     if (portalStarted) {
       logger.info("PORTAL: Config portal actief");
@@ -1105,7 +1105,7 @@ void setupWiFi() {
       
       // Try auto-connect
       logger.info("WIFI: Auto-connect starten (timeout: 20s)...");
-      bool connected = wifiManager.autoConnect("ColdMonitor-Setup");
+      bool connected = wifiManager.autoConnect(WIFI_SETUP_AP_SSID);
     
     if (!connected) {
       logger.warn("WIFI: Auto-connect mislukt - start config portal");
@@ -1177,7 +1177,7 @@ void setupWiFi() {
     wifiManager.setupColdMonitorParams(apiUrl.c_str(), apiKey.c_str(), deviceSerial.c_str());
     wifiManager.setOnSaveParamsCallback(onWifiParamsSaved);
     
-    if (wifiManager.startConfigPortal("ColdMonitor-Setup")) {
+    if (wifiManager.startConfigPortal(WIFI_SETUP_AP_SSID)) {
       logger.info("PORTAL: Config portal actief - wacht op configuratie");
     } else {
       logger.error("PORTAL: Config portal start mislukt");

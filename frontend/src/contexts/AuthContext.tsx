@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { authApi } from '../services/api';
 import { tokenStorage } from '../utils/tokenStorage';
+import { initPushNotifications, clearPushToken } from '../utils/pushNotifications';
 
 interface User {
   id: string;
@@ -92,6 +93,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [token]);
 
+  // Push notifications: registreer token bij backend wanneer gebruiker ingelogd is (native app)
+  useEffect(() => {
+    if (user && token) {
+      initPushNotifications();
+    }
+  }, [user, token]);
+
   const fetchUser = async (authToken: string) => {
     try {
       authApi.setToken(authToken);
@@ -159,6 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    void clearPushToken();
     void tokenStorage.removeToken();
     void tokenStorage.removeRefreshToken();
     // E-mail blijft bewaard voor "onthoud mij" – alleen tokens worden gewist

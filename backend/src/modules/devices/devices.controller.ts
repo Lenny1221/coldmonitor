@@ -91,6 +91,7 @@ router.post(
       }
 
       const { firmwareVersion, ip, rssi, uptime } = req.body || {};
+      const uptimeSeconds = typeof uptime === 'number' ? uptime : undefined;
 
       const device = await prisma.device.findUnique({
         where: { id: req.deviceId },
@@ -98,12 +99,18 @@ router.post(
       });
       const wasOffline = device?.status === 'OFFLINE';
 
-      const updateData: { firmwareVersion?: string; lastSeenAt: Date; status: 'ONLINE' } = {
+      const updateData: { firmwareVersion?: string; wifiSsid?: string; wifiPassword?: string; lastSeenAt: Date; status: 'ONLINE' } = {
         lastSeenAt: new Date(),
         status: 'ONLINE',
       };
       if (firmwareVersion && typeof firmwareVersion === 'string') {
         updateData.firmwareVersion = firmwareVersion;
+      }
+      if (wifiSsid !== undefined && typeof wifiSsid === 'string' && wifiSsid.length <= 32) {
+        updateData.wifiSsid = wifiSsid;
+      }
+      if (wifiPassword !== undefined && typeof wifiPassword === 'string' && wifiPassword.length <= 64) {
+        updateData.wifiPassword = wifiPassword;
       }
 
       await prisma.device.update({
@@ -111,10 +118,10 @@ router.post(
         data: updateData,
       });
 
-      // Power restored: resolve POWER_LOSS alerts
+      // Device terug online: los WIFI_LOSS/POWER_LOSS op (uptime bepaalt of het stroom of WiFi was)
       if (wasOffline && device?.coldCellId) {
         const { alertService } = await import('../../services/alertService');
-        await alertService.resolvePowerLossAlerts(device.coldCellId);
+        await alertService.resolveConnectionAlerts(device.coldCellId, uptimeSeconds);
       }
 
       res.status(200).json({ success: true, status: 'ONLINE' });

@@ -15,6 +15,7 @@ import VerifyEmailSent from './pages/VerifyEmailSent';
 import VerifyEmailRequired from './pages/VerifyEmailRequired';
 import Dashboard from './pages/Dashboard';
 import Locations from './pages/Locations';
+import LocationDetail from './pages/LocationDetail';
 import ColdCells from './pages/ColdCells';
 import ColdCellDetail from './pages/ColdCellDetail';
 import Alarmeringen from './pages/Alarmeringen';
@@ -75,6 +76,16 @@ function AppRoutes() {
           <PrivateRoute>
             <Layout>
               <Locations />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/locations/:id"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <LocationDetail />
             </Layout>
           </PrivateRoute>
         }

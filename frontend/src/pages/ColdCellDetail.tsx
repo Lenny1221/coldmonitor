@@ -422,7 +422,9 @@ const ColdCellDetail: React.FC = () => {
           alertTitle={
             resolveAlert.type === 'POWER_LOSS'
               ? 'Stroomuitval'
-              : resolveAlert.type?.replace('_', ' ') ?? 'Alarm'
+              : resolveAlert.type === 'WIFI_LOSS'
+                ? 'Geen wifi signaal meer'
+                : resolveAlert.type?.replace('_', ' ') ?? 'Alarm'
           }
           onResolve={async (reason) => {
             await alertsApi.resolve(resolveAlert.id, reason);
@@ -784,10 +786,14 @@ const ColdCellDetail: React.FC = () => {
                   <div className="font-semibold text-red-900 dark:text-red-200">
                     {alert.type === 'POWER_LOSS'
                       ? 'Stroomuitval'
-                      : alert.type?.replace('_', ' ') ?? 'Alarm'}
+                      : alert.type === 'WIFI_LOSS'
+                        ? 'Geen wifi signaal meer'
+                        : alert.type?.replace('_', ' ') ?? 'Alarm'}
                   </div>
                   {alert.type === 'POWER_LOSS' ? (
-                    <div className="text-sm text-red-700 dark:text-red-300">Device offline – stroom niet actief</div>
+                    <div className="text-sm text-red-700 dark:text-red-300">USB uitgetrokken – stroom uitgevallen</div>
+                  ) : alert.type === 'WIFI_LOSS' ? (
+                    <div className="text-sm text-red-700 dark:text-red-300">Geen wifi signaal meer – device offline</div>
                   ) : alert.value != null ? (
                     <div className="text-sm text-red-700 dark:text-red-300">
                       Waarde: {alert.value} °C

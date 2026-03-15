@@ -52,7 +52,7 @@ Keys:
 
 Wanneer het config portal wordt gestart:
 
-1. **AP SSID**: `ColdMonitor-Setup`
+1. **AP SSID**: `IntelliFrost-Setup`
 2. **IP**: `192.168.4.1`
 3. **Velden**:
    - WiFi SSID
@@ -80,7 +80,7 @@ Voorbeelden:
 [01240] [INFO] PROVISIONING: NVS geladen in 15ms
 [01245] [WARN] EERSTE BOOT: Configuratie vereist
 [01250] [INFO] PORTAL: Config portal starten...
-[01255] [INFO] PORTAL: AP SSID = ColdMonitor-Setup
+[01255] [INFO] PORTAL: AP SSID = IntelliFrost-Setup
 [01260] [INFO] PORTAL: Open http://192.168.4.1 in browser
 ```
 
@@ -112,7 +112,7 @@ Voorbeelden:
 
 1. Upload firmware naar ESP32
 2. ESP32 start automatisch config portal (eerste boot)
-3. Verbind met WiFi netwerk `ColdMonitor-Setup`
+3. Verbind met WiFi netwerk `IntelliFrost-Setup`
 4. Open browser naar `http://192.168.4.1`
 5. Vul in:
    - WiFi SSID en password

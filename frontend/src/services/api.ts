@@ -180,6 +180,9 @@ export const authApi = {
     const response = await api.get('/auth/me');
     return response.data;
   },
+  registerPushToken: async (pushToken: string | null) => {
+    await api.patch('/auth/me/push-token', { pushToken });
+  },
 };
 
 // Technicians API

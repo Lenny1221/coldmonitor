@@ -9,6 +9,7 @@ import { sendEmail } from '../../utils/email';
 import { config } from '../../config/env';
 import { CustomError } from '../../middleware/errorHandler';
 import { TicketType, TicketStatus, TicketUrgency } from '@prisma/client';
+import { sendTicketAcceptedPush } from '../../services/pushService';
 
 const router = Router();
 const frontendUrl = config.frontendUrl;
@@ -312,18 +313,33 @@ router.patch('/:id/status', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), asy
       });
     }
 
-    // E-mail naar klant bij bevestiging
-    if (status === 'INGEPLAND' && ticket.customer?.email) {
-      const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.6; color: #333;">
-          <p>Beste ${ticket.customer.contactName},</p>
-          <p>Uw onderhoudsaanvraag is ingepland.</p>
-          <p><strong>Gepland op:</strong> ${updated.scheduledAt ? new Date(updated.scheduledAt).toLocaleString('nl-BE') : '-'}</p>
-          <p><a href="${frontendUrl}/tickets">Bekijk status in de app</a></p>
-          <p>Met vriendelijke groeten,<br>IntelliFrost</p>
-        </div>
-      `;
-      await sendEmail(ticket.customer.email, 'Onderhoud ingepland – IntelliFrost', html);
+    // E-mail + push naar klant bij acceptatie/bevestiging (INGEPLAND of IN_BEHANDELING)
+    if ((status === 'INGEPLAND' || status === 'IN_BEHANDELING') && ticket.customer) {
+      const typeLabel = ticket.type === 'ONDERHOUDSAANVRAAG' ? 'onderhoudsaanvraag' : ticket.type === 'STORINGSMELDING' ? 'storingsmelding' : 'vraag/opmerking';
+      if (ticket.customer.email) {
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.6; color: #333;">
+            <p>Beste ${ticket.customer.contactName},</p>
+            <p>Uw ${typeLabel} is ${status === 'INGEPLAND' ? 'ingepland' : 'geaccepteerd en in behandeling'}.</p>
+            <p><strong>Gepland op:</strong> ${updated.scheduledAt ? new Date(updated.scheduledAt).toLocaleString('nl-BE') : '-'}</p>
+            <p><a href="${frontendUrl}/tickets">Bekijk status in de app</a></p>
+            <p>Met vriendelijke groeten,<br>IntelliFrost</p>
+          </div>
+        `;
+        await sendEmail(ticket.customer.email, status === 'INGEPLAND' ? 'Onderhoud ingepland – IntelliFrost' : 'Aanvraag geaccepteerd – IntelliFrost', html);
+      }
+      // Push notificatie naar app
+      const customerUser = await prisma.customer.findUnique({
+        where: { id: ticket.customerId },
+        select: { userId: true },
+      });
+      if (customerUser?.userId) {
+        await sendTicketAcceptedPush(
+          customerUser.userId,
+          typeLabel,
+          updated.scheduledAt ? new Date(updated.scheduledAt) : undefined
+        );
+      }
     }
 
     res.json(updated);

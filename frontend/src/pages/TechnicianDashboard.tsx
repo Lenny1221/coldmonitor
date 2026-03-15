@@ -43,6 +43,7 @@ const TechnicianDashboard: React.FC = () => {
       case 'LOW_TEMP':
         return <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" />;
       case 'POWER_LOSS':
+      case 'WIFI_LOSS':
       case 'SENSOR_ERROR':
         return <XCircleIcon className="h-5 w-5 text-red-500" />;
       default:
@@ -56,6 +57,7 @@ const TechnicianDashboard: React.FC = () => {
       case 'LOW_TEMP':
         return 'bg-orange-50 border-orange-200';
       case 'POWER_LOSS':
+      case 'WIFI_LOSS':
       case 'SENSOR_ERROR':
         return 'bg-red-50 border-red-200';
       default:
@@ -339,7 +341,9 @@ const TechnicianDashboard: React.FC = () => {
           alertTitle={
             resolveAlert.type === 'POWER_LOSS'
               ? 'Stroomuitval'
-              : resolveAlert.type?.replace('_', ' ') ?? 'Alarm'
+              : resolveAlert.type === 'WIFI_LOSS'
+                ? 'Geen wifi signaal meer'
+                : resolveAlert.type?.replace('_', ' ') ?? 'Alarm'
           }
           onResolve={async (reason) => {
             await alertsApi.resolve(resolveAlert.id, reason);

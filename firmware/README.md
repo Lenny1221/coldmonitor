@@ -13,7 +13,7 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 | **BOOT** | Init brownout, Serial, LED |
 | **LOAD_NVS** | Provisioning + config laden uit NVS |
 | **WIFI_CONNECT** | Verbinden met opgeslagen WiFi (timeout 20s) |
-| **CONFIG_PORTAL** | ColdMonitor-Setup AP als WiFi/API ontbreekt |
+| **CONFIG_PORTAL** | IntelliFrost-Setup AP als WiFi/API ontbreekt |
 | **API_HANDSHAKE** | POST /devices/heartbeat → status ONLINE |
 | **RUN** | Sensoren, upload, periodieke heartbeat |
 
@@ -159,7 +159,7 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 ### First Boot
 
 On first boot, the device creates a WiFi access point:
-- **SSID**: `ColdMonitor-Setup`
+- **SSID**: `IntelliFrost-Setup`
 - **Password**: (none, or check serial output)
 
 Connect to this AP and configure:
@@ -185,7 +185,7 @@ Om opnieuw een WiFi-netwerk te kiezen (bijv. ander netwerk of nieuw wachtwoord):
 3. De **LED knippert** elke 200ms terwijl je de knop indrukt (visuele feedback)
 4. Na 3 seconden knippert de LED **5x snel** als bevestiging
 5. In de Serial Monitor zie je: `BOOT 3 s ingedrukt - WiFi-gegevens WISSEN` en daarna `WiFi gewist. Herstart over 2 s.`
-6. De ESP32 herstart automatisch en opent het config-portal (**ColdMonitor-Setup**). Verbind met dat netwerk en kies opnieuw je WiFi + wachtwoord.
+6. De ESP32 herstart automatisch en opent het config-portal (**IntelliFrost-Setup**). Verbind met dat netwerk en kies opnieuw je WiFi + wachtwoord.
 
 **Let op:** 
 - Alleen de **WiFi-gegevens** (SSID/wachtwoord) worden gewist. API key en serienummer blijven bewaard (in de ColdMonitor-config).
@@ -193,13 +193,13 @@ Om opnieuw een WiFi-netwerk te kiezen (bijv. ander netwerk of nieuw wachtwoord):
 
 ### Configuratie met QR-code (telefoon)
 
-Op de configuratiepagina (wanneer je verbonden bent met **ColdMonitor-Setup**) staat een **QR-code**. Scan die met je telefoon om:
-1. Automatisch te verbinden met het netwerk **ColdMonitor-Setup**
+Op de configuratiepagina (wanneer je verbonden bent met **IntelliFrost-Setup**) staat een **QR-code**. Scan die met je telefoon om:
+1. Automatisch te verbinden met het netwerk **IntelliFrost-Setup**
 2. De configuratiepagina te openen (API key en serienummer staan al ingevuld)
 
 Je hoeft dan alleen nog je **WiFi-netwerk** te kiezen en het **wachtwoord** in te voeren.
 
-In de ColdMonitor-app (bij “Logger toevoegen”) kun je ook twee QR-codes tonen: de eerste om te verbinden met ColdMonitor-Setup, de tweede om de configpagina te openen met API-gegevens al ingevuld.
+In de ColdMonitor-app (bij “Logger toevoegen”) kun je ook twee QR-codes tonen: de eerste om te verbinden met IntelliFrost-Setup, de tweede om de configpagina te openen met API-gegevens al ingevuld.
 
 ### Configuration Parameters
 

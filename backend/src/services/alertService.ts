@@ -460,11 +460,11 @@ export class AlertService {
           data: { status: 'OFFLINE' },
         });
 
-        // POWER_LOSS alarm: alleen bij state-change (geen duplicaat)
+        // WIFI_LOSS alarm: device offline = geen heartbeat (WiFi of netwerk uitval)
         const existingAlert = await prisma.alert.findFirst({
           where: {
             coldCellId: device.coldCellId,
-            type: 'POWER_LOSS',
+            type: 'WIFI_LOSS',
             status: { in: ['ACTIVE', 'ESCALATING'] },
           },
         });
@@ -482,7 +482,7 @@ export class AlertService {
           const alert = await prisma.alert.create({
             data: {
               coldCellId: device.coldCellId,
-              type: 'POWER_LOSS',
+              type: 'WIFI_LOSS',
               status: layer === 'LAYER_1' ? 'ACTIVE' : 'ESCALATING',
               layer,
               timeSlot,
@@ -508,7 +508,7 @@ export class AlertService {
             },
           });
 
-          logger.warn('Power loss alarm: device offline', {
+          logger.warn('WiFi loss alarm: device offline (geen heartbeat)', {
             alertId: alert.id,
             deviceId: device.id,
             serialNumber: device.serialNumber,
@@ -525,27 +525,53 @@ export class AlertService {
   }
 
   /**
-   * Resolve POWER_LOSS alerts when device comes back online (heartbeat received).
+   * Resolve connection alerts when device comes back online (heartbeat received).
+   * - uptime < 90s (cold boot) = stroom was uitgevallen → update WIFI_LOSS naar POWER_LOSS, dan oplossen
+   * - uptime >= 90s = WiFi was uitgevallen → WIFI_LOSS oplossen
    */
-  async resolvePowerLossAlerts(coldCellId: string): Promise<void> {
+  async resolveConnectionAlerts(coldCellId: string, uptimeSeconds?: number): Promise<void> {
     try {
+      const coldBoot = uptimeSeconds != null && uptimeSeconds < 90;
+
+      if (coldBoot) {
+        // Cold boot = stroom was uitgevallen (USB uitgetrokken). Update WIFI_LOSS naar POWER_LOSS.
+        const wifiAlerts = await prisma.alert.findMany({
+          where: {
+            coldCellId,
+            type: 'WIFI_LOSS',
+            status: { in: ['ACTIVE', 'ESCALATING'] },
+          },
+        });
+        for (const a of wifiAlerts) {
+          await prisma.alert.update({
+            where: { id: a.id },
+            data: { type: 'POWER_LOSS' },
+          });
+        }
+      }
+
+      // Los POWER_LOSS en WIFI_LOSS op
       const resolved = await prisma.alert.updateMany({
         where: {
           coldCellId,
-          type: 'POWER_LOSS',
+          type: { in: ['POWER_LOSS', 'WIFI_LOSS'] },
           status: { in: ['ACTIVE', 'ESCALATING'] },
         },
         data: {
           status: 'RESOLVED',
           resolvedAt: new Date(),
-          resolutionNote: 'Stroom hersteld – device weer online',
+          resolutionNote: coldBoot ? 'Stroom hersteld – device weer online' : 'WiFi hersteld – verbinding hersteld',
         },
       });
       if (resolved.count > 0) {
-        logger.info('Power loss alerts resolved (device back online)', { coldCellId, count: resolved.count });
+        logger.info('Connection alerts resolved (device back online)', {
+          coldCellId,
+          count: resolved.count,
+          coldBoot,
+        });
       }
     } catch (error) {
-      logger.error('Error resolving power loss alerts', error as Error, { coldCellId });
+      logger.error('Error resolving connection alerts', error as Error, { coldCellId });
     }
   }
 

@@ -25,6 +25,7 @@ enum AlertType {
   HIGH_TEMP
   LOW_TEMP
   POWER_LOSS
+  WIFI_LOSS
   SENSOR_ERROR
   DOOR_OPEN
 }
@@ -83,6 +84,7 @@ model User {
   emailVerified              Boolean   @default(false)
   emailVerificationToken     String?
   emailVerificationExpiresAt DateTime?
+  pushToken                  String?   // FCM token voor push notificaties (app)
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
 

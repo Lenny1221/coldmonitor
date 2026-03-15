@@ -377,4 +377,24 @@ router.get('/me', requireAuth, async (req: AuthRequest, res, next) => {
   }
 });
 
+/**
+ * PATCH /auth/me/push-token
+ * Registreer FCM push token voor de app (klant/technicus)
+ */
+const pushTokenSchema = z.object({
+  pushToken: z.string().nullable(),
+});
+router.patch('/me/push-token', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const data = pushTokenSchema.parse(req.body);
+    await prisma.user.update({
+      where: { id: req.userId! },
+      data: { pushToken: data.pushToken },
+    });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

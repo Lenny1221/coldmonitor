@@ -1,7 +1,7 @@
 /**
  * Redenen per alarmtype om te kiezen bij "Oplossen"
  */
-export type AlertType = 'HIGH_TEMP' | 'LOW_TEMP' | 'POWER_LOSS' | 'SENSOR_ERROR' | 'DOOR_OPEN';
+export type AlertType = 'HIGH_TEMP' | 'LOW_TEMP' | 'POWER_LOSS' | 'WIFI_LOSS' | 'SENSOR_ERROR' | 'DOOR_OPEN';
 
 export const RESOLUTION_REASONS: Record<AlertType, string[]> = {
   HIGH_TEMP: [
@@ -24,6 +24,13 @@ export const RESOLUTION_REASONS: Record<AlertType, string[]> = {
     'Stroom hersteld',
     'Korte onderbreking',
     'Schakelaar omgezet',
+    'Onderhoud uitgevoerd',
+    'Anders',
+  ],
+  WIFI_LOSS: [
+    'WiFi hersteld',
+    'Router herstart',
+    'Netwerk hersteld',
     'Onderhoud uitgevoerd',
     'Anders',
   ],

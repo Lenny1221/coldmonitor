@@ -44,8 +44,8 @@ export const config = {
     10
   ), // Failed auth attempts per window (successful logins don't count)
 
-  // Device Offline Detection (power-loss alarm)
-  // Threshold = 30s (3x heartbeat interval). Device offline => POWER_LOSS alert.
+  // Device Offline Detection (WiFi-loss alarm)
+  // Threshold = 30s (3x heartbeat interval). Device offline => WIFI_LOSS alert.
   deviceOfflineThresholdSeconds: parseInt(process.env.DEVICE_OFFLINE_THRESHOLD_SECONDS || '30', 10),
 
   // Email (voor verificatie + alarm)
@@ -70,4 +70,7 @@ export const config = {
 
   // Cron secret voor /api/escalate endpoint
   cronSecret: process.env.CRON_SECRET || process.env.API_CRON_KEY || '',
+
+  // Push notificaties (FCM) – voor ticket-acceptatie, alarmen, etc.
+  fcmServerKey: process.env.FCM_SERVER_KEY || '',
 };
