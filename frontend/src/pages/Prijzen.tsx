@@ -195,7 +195,7 @@ const Prijzen: React.FC = () => {
           </div>
           <div className="flex flex-col rounded-3xl border-2 border-[#00c8ff] bg-[#0B1F3A] overflow-hidden shadow-[0_24px_48px_rgba(0,200,255,0.2)] transition-transform duration-200 hover:-translate-y-3" style={{ transform: 'translateY(-8px)' }}>
             <div className="p-8 pt-8 flex-1">
-              <h2 className="font-['Exo_2'] text-xl font-bold text-white mb-1">Pro</h2>
+              <h2 className="font-['Exo_2'] text-xl font-bold mb-1" style={{ color: '#ffffff' }}>Pro</h2>
               <p className="text-sm mb-6 leading-snug" style={{ color: 'rgba(255,255,255,0.55)' }}>Voor professionele keukens en koelcellen. Volledig autonoom met 4G backup.</p>
               <div className="mb-1 text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.45)' }}>Hardware eenmalig</div>
               <div className="text-2xl font-bold text-white mb-1">€499 <span className="text-sm font-normal" style={{ color: 'rgba(255,255,255,0.45)' }}>excl. BTW</span></div>
