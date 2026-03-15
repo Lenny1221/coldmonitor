@@ -147,9 +147,9 @@ const Prijzen: React.FC = () => {
       </div>
 
       {/* Plans */}
-      <div className="grid md:grid-cols-3 gap-6 mb-16">
+      <div className="grid md:grid-cols-3 gap-6 mb-16 items-start" style={{ paddingTop: '20px' }}>
         {/* Starter */}
-        <div className="flex flex-col rounded-3xl border-2 border-gray-200 bg-gray-50 overflow-hidden">
+        <div className="flex flex-col rounded-3xl border-2 border-gray-200 bg-gray-50 overflow-hidden transition-transform duration-200 hover:-translate-y-1">
           <div className="p-8 flex-1">
             <h2 className="font-['Exo_2'] text-xl font-bold text-gray-900 mb-1">Starter</h2>
             <p className="text-sm text-gray-500 mb-6 leading-snug">Voor kleine zaken met 1 koelcel of vriezer. Snel geïnstalleerd, direct HACCP-klaar.</p>
@@ -157,8 +157,8 @@ const Prijzen: React.FC = () => {
             <div className="text-2xl font-bold text-gray-900 mb-1">€399 <span className="text-sm font-normal text-gray-400">excl. BTW</span></div>
             <div className="h-px bg-gray-200 my-5"></div>
             <div className="mb-1 text-xs font-semibold text-gray-400 uppercase tracking-widest">Abonnement</div>
-            <div className="text-3xl font-bold text-[#00c8ff] mb-1">
-              €{Math.round(starterPrice)}<span className="text-base font-normal text-gray-400">/maand</span>
+            <div className="text-4xl font-bold text-[#00c8ff] mb-1">
+              €{Math.round(starterPrice)}<span className="text-lg font-normal text-gray-400">/maand</span>
             </div>
             <div className="text-sm text-gray-400 mb-6">{subLabel}</div>
             <ul className="space-y-2.5">
@@ -186,43 +186,46 @@ const Prijzen: React.FC = () => {
         </div>
 
         {/* Pro – featured */}
-        <div className="flex flex-col rounded-3xl border-2 border-[#00c8ff] bg-gradient-to-b from-[#00c8ff]/8 to-transparent overflow-hidden relative -translate-y-2 shadow-[0_20px_40px_rgba(0,200,255,0.15)]">
-          <div className="absolute top-0 left-0 right-0 flex justify-center -translate-y-1/2">
-            <span className="bg-[#00c8ff] text-white text-[11px] font-bold px-4 py-1 rounded-full tracking-widest uppercase">
+        <div className="relative" style={{ marginTop: '-20px' }}>
+          {/* Badge outside the card so it's never clipped */}
+          <div className="flex justify-center mb-[-1px] relative z-10">
+            <span className="bg-[#00c8ff] text-[#0B1F3A] text-[11px] font-bold px-5 py-1.5 rounded-full tracking-widest uppercase shadow-md">
               Meest gekozen
             </span>
           </div>
-          <div className="p-8 pt-10 flex-1">
-            <h2 className="font-['Exo_2'] text-xl font-bold text-gray-900 mb-1">Pro</h2>
-            <p className="text-sm text-gray-500 mb-6 leading-snug">Voor professionele keukens en koelcellen. Volledig autonoom met 4G backup.</p>
-            <div className="mb-1 text-xs font-semibold text-gray-400 uppercase tracking-widest">Hardware eenmalig</div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">€499 <span className="text-sm font-normal text-gray-400">excl. BTW</span></div>
-            <div className="h-px bg-[#00c8ff]/20 my-5"></div>
-            <div className="mb-1 text-xs font-semibold text-gray-400 uppercase tracking-widest">Abonnement</div>
-            <div className="text-3xl font-bold text-[#00c8ff] mb-1">
-              €{Math.round(proPrice)}<span className="text-base font-normal text-gray-400">/maand</span>
+          <div className="flex flex-col rounded-3xl border-2 border-[#00c8ff] bg-[#0B1F3A] overflow-hidden shadow-[0_24px_48px_rgba(0,200,255,0.2)] transition-transform duration-200 hover:-translate-y-3" style={{ transform: 'translateY(-8px)' }}>
+            <div className="p-8 pt-8 flex-1">
+              <h2 className="font-['Exo_2'] text-xl font-bold text-white mb-1">Pro</h2>
+              <p className="text-sm mb-6 leading-snug" style={{ color: 'rgba(255,255,255,0.55)' }}>Voor professionele keukens en koelcellen. Volledig autonoom met 4G backup.</p>
+              <div className="mb-1 text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.45)' }}>Hardware eenmalig</div>
+              <div className="text-2xl font-bold text-white mb-1">€499 <span className="text-sm font-normal" style={{ color: 'rgba(255,255,255,0.45)' }}>excl. BTW</span></div>
+              <div className="h-px my-5" style={{ background: 'rgba(255,255,255,0.12)' }}></div>
+              <div className="mb-1 text-xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.45)' }}>Abonnement</div>
+              <div className="text-4xl font-bold text-[#00c8ff] mb-1">
+                €{Math.round(proPrice)}<span className="text-lg font-normal" style={{ color: 'rgba(255,255,255,0.4)' }}>/maand</span>
+              </div>
+              <div className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.45)' }}>{subLabel}</div>
+              <ul className="space-y-2.5">
+                {proFeatures.map((f) => (
+                  <li key={f.text} className="flex items-center gap-2.5 text-sm">
+                    <span className="w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(0,196,204,0.2)' }}>
+                      <CheckIcon className="h-3 w-3 text-[#00c8ff]" />
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.8)' }}>{f.text}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="text-sm text-gray-400 mb-6">{subLabel}</div>
-            <ul className="space-y-2.5">
-              {proFeatures.map((f) => (
-                <li key={f.text} className="flex items-center gap-2.5 text-sm">
-                  <span className="w-[18px] h-[18px] rounded-full bg-[#00c8ff]/20 flex items-center justify-center flex-shrink-0">
-                    <CheckIcon className="h-3 w-3 text-[#007a99]" />
-                  </span>
-                  <span className="text-gray-700">{f.text}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="p-8 pt-0">
-            <Link to="/contact" className="block w-full text-center py-3 rounded-xl font-semibold bg-[#00c8ff] text-white hover:bg-[#00a8dd] transition-colors text-sm">
-              Aan de slag
-            </Link>
+            <div className="p-8 pt-0">
+              <Link to="/contact" className="block w-full text-center py-3 rounded-xl font-semibold bg-[#00c8ff] text-[#0B1F3A] hover:bg-[#4de8f0] transition-colors text-sm">
+                Aan de slag
+              </Link>
+            </div>
           </div>
         </div>
 
         {/* Multi */}
-        <div className="flex flex-col rounded-3xl border-2 border-gray-200 bg-gray-50 overflow-hidden">
+        <div className="flex flex-col rounded-3xl border-2 border-gray-200 bg-gray-50 overflow-hidden transition-transform duration-200 hover:-translate-y-1">
           <div className="p-8 flex-1">
             <h2 className="font-['Exo_2'] text-xl font-bold text-gray-900 mb-1">Multi</h2>
             <p className="text-sm text-gray-500 mb-6 leading-snug">Voor grootkeukens, slagerijen en bedrijven met meerdere koelunits. Volumekorting inbegrepen.</p>
@@ -230,8 +233,8 @@ const Prijzen: React.FC = () => {
             <div className="text-2xl font-bold text-gray-900 mb-1">Op maat</div>
             <div className="h-px bg-gray-200 my-5"></div>
             <div className="mb-1 text-xs font-semibold text-gray-400 uppercase tracking-widest">Abonnement</div>
-            <div className="text-3xl font-bold text-gray-700 mb-1">
-              Offerte<span className="text-base font-normal text-gray-400"> op aanvraag</span>
+            <div className="text-4xl font-bold text-gray-700 mb-1">
+              Offerte<span className="text-lg font-normal text-gray-400"> op aanvraag</span>
             </div>
             <div className="text-sm text-gray-400 mb-6">Vanaf €25/toestel/maand</div>
             <ul className="space-y-2.5">
