@@ -1,5 +1,4 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import passport from 'passport';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { z } from 'zod';
@@ -40,45 +39,6 @@ const loginSchema = z.object({
 
 const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1),
-});
-
-/**
- * GET /auth/google
- * Start Google OAuth flow
- */
-router.get('/google', (req, res, next) => {
-  if (!config.googleClientId || !config.googleClientSecret) {
-    return (res as any).redirect(`${config.frontendUrl}/login?error=google_not_configured`);
-  }
-  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
-});
-
-/**
- * GET /auth/google/callback
- * Google OAuth callback – redirect naar frontend met token
- */
-router.get('/google/callback', (req: Request, res: Response, next: NextFunction) => {
-  const handler = passport.authenticate('google', (err: Error | null, authResult: { user: any } | null) => {
-    if (err) {
-      logger.error('Google OAuth error: ' + err.message);
-      return (res as any).redirect(`${config.frontendUrl}/login?error=oauth_failed`);
-    }
-    if (!authResult?.user) {
-      return (res as any).redirect(`${config.frontendUrl}/login?error=oauth_failed`);
-    }
-    const user = authResult.user;
-    const customerId = user.customer?.id;
-    const technicianId = user.technician?.id;
-    const tokens = generateTokens({
-      userId: user.id,
-      role: user.role,
-      customerId,
-      technicianId,
-    });
-    const token = tokens.accessToken || (tokens as any).token;
-    return (res as any).redirect(`${config.frontendUrl}/login?oauth=1&token=${token}`);
-  });
-  handler(req, res, next);
 });
 
 /**
@@ -262,12 +222,12 @@ router.post('/login', authRateLimiter, async (req, res, next) => {
     });
 
     if (!user) {
-      throw new CustomError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
+      throw new CustomError('Het ingevoerde e-mailadres of wachtwoord is onjuist.', 401, 'INVALID_CREDENTIALS');
     }
 
     const isValid = await bcrypt.compare(data.password, user.password);
     if (!isValid) {
-      throw new CustomError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
+      throw new CustomError('Het ingevoerde e-mailadres of wachtwoord is onjuist.', 401, 'INVALID_CREDENTIALS');
     }
 
     // Controleer e-mailverificatie (User.emailVerified, CUSTOMER en TECHNICIAN)

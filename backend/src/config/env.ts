@@ -48,10 +48,6 @@ export const config = {
   // Threshold = 30s (3x heartbeat interval). Device offline => POWER_LOSS alert.
   deviceOfflineThresholdSeconds: parseInt(process.env.DEVICE_OFFLINE_THRESHOLD_SECONDS || '30', 10),
 
-  // Google OAuth
-  googleClientId: process.env.GOOGLE_CLIENT_ID || '',
-  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-
   // Email (voor verificatie + alarm)
   resendApiKey: process.env.RESEND_API_KEY ||
     (process.env.SMTP_HOST === 'smtp.resend.com' ? process.env.SMTP_PASS || '' : '') ||

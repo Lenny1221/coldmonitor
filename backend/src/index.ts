@@ -2,13 +2,10 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import cors from 'cors';
-import session from 'express-session';
-import passport from 'passport';
 import dotenv from 'dotenv';
 
 // Config
 import { config } from './config/env';
-import './config/passport';
 import { logger } from './utils/logger';
 
 // Middleware
@@ -65,18 +62,6 @@ app.use(
 // Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Session (voor OAuth)
-app.use(
-  session({
-    secret: config.jwtSecret,
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: config.nodeEnv === 'production', maxAge: 10 * 60 * 1000 },
-  })
-);
-app.use(passport.initialize());
-app.use(passport.session());
 
 // Request logging
 app.use(requestLogger);

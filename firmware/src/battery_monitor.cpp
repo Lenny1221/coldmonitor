@@ -61,11 +61,16 @@ void BatteryMonitor::update() {
     voltage *= BATTERY_CALIBRATION_FACTOR;  // Compenseer ADC-afwijking
     
     int rawPercent = calculatePercentage(voltage);
-    // Rate limit: max BATTERY_MAX_PCT_CHANGE per seconde (voorkomt sprongen bij USB in/uit)
-    int delta = rawPercent - percentage;
-    if (delta > BATTERY_MAX_PCT_CHANGE) delta = BATTERY_MAX_PCT_CHANGE;
-    if (delta < -BATTERY_MAX_PCT_CHANGE) delta = -BATTERY_MAX_PCT_CHANGE;
-    percentage = constrain(percentage + delta, 0, 100);
+    // Bij 100% (opgeladen): direct tonen, geen rate limit
+    if (rawPercent >= 100) {
+      percentage = 100;
+    } else {
+      // Rate limit: max BATTERY_MAX_PCT_CHANGE per seconde (voorkomt sprongen bij USB in/uit)
+      int delta = rawPercent - percentage;
+      if (delta > BATTERY_MAX_PCT_CHANGE) delta = BATTERY_MAX_PCT_CHANGE;
+      if (delta < -BATTERY_MAX_PCT_CHANGE) delta = -BATTERY_MAX_PCT_CHANGE;
+      percentage = constrain(percentage + delta, 0, 100);
+    }
     
     lastUpdate = now;
   }

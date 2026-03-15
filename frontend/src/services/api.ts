@@ -118,6 +118,15 @@ api.interceptors.response.use(
           }
           return Promise.reject(refreshError);
         }
+      } else {
+        // Geen refresh token – redirect naar login
+        await tokenStorage.removeToken();
+        await tokenStorage.removeRefreshToken();
+        authToken = null;
+        delete api.defaults.headers.common['Authorization'];
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
       }
     }
 

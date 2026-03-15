@@ -214,12 +214,12 @@ router.post('/login', async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Het ingevoerde e-mailadres of wachtwoord is onjuist.' });
     }
 
     const isValid = await bcrypt.compare(data.password, user.password);
     if (!isValid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Het ingevoerde e-mailadres of wachtwoord is onjuist.' });
     }
 
     // Get related entity IDs

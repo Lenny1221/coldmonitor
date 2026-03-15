@@ -179,6 +179,21 @@ void setup() {
     logger.info("Config: Configuratie geladen uit NVS");
   }
   
+  // Sync: als provisioning geen API credentials heeft maar config wel, overnemen (voorkomt portal)
+  if (!provisioning.hasAPICredentials()) {
+    String cfgUrl = config.getAPIUrl();
+    String cfgKey = config.getAPIKey();
+    if (cfgUrl.length() > 0 && cfgKey.length() > 0) {
+      if (provisioning.setAPICredentials(cfgUrl, cfgKey)) {
+        logger.info("PROVISIONING: API credentials overgenomen van config (coldmonitor)");
+        if (provisioning.hasWiFiCredentials()) {
+          provisioning.setProvisioned(true);
+          provisioning.save();
+        }
+      }
+    }
+  }
+  
   // Log provisioning state
   provisioning.logProvisioningState();
   provisioning.logWiFiState();
@@ -423,10 +438,12 @@ void loop() {
       logger.info("Battery: " + String(voltage, 2) + "V (" + String(percentage) + "%)");
     }
     
-    // Geen deep sleep bij (vrijwel) geen spanning = USB-voeding, geen batterij aangesloten
-    // Drempel 1.0V: ADC-ruis zonder batterij kan ~0.5V zijn, echte lege batterij is ~3.0V
-    if (voltage < 1.0f) {
-      // USB / geen batterij: nooit deep sleep vanwege "batterij leeg"
+    // Geen deep sleep bij USB-voeding (batterij laadt, percentage kan onbetrouwbaar zijn)
+    // Geen deep sleep bij (vrijwel) geen spanning = geen batterij aangesloten
+    if (powerMonitor.isUsbConnected()) {
+      // USB aangesloten: batterij laadt, skip deep sleep (ADC leest anders bij laden)
+    } else if (voltage < 1.0f) {
+      // Geen batterij: nooit deep sleep
     } else {
       if (percentage < 20) {
         logger.warn("Low battery warning!");
