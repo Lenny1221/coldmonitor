@@ -75,6 +75,21 @@ enum CommandStatus {
   CANCELLED
 }
 
+// Remote device management commands (RESTART, WIFI_SCAN, etc.)
+enum RemoteCommandType {
+  RESTART
+  WIFI_SCAN
+  WIFI_CONNECT
+  FIRMWARE_UPDATE
+}
+
+enum RemoteCommandStatus {
+  PENDING
+  SENT
+  EXECUTED
+  FAILED
+}
+
 // User accounts for authentication
 model User {
   id                         String    @id @default(cuid())
@@ -211,6 +226,8 @@ model Device {
   
   sensorReadings SensorReading[]
   commands DeviceCommand[]
+  remoteCommands DeviceRemoteCommand[]
+  heartbeats DeviceHeartbeat[]
   deviceState DeviceState?
   doorEvents DoorEvent[]
   doorStatsDaily DoorStatsDaily[]
@@ -266,6 +283,40 @@ model DoorStatsDaily {
   @@unique([deviceId, date])
   @@index([deviceId])
   @@index([date])
+}
+
+// Device heartbeat - telemetry from ESP32 (remote device management)
+model DeviceHeartbeat {
+  id              String   @id @default(cuid())
+  deviceId        String
+  device          Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  firmwareVersion String?
+  wifiSsid        String?
+  wifiRssi        Int?
+  uptimeSeconds   Int      // millis()/1000 from ESP32
+  freeHeap        Int
+  batteryPercent  Int?
+  onMains         Boolean?
+  ipAddress       String?
+  createdAt       DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([createdAt])
+}
+
+// Remote device management commands (RESTART, WIFI_SCAN, WIFI_CONNECT, FIRMWARE_UPDATE)
+model DeviceRemoteCommand {
+  id         String              @id @default(cuid())
+  deviceId   String
+  device     Device              @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  command    RemoteCommandType
+  payload    Json?
+  status     RemoteCommandStatus  @default(PENDING)
+  createdAt  DateTime            @default(now())
+  executedAt DateTime?
+
+  @@index([deviceId, status])
+  @@index([status])
 }
 
 // Device Command model (for RS485 commands like defrost)

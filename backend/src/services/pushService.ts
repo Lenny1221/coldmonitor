@@ -46,7 +46,7 @@ export async function sendPushNotification(
       return false;
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as { failure?: number };
     if (result.failure === 1) {
       logger.warn('Push FCM: verzenden mislukt', { result });
       return false;

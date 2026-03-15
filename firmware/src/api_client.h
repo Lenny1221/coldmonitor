@@ -28,8 +28,9 @@ public:
   bool checkConnection();
   String getDeviceInfo();
   
-  // POST /devices/heartbeat - meldt device als ONLINE, met telemetrie
-  bool apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const String& ip);
+  // POST /devices/heartbeat - meldt device als ONLINE, telemetrie + remote commands
+  bool apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const String& ip,
+    int batteryPercent = -1, bool onMains = false);
   
   // GET /devices/settings - alarm thresholds (min/max temp, door delay)
   bool fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAlarmDelaySeconds);
@@ -40,6 +41,12 @@ public:
   // Command handling
   bool getPendingCommand(String& commandType, String& commandId, DynamicJsonDocument& parameters);
   bool completeCommand(const String& commandId, bool success, const DynamicJsonDocument& result);
+  
+  // Remote command result (PATCH /devices/commands/remote/:commandId)
+  bool reportRemoteCommandResult(const char* commandId, const char* status, const char* payloadJson);
+  
+  // OTA: GET /api/firmware/latest, update if version newer
+  bool checkAndApplyFirmwareUpdate();
   
   void setSerialNumber(String serial) { serialNumber = serial; }
   

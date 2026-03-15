@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole, AuthRequest } from '../../middleware/auth';
 import { requireDeviceAuth, DeviceRequest } from '../../middleware/deviceAuth';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/database';
 import { generateApiKey } from '../../utils/crypto';
 import { CustomError } from '../../middleware/errorHandler';
@@ -13,6 +14,12 @@ const deviceSchema = z.object({
   serialNumber: z.string().min(1),
   coldCellId: z.string(),
   firmwareVersion: z.string().optional(),
+});
+
+const REMOTE_COMMAND_TYPES = ['RESTART', 'WIFI_SCAN', 'WIFI_CONNECT', 'FIRMWARE_UPDATE'] as const;
+const remoteCommandSchema = z.object({
+  command: z.enum(REMOTE_COMMAND_TYPES),
+  payload: z.record(z.unknown()).optional(),
 });
 
 /**
@@ -90,8 +97,18 @@ router.post(
         throw new CustomError('Device ID not found', 400, 'DEVICE_ID_MISSING');
       }
 
-      const { firmwareVersion, ip, rssi, uptime } = req.body || {};
-      const uptimeSeconds = typeof uptime === 'number' ? uptime : undefined;
+      const {
+        firmwareVersion,
+        ip,
+        rssi,
+        uptime,
+        wifi_ssid,
+        free_heap,
+        battery_percent,
+        on_mains,
+      } = req.body || {};
+      const uptimeSeconds = typeof uptime === 'number' ? Math.round(uptime) : 0;
+      const freeHeap = typeof free_heap === 'number' ? free_heap : 0;
 
       const device = await prisma.device.findUnique({
         where: { id: req.deviceId },
@@ -99,18 +116,12 @@ router.post(
       });
       const wasOffline = device?.status === 'OFFLINE';
 
-      const updateData: { firmwareVersion?: string; wifiSsid?: string; wifiPassword?: string; lastSeenAt: Date; status: 'ONLINE' } = {
+      const updateData: { firmwareVersion?: string; lastSeenAt: Date; status: 'ONLINE' } = {
         lastSeenAt: new Date(),
         status: 'ONLINE',
       };
       if (firmwareVersion && typeof firmwareVersion === 'string') {
         updateData.firmwareVersion = firmwareVersion;
-      }
-      if (wifiSsid !== undefined && typeof wifiSsid === 'string' && wifiSsid.length <= 32) {
-        updateData.wifiSsid = wifiSsid;
-      }
-      if (wifiPassword !== undefined && typeof wifiPassword === 'string' && wifiPassword.length <= 64) {
-        updateData.wifiPassword = wifiPassword;
       }
 
       await prisma.device.update({
@@ -118,13 +129,71 @@ router.post(
         data: updateData,
       });
 
-      // Device terug online: los WIFI_LOSS/POWER_LOSS op (uptime bepaalt of het stroom of WiFi was)
+      // Save to device_heartbeat (remote device management telemetry)
+      await prisma.deviceHeartbeat.create({
+        data: {
+          deviceId: req.deviceId,
+          firmwareVersion:
+            typeof firmwareVersion === 'string' ? firmwareVersion : null,
+          wifiSsid:
+            typeof wifi_ssid === 'string' && wifi_ssid.length <= 32
+              ? wifi_ssid
+              : null,
+          wifiRssi: typeof rssi === 'number' ? rssi : null,
+          uptimeSeconds,
+          freeHeap,
+          batteryPercent:
+            typeof battery_percent === 'number' ? battery_percent : null,
+          onMains:
+            typeof on_mains === 'boolean' ? on_mains : null,
+          ipAddress: typeof ip === 'string' ? ip : null,
+        },
+      });
+
+      // Device terug online: los WIFI_LOSS/POWER_LOSS op
       if (wasOffline && device?.coldCellId) {
         const { alertService } = await import('../../services/alertService');
         await alertService.resolveConnectionAlerts(device.coldCellId, uptimeSeconds);
       }
 
-      res.status(200).json({ success: true, status: 'ONLINE' });
+      // Fetch PENDING remote commands, mark as SENT, clear password from WIFI_CONNECT payload
+      const pendingCommands = await prisma.deviceRemoteCommand.findMany({
+        where: { deviceId: req.deviceId, status: 'PENDING' },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      const commandsToReturn: Array<{
+        id: string;
+        command: string;
+        payload: unknown;
+      }> = [];
+
+      for (const cmd of pendingCommands) {
+        const payload = cmd.payload as Record<string, unknown> | null;
+        if (cmd.command === 'WIFI_CONNECT' && payload && 'password' in payload) {
+          // Send full payload to device (needs password to connect), then clear from DB
+          await prisma.deviceRemoteCommand.update({
+            where: { id: cmd.id },
+            data: { status: 'SENT', payload: { ssid: payload.ssid as string } },
+          });
+        } else {
+          await prisma.deviceRemoteCommand.update({
+            where: { id: cmd.id },
+            data: { status: 'SENT' },
+          });
+        }
+        commandsToReturn.push({
+          id: cmd.id,
+          command: cmd.command,
+          payload: cmd.payload ?? undefined,
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        status: 'ONLINE',
+        commands: commandsToReturn,
+      });
     } catch (error) {
       next(error);
     }
@@ -295,6 +364,151 @@ async function assertDeviceAccess(deviceId: string, req: AuthRequest): Promise<v
     }
   }
 }
+
+/**
+ * GET /devices/:id/status
+ * Returns latest heartbeat for device (remote device management)
+ */
+router.get(
+  '/:id/status',
+  requireAuth,
+  requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      await assertDeviceAccess(id, req);
+
+      const latest = await prisma.deviceHeartbeat.findFirst({
+        where: { deviceId: id },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      res.json(latest ?? null);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /devices/:id/remote-commands
+ * Create remote management command (RESTART, WIFI_SCAN, WIFI_CONNECT, FIRMWARE_UPDATE)
+ */
+router.post(
+  '/:id/remote-commands',
+  requireAuth,
+  requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      await assertDeviceAccess(id, req);
+
+      const data = remoteCommandSchema.parse(req.body);
+
+      const payloadJson = data.payload
+        ? (JSON.parse(JSON.stringify(data.payload)) as Prisma.InputJsonValue)
+        : undefined;
+      const command = await prisma.deviceRemoteCommand.create({
+        data: {
+          deviceId: id,
+          command: data.command,
+          payload: payloadJson,
+          status: 'PENDING',
+        },
+      });
+
+      res.status(201).json(command);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * PATCH /devices/:id/remote-commands/:commandId
+ * Update remote command status (EXECUTED, FAILED)
+ */
+router.patch(
+  '/:id/remote-commands/:commandId',
+  requireAuth,
+  requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { id, commandId } = req.params;
+      const { status } = req.body;
+
+      if (!['EXECUTED', 'FAILED'].includes(status)) {
+        throw new CustomError('Invalid status', 400, 'INVALID_STATUS');
+      }
+
+      await assertDeviceAccess(id, req);
+
+      const command = await prisma.deviceRemoteCommand.findFirst({
+        where: { id: commandId, deviceId: id },
+      });
+
+      if (!command) {
+        throw new CustomError('Command not found', 404, 'COMMAND_NOT_FOUND');
+      }
+
+      const updated = await prisma.deviceRemoteCommand.update({
+        where: { id: commandId },
+        data: {
+          status,
+          executedAt: new Date(),
+        },
+      });
+
+      res.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * PATCH /devices/commands/remote/:commandId
+ * ESP32 reports command result (device auth via x-device-key)
+ */
+router.patch(
+  '/commands/remote/:commandId',
+  requireDeviceAuth,
+  async (req: DeviceRequest, res, next) => {
+    try {
+      const { commandId } = req.params;
+      const { status, payload } = req.body;
+
+      if (!req.deviceId) {
+        throw new CustomError('Device ID not found', 400, 'DEVICE_ID_MISSING');
+      }
+
+      if (!['EXECUTED', 'FAILED'].includes(status)) {
+        throw new CustomError('Invalid status', 400, 'INVALID_STATUS');
+      }
+
+      const command = await prisma.deviceRemoteCommand.findFirst({
+        where: { id: commandId, deviceId: req.deviceId },
+      });
+
+      if (!command) {
+        throw new CustomError('Command not found', 404, 'COMMAND_NOT_FOUND');
+      }
+
+      const updated = await prisma.deviceRemoteCommand.update({
+        where: { id: commandId },
+        data: {
+          status,
+          payload: payload ?? command.payload,
+          executedAt: new Date(),
+        },
+      });
+
+      res.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 /**
  * GET /devices/:id/state

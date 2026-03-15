@@ -397,7 +397,11 @@ void loop() {
   // Periodieke API heartbeat (exponentiële backoff bij failure)
   if (WiFi.isConnected() && provisioning.hasAPICredentials()) {
     if (lastApiHeartbeat == 0 || (now - lastApiHeartbeat >= apiRetryBackoff)) {
-      bool apiOk = apiClient.apiHandshakeOrHeartbeat(true, WiFi.RSSI(), WiFi.localIP().toString());
+      int batPct = -1;
+      bool onMains = false;
+      if (batteryMonitor.getVoltage() >= 1.0f) batPct = batteryMonitor.getPercentage();
+      if (powerMonitor.isUsbConnected()) onMains = true;
+      bool apiOk = apiClient.apiHandshakeOrHeartbeat(true, WiFi.RSSI(), WiFi.localIP().toString(), batPct, onMains);
       deviceStatus.connectedToWifi = true;
       deviceStatus.connectedToApi = apiOk;
       deviceStatus.lastError = apiOk ? "" : "API heartbeat failed";
@@ -409,6 +413,12 @@ void loop() {
       } else {
         apiRetryBackoff = (apiRetryBackoff < 600000) ? apiRetryBackoff * 2 : 600000;  // Max 10 min
       }
+    }
+    // OTA check: once per boot, 30s after first successful heartbeat
+    static bool otaChecked = false;
+    if (deviceStatus.connectedToApi && !otaChecked && (now - lastApiHeartbeat >= 30000)) {
+      otaChecked = true;
+      apiClient.checkAndApplyFirmwareUpdate();
     }
     // Settings sync elke 60s (min/max temp, deur-alarm vertraging)
     if (deviceStatus.connectedToApi && (lastSettingsFetch == 0 || (now - lastSettingsFetch >= 60000))) {
@@ -1142,7 +1152,11 @@ void setupWiFi() {
       logger.info("API: Configuratie geladen vanuit provisioning");
       
       // API handshake: meld device als ONLINE
-      bool apiOk = apiClient.apiHandshakeOrHeartbeat(true, WiFi.RSSI(), WiFi.localIP().toString());
+      int batPct = -1;
+      bool onMains = false;
+      if (batteryMonitor.getVoltage() >= 1.0f) batPct = batteryMonitor.getPercentage();
+      if (powerMonitor.isUsbConnected()) onMains = true;
+      bool apiOk = apiClient.apiHandshakeOrHeartbeat(true, WiFi.RSSI(), WiFi.localIP().toString(), batPct, onMains);
       deviceStatus.connectedToWifi = true;
       deviceStatus.connectedToApi = apiOk;
       deviceStatus.lastError = apiOk ? "" : "API handshake failed";

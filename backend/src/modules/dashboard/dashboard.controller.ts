@@ -123,6 +123,119 @@ router.get(
 );
 
 /**
+ * GET /dashboard/devices
+ * All devices with latest heartbeat, online/offline (offline if no heartbeat in 10 min)
+ */
+router.get(
+  '/devices',
+  requireAuth,
+  requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+      let devices: Array<{
+        id: string;
+        serialNumber: string;
+        coldCellId: string;
+        coldCell: { name: string };
+        firmwareVersion: string | null;
+        status: string;
+        lastHeartbeat: { createdAt: Date; [key: string]: unknown } | null;
+      }> = [];
+
+      if (req.userRole === 'ADMIN') {
+        devices = await prisma.device.findMany({
+          include: {
+            coldCell: { select: { name: true } },
+            heartbeats: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
+          },
+        }).then((list) =>
+          list.map((d) => {
+            const latestHeartbeat = d.heartbeats[0] ?? null;
+            const isOnline = latestHeartbeat && latestHeartbeat.createdAt > tenMinutesAgo;
+            return {
+              id: d.id,
+              serialNumber: d.serialNumber,
+              coldCellId: d.coldCellId,
+              coldCell: d.coldCell,
+              firmwareVersion: d.firmwareVersion,
+              status: isOnline ? 'ONLINE' : 'OFFLINE',
+              lastHeartbeat: latestHeartbeat,
+            };
+          })
+        );
+      } else if (req.userRole === 'CUSTOMER' && req.customerId) {
+        devices = await prisma.device.findMany({
+          where: {
+            coldCell: { location: { customerId: req.customerId } },
+          },
+          include: {
+            coldCell: { select: { name: true } },
+            heartbeats: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
+          },
+        }).then((list) =>
+          list.map((d) => {
+            const latestHeartbeat = d.heartbeats[0] ?? null;
+            const isOnline = latestHeartbeat && latestHeartbeat.createdAt > tenMinutesAgo;
+            return {
+              id: d.id,
+              serialNumber: d.serialNumber,
+              coldCellId: d.coldCellId,
+              coldCell: d.coldCell,
+              firmwareVersion: d.firmwareVersion,
+              status: isOnline ? 'ONLINE' : 'OFFLINE',
+              lastHeartbeat: latestHeartbeat,
+            };
+          })
+        );
+      } else if (req.userRole === 'TECHNICIAN' && req.technicianId) {
+        devices = await prisma.device.findMany({
+          where: {
+            coldCell: {
+              location: {
+                customer: { linkedTechnicianId: req.technicianId },
+              },
+            },
+          },
+          include: {
+            coldCell: { select: { name: true } },
+            heartbeats: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
+          },
+        }).then((list) =>
+          list.map((d) => {
+            const latestHeartbeat = d.heartbeats[0] ?? null;
+            const isOnline = latestHeartbeat && latestHeartbeat.createdAt > tenMinutesAgo;
+            return {
+              id: d.id,
+              serialNumber: d.serialNumber,
+              coldCellId: d.coldCellId,
+              coldCell: d.coldCell,
+              firmwareVersion: d.firmwareVersion,
+              status: isOnline ? 'ONLINE' : 'OFFLINE',
+              lastHeartbeat: latestHeartbeat,
+            };
+          })
+        );
+      }
+
+      res.json({ devices });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
  * GET /dashboard/technician
  * Technician global dashboard
  */
