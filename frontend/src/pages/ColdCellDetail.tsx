@@ -101,6 +101,7 @@ const ColdCellDetail: React.FC = () => {
   };
 
   // Automatisch vernieuwen: cold cell elke 5s (live weergave), rest elke 20s
+  // timeRange in deps zodat fetchReadings altijd de gekozen periode gebruikt (geen verspringen bij nieuwe data)
   useEffect(() => {
     if (!id) return;
     const fastInterval = setInterval(() => {
@@ -115,7 +116,7 @@ const ColdCellDetail: React.FC = () => {
       clearInterval(fastInterval);
       clearInterval(slowInterval);
     };
-  }, [id]);
+  }, [id, timeRange]);
 
   // Bij terugkeer naar tab direct verversen (browsers vertragen timers in achtergrond tot ~10 min)
   useEffect(() => {
@@ -129,7 +130,7 @@ const ColdCellDetail: React.FC = () => {
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [id]);
+  }, [id, timeRange]);
 
   const fetchColdCell = async () => {
     setErrorStatus(null);
