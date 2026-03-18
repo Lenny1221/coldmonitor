@@ -217,6 +217,10 @@ model Device {
   apiKey         String       @unique // Device authentication token
   lastSeenAt     DateTime?
   firmwareVersion String?
+  // RS485 regelaar configuratie
+  controllerType        String?  // Carel PJEZ Easy Cool, Carel IR33, Dixell XR60C, etc.
+  controllerSlaveAddr  Int?     // Slave-adres op RS485-bus (1-247)
+  controllerBaudRate   Int?     // Baudrate (1200, 9600, 19200, etc.)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 

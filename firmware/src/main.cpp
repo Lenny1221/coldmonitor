@@ -88,6 +88,11 @@ struct ModbusData {
 #define DEFROST_REG_ADDR  0x0006  // Holding register (F06)
 #define DEFROST_COIL_ADDR 0x0002  // Coil (F05) – Carel booleans start bij 2
 
+// Controller type from API (override config when set)
+static String controllerTypeFromApi = "";
+static int controllerSlaveAddrFromApi = 0;
+static int controllerBaudRateFromApi = 0;
+
 // Function prototypes
 void sensorTask(void *parameter);
 void modbusTask(void *parameter);
@@ -420,14 +425,21 @@ void loop() {
       otaChecked = true;
       apiClient.checkAndApplyFirmwareUpdate();
     }
-    // Settings sync elke 60s (min/max temp, deur-alarm vertraging)
+    // Settings sync elke 60s (min/max temp, deur-alarm vertraging, controller config)
     if (deviceStatus.connectedToApi && (lastSettingsFetch == 0 || (now - lastSettingsFetch >= 60000))) {
       float mt, Mx;
       int dd;
-      if (apiClient.fetchDeviceSettings(mt, Mx, dd)) {
+      String ctrlType;
+      int ctrlSlave = 0, ctrlBaud = 0;
+      if (apiClient.fetchDeviceSettings(mt, Mx, dd, &ctrlType, &ctrlSlave, &ctrlBaud)) {
         deviceMinTemp = mt;
         deviceMaxTemp = Mx;
         deviceDoorAlarmDelaySec = dd;
+        if (ctrlType.length() > 0) {
+          controllerTypeFromApi = ctrlType;
+          controllerSlaveAddrFromApi = ctrlSlave;
+          controllerBaudRateFromApi = ctrlBaud;
+        }
         lastSettingsFetch = now;
       }
     }
@@ -775,7 +787,11 @@ void commandTask(void *parameter) {
             
             bool success = false;
             DynamicJsonDocument result(512);
+            // API controller_type overrides config when set
             bool useCarel = config.getCarelProtocolEnabled();
+            if (controllerTypeFromApi.length() > 0) {
+              useCarel = (controllerTypeFromApi.indexOf("CAREL_PJEZ") >= 0);
+            }
 
             if (useCarel) {
               // Carel PJEZ supervisie protocol
@@ -833,14 +849,20 @@ void commandTask(void *parameter) {
                 result["error"] = "Unknown command type";
               }
             } else {
-              // Modbus RTU (Carel PZD2S0P001 of andere)
+              // Modbus RTU – adressen per controller type (Dixell 0x0000, Eliwell 0x0100, Carel IR33 reg 1/2)
+              uint16_t tempAddr = 0x0000, setpointAddr = 0x0001, defrostCoil = 0x0001, alarmCoil = 0x0003;
+              if (controllerTypeFromApi.indexOf("ELIWELL") >= 0) {
+                tempAddr = 0x0100; setpointAddr = 0x0101; defrostCoil = 0x0000; alarmCoil = 0x0001;
+              } else if (controllerTypeFromApi.indexOf("CAREL_IR33") >= 0) {
+                tempAddr = 2; setpointAddr = 1; defrostCoil = DEFROST_COIL_ADDR; alarmCoil = 6;
+              }
               if (commandType == "DEFROST_START") {
                 logger.info("Executing DEFROST_START command...");
                 modbus.setDefrostDebug(true);
                 if (modbus.writeSingleRegister(DEFROST_REG_ADDR, 1)) {
                   success = true;
                   result["status"] = "defrost_started";
-                } else if (modbus.writeSingleCoil(DEFROST_COIL_ADDR, true)) {
+                } else if (modbus.writeSingleCoil(defrostCoil, true)) {
                   success = true;
                   result["status"] = "defrost_started";
                 } else if (modbus.writeSingleCoil(DEFROST_REG_ADDR, true)) {
@@ -850,14 +872,71 @@ void commandTask(void *parameter) {
                   result["error"] = "RS485 write failed. Zie Serial Monitor.";
                 }
                 modbus.setDefrostDebug(false);
+              } else if (commandType == "DEFROST_STOP") {
+                if (modbus.writeSingleRegister(DEFROST_REG_ADDR, 0) || modbus.writeSingleCoil(defrostCoil, false)) {
+                  success = true;
+                  result["status"] = "defrost_stopped";
+                } else {
+                  result["error"] = "RS485 write failed";
+                }
               } else if (commandType == "READ_TEMPERATURE") {
-                logger.info("Executing READ_TEMPERATURE command...");
-                if (modbus.readInputRegisters(0x0000, 2)) {
+                if (modbus.readInputRegisters(tempAddr, 2)) {
+                  float temp = modbus.getFloat(0);
+                  success = true;
+                  result["temperature"] = temp;
+                } else if (modbus.readHoldingRegisters(tempAddr, 2)) {
                   float temp = modbus.getFloat(0);
                   success = true;
                   result["temperature"] = temp;
                 } else {
                   result["error"] = "RS485 read failed";
+                }
+              } else if (commandType == "READ_SETPOINT") {
+                if (modbus.readHoldingRegisters(setpointAddr, 2)) {
+                  float sp = modbus.getFloat(0);
+                  success = true;
+                  result["setpoint"] = sp;
+                } else {
+                  result["error"] = "RS485 read failed";
+                }
+              } else if (commandType == "READ_ALARM_STATUS") {
+                if (modbus.readHoldingRegisters(6, 2)) {
+                  uint16_t v = modbus.getRegister(0);
+                  success = true;
+                  result["alarm"] = (v != 0);
+                } else if (modbus.readHoldingRegisters(alarmCoil, 1)) {
+                  success = true;
+                  result["alarm"] = (modbus.getRegister(0) != 0);
+                } else {
+                  result["error"] = "RS485 read failed";
+                }
+              } else if (commandType == "SET_SETPOINT") {
+                int val = parametersDoc["value"] | parametersDoc["temperature"] | -999;
+                if (val > -500) {
+                  uint16_t regVal = (uint16_t)(val * 10);  // Veel regelaars: x10
+                  if (modbus.writeSingleRegister(setpointAddr, regVal)) {
+                    success = true;
+                    result["status"] = "ok";
+                  } else {
+                    result["error"] = "RS485 write failed";
+                  }
+                } else {
+                  result["error"] = "Missing value parameter";
+                }
+              } else if (commandType == "ALARM_RESET") {
+                if (modbus.writeSingleCoil(alarmCoil, true)) {
+                  success = true;
+                  result["status"] = "ok";
+                } else {
+                  result["error"] = "RS485 write failed";
+                }
+              } else if (commandType == "POWER_ON_OFF") {
+                int val = parametersDoc["value"] | 1;
+                if (modbus.writeSingleRegister(101, val)) {
+                  success = true;
+                  result["status"] = "ok";
+                } else {
+                  result["error"] = "RS485 write failed";
                 }
               } else {
                 logger.warn("Unknown command type: " + commandType);
@@ -882,6 +961,12 @@ void commandTask(void *parameter) {
               }
               if (result.containsKey("defrostDuration")) {
                 resultDoc["defrostDuration"] = result["defrostDuration"].as<int>();
+              }
+              if (result.containsKey("setpoint")) {
+                resultDoc["setpoint"] = result["setpoint"].as<float>();
+              }
+              if (result.containsKey("alarm")) {
+                resultDoc["alarm"] = result["alarm"].as<bool>();
               }
               if (result.containsKey("error")) {
                 resultDoc["error"] = result["error"].as<String>();

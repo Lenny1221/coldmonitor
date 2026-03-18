@@ -7,6 +7,11 @@ import { prisma } from '../../config/database';
 import { generateApiKey } from '../../utils/crypto';
 import { CustomError } from '../../middleware/errorHandler';
 import { getEffectiveDoorCountsToday } from '../../utils/dateUtils';
+import {
+  CONTROLLER_TYPES,
+  getControllerTypeById,
+  getCommandsForDevice,
+} from '../../config/controllerTypes';
 
 const router = Router();
 
@@ -235,6 +240,9 @@ router.get(
         min_temp: cc.temperatureMinThreshold,
         max_temp: cc.temperatureMaxThreshold,
         door_alarm_delay_seconds: cc.doorAlarmDelaySeconds ?? 300,
+        controller_type: device.controllerType ?? null,
+        controller_slave_addr: device.controllerSlaveAddr ?? null,
+        controller_baud_rate: device.controllerBaudRate ?? null,
       });
     } catch (error) {
       next(error);
@@ -337,6 +345,23 @@ router.get(
   }
 );
 
+/**
+ * GET /devices/controller-types
+ * Alle beschikbare regelaartypes (voor dropdown)
+ */
+router.get(
+  '/controller-types',
+  requireAuth,
+  requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'),
+  async (_req, res, next) => {
+    try {
+      res.json({ controllerTypes: CONTROLLER_TYPES });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 /** Check device access (CUSTOMER/TECHNICIAN via coldCell->location). */
 async function assertDeviceAccess(deviceId: string, req: AuthRequest): Promise<void> {
   const device = await prisma.device.findUnique({
@@ -384,6 +409,114 @@ router.get(
       });
 
       res.json(latest ?? null);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+const controllerConfigSchema = z.object({
+  controllerType: z.string().min(1).optional(),
+  controllerSlaveAddr: z.number().int().min(1).max(247).optional(),
+  controllerBaudRate: z.number().int().positive().optional(),
+});
+
+/**
+ * GET /devices/:id/controller-config
+ * Huidige regelaarconfiguratie + beschikbare commando's voor dit type
+ */
+router.get(
+  '/:id/controller-config',
+  requireAuth,
+  requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      await assertDeviceAccess(id, req);
+
+      const device = await prisma.device.findUnique({
+        where: { id },
+        select: {
+          controllerType: true,
+          controllerSlaveAddr: true,
+          controllerBaudRate: true,
+        },
+      });
+
+      if (!device) {
+        throw new CustomError('Device not found', 404, 'DEVICE_NOT_FOUND');
+      }
+
+      const type = device.controllerType
+        ? getControllerTypeById(device.controllerType)
+        : null;
+      const isTechnician = req.userRole === 'TECHNICIAN' || req.userRole === 'ADMIN';
+      const commands = getCommandsForDevice(device.controllerType, isTechnician);
+
+      res.json({
+        controllerType: device.controllerType,
+        controllerSlaveAddr: device.controllerSlaveAddr,
+        controllerBaudRate: device.controllerBaudRate,
+        typeInfo: type
+          ? {
+              id: type.id,
+              name: type.name,
+              description: type.description,
+              protocol: type.protocol,
+              defaultBaudRate: type.defaultBaudRate,
+              defaultSlaveAddr: type.defaultSlaveAddr,
+            }
+          : null,
+        commands,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * PATCH /devices/:id/controller-config
+ * Regelaartype, slave-adres en baudrate instellen (alleen technici/admins)
+ */
+router.patch(
+  '/:id/controller-config',
+  requireAuth,
+  requireRole('TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      await assertDeviceAccess(id, req);
+
+      const data = controllerConfigSchema.parse(req.body);
+
+      const updateData: {
+        controllerType?: string;
+        controllerSlaveAddr?: number;
+        controllerBaudRate?: number;
+      } = {};
+      if (data.controllerType !== undefined) {
+        const type = getControllerTypeById(data.controllerType);
+        if (!type) {
+          throw new CustomError('Onbekend regelaartype', 400, 'INVALID_CONTROLLER_TYPE');
+        }
+        updateData.controllerType = data.controllerType;
+        if (data.controllerSlaveAddr === undefined) updateData.controllerSlaveAddr = type.defaultSlaveAddr;
+        if (data.controllerBaudRate === undefined) updateData.controllerBaudRate = type.defaultBaudRate;
+      }
+      if (data.controllerSlaveAddr !== undefined) updateData.controllerSlaveAddr = data.controllerSlaveAddr;
+      if (data.controllerBaudRate !== undefined) updateData.controllerBaudRate = data.controllerBaudRate;
+
+      const updated = await prisma.device.update({
+        where: { id },
+        data: updateData,
+      });
+
+      res.json({
+        controllerType: updated.controllerType,
+        controllerSlaveAddr: updated.controllerSlaveAddr,
+        controllerBaudRate: updated.controllerBaudRate,
+      });
     } catch (error) {
       next(error);
     }
@@ -649,6 +782,42 @@ router.patch(
 );
 
 /**
+ * GET /devices/:id/commands
+ * Laatste 20 uitgevoerde commando's (voor commandohistoriek)
+ */
+router.get(
+  '/:id/commands',
+  requireAuth,
+  requireRole('CUSTOMER', 'TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      await assertDeviceAccess(id, req);
+
+      const commands = await prisma.deviceCommand.findMany({
+        where: { deviceId: id },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: {
+          id: true,
+          commandType: true,
+          status: true,
+          parameters: true,
+          result: true,
+          error: true,
+          createdAt: true,
+          executedAt: true,
+        },
+      });
+
+      res.json({ commands });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
  * POST /devices/:id/commands
  * Create a command for a device (e.g., start defrost)
  */
@@ -866,6 +1035,21 @@ router.get(
           .filter(Boolean)
           .sort((a, b) => (b?.getTime() ?? 0) - (a?.getTime() ?? 0))[0] || null;
 
+      // Controller config van eerste device in cold cell (online of offline)
+      const firstDevice = await prisma.device.findFirst({
+        where: { coldCellId },
+        select: { id: true, controllerType: true, controllerSlaveAddr: true, controllerBaudRate: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      const controllerConfig = firstDevice
+        ? {
+            controllerType: firstDevice.controllerType,
+            controllerSlaveAddr: firstDevice.controllerSlaveAddr,
+            controllerBaudRate: firstDevice.controllerBaudRate,
+            deviceId: firstDevice.id,
+          }
+        : null;
+
       res.json({
         rs485Temperature,
         defrostType,
@@ -873,6 +1057,7 @@ router.get(
         defrostDuration,
         deviceOnline: coldCell.devices.length > 0,
         lastUpdate,
+        controllerConfig,
       });
     } catch (error) {
       next(error);

@@ -428,6 +428,25 @@ export const devicesApi = {
     const response = await api.get(`/devices/coldcells/${coldCellId}/rs485-status`);
     return response.data;
   },
+  getControllerTypes: async () => {
+    const response = await api.get('/devices/controller-types');
+    return response.data;
+  },
+  getControllerConfig: async (deviceId: string) => {
+    const response = await api.get(`/devices/${deviceId}/controller-config`);
+    return response.data;
+  },
+  updateControllerConfig: async (
+    deviceId: string,
+    data: { controllerType?: string; controllerSlaveAddr?: number; controllerBaudRate?: number }
+  ) => {
+    const response = await api.patch(`/devices/${deviceId}/controller-config`, data);
+    return response.data;
+  },
+  getCommandHistory: async (deviceId: string) => {
+    const response = await api.get(`/devices/${deviceId}/commands`);
+    return response.data;
+  },
 };
 
 // Measurements API (readings per device)

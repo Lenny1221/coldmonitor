@@ -280,7 +280,8 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
   return success;
 }
 
-bool APIClient::fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAlarmDelaySeconds) {
+bool APIClient::fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAlarmDelaySeconds,
+    String* outControllerType, int* outSlaveAddr, int* outBaudRate) {
   if (!WiFi.isConnected() || apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) {
     return false;
   }
@@ -299,7 +300,7 @@ bool APIClient::fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAla
   
   if (httpCode == 200) {
     String response = http.getString();
-    DynamicJsonDocument doc(256);
+    DynamicJsonDocument doc(512);
     DeserializationError err = deserializeJson(doc, response);
     if (!err && doc.containsKey("min_temp") && doc.containsKey("max_temp")) {
       minTemp = doc["min_temp"].as<float>();
@@ -307,6 +308,15 @@ bool APIClient::fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAla
       doorAlarmDelaySeconds = doc["door_alarm_delay_seconds"] | 300;
       ok = true;
       logger.info("Settings fetched: min=" + String(minTemp, 1) + " max=" + String(maxTemp, 1) + " doorDelay=" + String(doorAlarmDelaySeconds) + "s");
+      if (outControllerType && doc.containsKey("controller_type") && !doc["controller_type"].isNull()) {
+        *outControllerType = doc["controller_type"].as<String>();
+      }
+      if (outSlaveAddr && doc.containsKey("controller_slave_addr") && !doc["controller_slave_addr"].isNull()) {
+        *outSlaveAddr = doc["controller_slave_addr"].as<int>();
+      }
+      if (outBaudRate && doc.containsKey("controller_baud_rate") && !doc["controller_baud_rate"].isNull()) {
+        *outBaudRate = doc["controller_baud_rate"].as<int>();
+      }
     }
   }
   

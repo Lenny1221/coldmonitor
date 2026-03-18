@@ -32,8 +32,9 @@ public:
   bool apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const String& ip,
     int batteryPercent = -1, bool onMains = false);
   
-  // GET /devices/settings - alarm thresholds (min/max temp, door delay)
-  bool fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAlarmDelaySeconds);
+  // GET /devices/settings - alarm thresholds + controller config
+  bool fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAlarmDelaySeconds,
+    String* outControllerType = nullptr, int* outSlaveAddr = nullptr, int* outBaudRate = nullptr);
   
   // Genereer JSON status voor app: connected_to_wifi, connected_to_api, last_error
   String publishStatusJson(bool connectedToWifi, bool connectedToApi, const String& lastError);
