@@ -219,6 +219,24 @@ export const techniciansApi = {
   },
 };
 
+// Contact form (publiek, geen auth)
+export const contactApi = {
+  submit: async (data: {
+    type: 'vraag' | 'offerte' | 'demo' | 'technicus' | 'support';
+    name: string;
+    email: string;
+    phone?: string;
+    company?: string;
+    sector?: string;
+    locations?: string;
+    coldrooms?: string;
+    message: string;
+  }) => {
+    const response = await api.post('/contact', data);
+    return response.data;
+  },
+};
+
 // Invitations API
 export const invitationsApi = {
   send: async (data: { customerId: string; message?: string }) => {

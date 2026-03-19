@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { contactApi, getErrorMessage } from '../services/api';
 import {
   EnvelopeIcon,
   PhoneIcon,
@@ -47,26 +48,32 @@ const Contact: React.FC = () => {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
 
-    const body = [
-      `Type aanvraag: ${contactTypes.find(t => t.id === selectedType)?.label}`,
-      `Naam: ${formData.name}`,
-      `E-mail: ${formData.email}`,
-      `Telefoon: ${formData.phone}`,
-      `Bedrijf: ${formData.company}`,
-      `Sector: ${formData.sector}`,
-      `Aantal locaties: ${formData.locations}`,
-      `Aantal koelcellen: ${formData.coldrooms}`,
-      ``,
-      `Bericht:`,
-      formData.message,
-    ].join('%0D%0A');
-
-    window.location.href = `mailto:info@intellifrost.be?subject=${encodeURIComponent(contactTypes.find(t => t.id === selectedType)?.label ?? 'Contact via website')}&body=${body}`;
-    setSubmitted(true);
+    try {
+      await contactApi.submit({
+        type: selectedType,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        company: formData.company || undefined,
+        sector: formData.sector || undefined,
+        locations: formData.locations || undefined,
+        coldrooms: formData.coldrooms || undefined,
+        message: formData.message,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Er ging iets mis. Probeer het later opnieuw of mail direct naar info@intellifrost.be.'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -151,7 +158,7 @@ const Contact: React.FC = () => {
                 </div>
               </a>
               <a
-                href="tel:+32123456789"
+                href="tel:+32468429719"
                 className="flex items-center gap-3 text-gray-600 hover:text-[#00c8ff] transition-colors"
               >
                 <div className="w-9 h-9 rounded-lg bg-[#00c8ff]/15 flex items-center justify-center flex-shrink-0">
@@ -159,7 +166,7 @@ const Contact: React.FC = () => {
                 </div>
                 <div>
                   <div className="text-xs text-gray-400">Telefoon</div>
-                  <div className="text-sm font-medium">+32 123 45 67 89</div>
+                  <div className="text-sm font-medium">+32 468 42 97 19</div>
                 </div>
               </a>
               <div className="flex items-start gap-3 text-gray-600">
@@ -381,16 +388,26 @@ const Contact: React.FC = () => {
               />
             </div>
 
+            {error && (
+              <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                {error}
+              </div>
+            )}
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl font-semibold text-white bg-[#00c8ff] hover:bg-[#00a8dd] transition-colors text-sm"
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl font-semibold text-white bg-[#00c8ff] hover:bg-[#00a8dd] disabled:opacity-70 disabled:cursor-not-allowed transition-colors text-sm"
               >
-                {selectedType === 'demo' && 'Demo aanvragen'}
-                {selectedType === 'offerte' && 'Offerte aanvragen'}
-                {selectedType === 'vraag' && 'Vraag versturen'}
-                {selectedType === 'technicus' && 'Aanvraag versturen'}
-                {selectedType === 'support' && 'Supportverzoek versturen'}
+                {loading ? 'Bezig met versturen...' : (
+                  <>
+                    {selectedType === 'demo' && 'Demo aanvragen'}
+                    {selectedType === 'offerte' && 'Offerte aanvragen'}
+                    {selectedType === 'vraag' && 'Vraag versturen'}
+                    {selectedType === 'technicus' && 'Aanvraag versturen'}
+                    {selectedType === 'support' && 'Supportverzoek versturen'}
+                  </>
+                )}
               </button>
               <p className="text-xs text-gray-400 text-center mt-3">
                 We antwoorden normaal gezien binnen 1 werkdag.
