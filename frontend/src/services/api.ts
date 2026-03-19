@@ -287,8 +287,13 @@ export const customersApi = {
     nightStart?: string;
     backupPhone?: string;
     backupContacts?: { name: string; phone: string; addedBy?: string }[];
+    haccpAutoSendConfig?: { enabled: boolean; extraEmails: string[] };
   }) => {
     const response = await api.patch('/customers/me/settings', data);
+    return response.data;
+  },
+  updateHaccpSettings: async (customerId: string, data: { enabled: boolean; extraEmails: string[] }) => {
+    const response = await api.patch(`/customers/${customerId}/haccp-settings`, { haccpAutoSendConfig: data });
     return response.data;
   },
 };

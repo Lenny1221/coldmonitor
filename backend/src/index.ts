@@ -147,6 +147,29 @@ app.listen(PORT, () => {
   // Escalatie: run every minute (20 min L1→L2, 15 min L2→L3)
   setInterval(() => jobs.escalateAlerts(), 60 * 1000);
   logger.info('Escalatie-job gestart (elke minuut)');
+
+  // HACCP auto-send: wekelijks maandag om 6:00
+  const scheduleHaccpAutoSend = () => {
+    const runAtNextMonday6 = () => {
+      const now = new Date();
+      const next = new Date(now);
+      next.setHours(6, 0, 0, 0);
+      const day = now.getDay(); // 0=Sun, 1=Mon, ...
+      const daysUntilMonday = day === 1 && now.getHours() >= 6 ? 7 : (8 - day) % 7;
+      next.setDate(next.getDate() + daysUntilMonday);
+      return next.getTime() - now.getTime();
+    };
+    const schedule = () => {
+      const ms = runAtNextMonday6();
+      setTimeout(() => {
+        jobs.haccpAutoSend();
+        setInterval(() => jobs.haccpAutoSend(), 7 * 24 * 60 * 60 * 1000);
+      }, ms);
+    };
+    schedule();
+    logger.info('HACCP auto-send job gepland (wekelijks maandag 6:00)');
+  };
+  scheduleHaccpAutoSend();
 });
 
 // Graceful shutdown

@@ -14,6 +14,9 @@ import {
   CalendarIcon,
   MapPinIcon,
   CubeIcon,
+  EnvelopeIcon,
+  PlusIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { format, subWeeks, subMonths, startOfDay, endOfDay } from 'date-fns';
 
@@ -58,6 +61,11 @@ const HACCPAuditReport: React.FC = () => {
   const [preview, setPreview] = useState<any>(null);
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerSearchResults, setCustomerSearchResults] = useState<Customer[]>([]);
+  const [autoSendEnabled, setAutoSendEnabled] = useState(false);
+  const [extraEmails, setExtraEmails] = useState<string[]>([]);
+  const [newExtraEmail, setNewExtraEmail] = useState('');
+  const [savingAutoSend, setSavingAutoSend] = useState(false);
+  const [autoSendSaved, setAutoSendSaved] = useState(false);
 
   const isCustomer = user?.role === 'CUSTOMER';
   const isTechnicianOrAdmin = user?.role === 'TECHNICIAN' || user?.role === 'ADMIN';
@@ -159,12 +167,31 @@ const HACCPAuditReport: React.FC = () => {
         setLocations(locs);
         setSelectedLocationId('');
         setSelectedColdCellIds([]);
+        const cfg = (customer as any)?.haccpAutoSendConfig;
+        setAutoSendEnabled(cfg?.enabled === true);
+        setExtraEmails(Array.isArray(cfg?.extraEmails) ? cfg.extraEmails : []);
       } catch (e) {
         setError(getErrorMessage(e, 'Klantgegevens laden mislukt'));
       }
     };
     load();
   }, [selectedCustomerId, isTechnicianOrAdmin]);
+
+  // Load HACCP auto-send config for CUSTOMER
+  useEffect(() => {
+    if (!isCustomer) return;
+    const load = async () => {
+      try {
+        const data = await customersApi.getMe();
+        const cfg = (data as any)?.haccpAutoSendConfig;
+        setAutoSendEnabled(cfg?.enabled === true);
+        setExtraEmails(Array.isArray(cfg?.extraEmails) ? cfg.extraEmails : []);
+      } catch {
+        // ignore
+      }
+    };
+    load();
+  }, [isCustomer]);
 
   const allColdCells = locations.flatMap((loc) =>
     (loc.coldCells || []).map((cc) => ({
@@ -265,6 +292,44 @@ const HACCPAuditReport: React.FC = () => {
 
   const canDownload =
     (isCustomer && locations.length > 0) || (isTechnicianOrAdmin && selectedCustomerId);
+
+  const effectiveCustomerId = isCustomer ? undefined : selectedCustomerId;
+  const canConfigureAutoSend = (isCustomer && locations.length > 0) || (isTechnicianOrAdmin && selectedCustomerId);
+
+  const handleSaveAutoSend = async () => {
+    if (!canConfigureAutoSend) return;
+    setSavingAutoSend(true);
+    setAutoSendSaved(false);
+    setError('');
+    try {
+      const validEmails = extraEmails.filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+      if (isCustomer) {
+        await customersApi.updateSettings({
+          haccpAutoSendConfig: { enabled: autoSendEnabled, extraEmails: validEmails },
+        });
+      } else if (effectiveCustomerId) {
+        await customersApi.updateHaccpSettings(effectiveCustomerId, {
+          enabled: autoSendEnabled,
+          extraEmails: validEmails,
+        });
+      }
+      setExtraEmails(validEmails);
+      setAutoSendSaved(true);
+      setTimeout(() => setAutoSendSaved(false), 3000);
+    } catch (e) {
+      setError(getErrorMessage(e, 'Instellingen opslaan mislukt'));
+    } finally {
+      setSavingAutoSend(false);
+    }
+  };
+
+  const handleAddExtraEmail = () => {
+    const email = newExtraEmail.trim().toLowerCase();
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !extraEmails.includes(email)) {
+      setExtraEmails((prev) => [...prev, email]);
+      setNewExtraEmail('');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -448,6 +513,80 @@ const HACCPAuditReport: React.FC = () => {
               {downloading === 'excel' ? 'Bezig...' : 'Download Excel'}
             </button>
           </div>
+
+          {/* Automatisch versturen */}
+          {canConfigureAutoSend && (
+            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-frost-600">
+              <h3 className="text-base font-medium text-gray-900 dark:text-frost-100 mb-3 flex items-center gap-2">
+                <EnvelopeIcon className="h-5 w-5 text-[#00c8ff]" />
+                Automatisch versturen
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-frost-400 mb-4">
+                Schakel automatisch versturen in om het HACCP-rapport wekelijks per e-mail te ontvangen. Het rapport wordt naar het e-mailadres van de klant verstuurd.
+              </p>
+              <div className="space-y-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoSendEnabled}
+                    onChange={(e) => setAutoSendEnabled(e.target.checked)}
+                    className="rounded border-gray-300 dark:border-frost-600 text-[#00c8ff] focus:ring-[#00c8ff]"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-frost-300">
+                    Rapport automatisch versturen (wekelijks, elke maandag om 6:00)
+                  </span>
+                </label>
+                {autoSendEnabled && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-frost-300 mb-2">
+                      Extra e-mailadressen (optioneel)
+                    </label>
+                    <div className="flex gap-2 mb-2">
+                      <input
+                        type="email"
+                        value={newExtraEmail}
+                        onChange={(e) => setNewExtraEmail(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddExtraEmail())}
+                        placeholder="extra@voorbeeld.be"
+                        className="block flex-1 rounded-md border-gray-300 dark:border-frost-600 dark:bg-frost-700 dark:text-frost-100 shadow-sm focus:border-[#00c8ff] focus:ring-[#00c8ff] sm:text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddExtraEmail}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-frost-600 rounded-md text-sm font-medium text-gray-700 dark:text-frost-300 hover:bg-gray-50 dark:hover:bg-frost-700"
+                      >
+                        <PlusIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {extraEmails.length > 0 && (
+                      <ul className="space-y-1">
+                        {extraEmails.map((email, i) => (
+                          <li key={i} className="flex items-center justify-between text-sm py-1">
+                            <span className="text-gray-600 dark:text-frost-400">{email}</span>
+                            <button
+                              type="button"
+                              onClick={() => setExtraEmails((prev) => prev.filter((_, j) => j !== i))}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSaveAutoSend}
+                  disabled={savingAutoSend}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#00c8ff] hover:bg-[#00a8dd] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00c8ff] disabled:opacity-50"
+                >
+                  {savingAutoSend ? 'Opslaan...' : autoSendSaved ? 'Opgeslagen!' : 'Instellingen opslaan'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

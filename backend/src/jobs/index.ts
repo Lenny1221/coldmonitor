@@ -11,11 +11,13 @@
 import { checkDeviceOfflineJob } from './deviceOfflineCheck.job';
 import { generateDailyReportsJob } from './dailyReport.job';
 import { escalateAlertsJob } from './alertEscalation.job';
+import { haccpAutoSendJob } from './haccpAutoSend.job';
 
 export const jobs = {
   checkDeviceOffline: checkDeviceOfflineJob,
   generateDailyReports: generateDailyReportsJob,
   escalateAlerts: escalateAlertsJob,
+  haccpAutoSend: haccpAutoSendJob,
 };
 
 /**

@@ -151,3 +151,48 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   logger.info('E-mail (uit – geen Resend):', { to, subject });
   return true;
 }
+
+/**
+ * Verstuur e-mail met PDF-bijlage (voor HACCP rapporten)
+ */
+export async function sendEmailWithAttachment(
+  to: string,
+  subject: string,
+  html: string,
+  attachment: { filename: string; content: Buffer }
+): Promise<boolean> {
+  if (config.resendApiKey) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: `IntelliFrost <${config.emailFrom}>`,
+          to: [to],
+          subject,
+          html,
+          attachments: [
+            {
+              filename: attachment.filename,
+              content: attachment.content.toString('base64'),
+            },
+          ],
+        }),
+      });
+      if (!res.ok) {
+        const errBody = await res.text();
+        logger.error('Resend API fout (attachment)', new Error(errBody), { to, status: res.status });
+        return false;
+      }
+      return true;
+    } catch (err) {
+      logger.error('Fout bij verzenden e-mail met bijlage', err as Error, { to });
+      return false;
+    }
+  }
+  logger.info('E-mail met bijlage (uit – geen Resend):', { to, subject });
+  return true;
+}

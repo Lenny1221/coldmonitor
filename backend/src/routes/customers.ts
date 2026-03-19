@@ -69,7 +69,7 @@ router.get('/search', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (re
 router.patch('/me/settings', requireAuth, requireRole('CUSTOMER'), async (req: AuthRequest, res) => {
   try {
     const customerId = req.customerId!;
-    const { openingTime, closingTime, nightStart, backupPhone, backupContacts } = req.body;
+    const { openingTime, closingTime, nightStart, backupPhone, backupContacts, haccpAutoSendConfig } = req.body;
 
     const data: Record<string, unknown> = {};
     if (typeof openingTime === 'string' && /^\d{1,2}:\d{2}$/.test(openingTime)) data.openingTime = openingTime;
@@ -88,6 +88,14 @@ router.patch('/me/settings', requireAuth, requireRole('CUSTOMER'), async (req: A
       // Wis legacy backupPhone zodat bij herladen geen oude waarde meer verschijnt
       data.backupPhone = null;
     }
+    if (haccpAutoSendConfig !== undefined) {
+      const cfg = haccpAutoSendConfig as { enabled?: boolean; extraEmails?: string[] };
+      const enabled = cfg?.enabled === true;
+      const extraEmails = Array.isArray(cfg?.extraEmails)
+        ? (cfg.extraEmails as string[]).map((e) => String(e).trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
+        : [];
+      data.haccpAutoSendConfig = { enabled, extraEmails };
+    }
 
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ error: 'Geen geldige velden om bij te werken' });
@@ -102,6 +110,46 @@ router.patch('/me/settings', requireAuth, requireRole('CUSTOMER'), async (req: A
   } catch (error) {
     console.error('Update customer settings error:', error);
     res.status(500).json({ error: 'Instellingen bijwerken mislukt' });
+  }
+});
+
+/**
+ * PATCH /customers/:id/haccp-settings
+ * Technicus/Admin: HACCP automatisch versturen configureren voor een klant
+ */
+router.patch('/:id/haccp-settings', requireAuth, requireRole('TECHNICIAN', 'ADMIN'), async (req: AuthRequest, res) => {
+  try {
+    const customerId = req.params.id;
+
+    if (req.userRole === 'TECHNICIAN') {
+      const customer = await prisma.customer.findFirst({
+        where: { id: customerId, linkedTechnicianId: req.technicianId! },
+      });
+      if (!customer) {
+        return res.status(404).json({ error: 'Klant niet gevonden of geen toegang' });
+      }
+    }
+
+    const { haccpAutoSendConfig } = req.body;
+    if (haccpAutoSendConfig === undefined) {
+      return res.status(400).json({ error: 'haccpAutoSendConfig vereist' });
+    }
+
+    const cfg = haccpAutoSendConfig as { enabled?: boolean; extraEmails?: string[] };
+    const enabled = cfg?.enabled === true;
+    const extraEmails = Array.isArray(cfg?.extraEmails)
+      ? (cfg.extraEmails as string[]).map((e) => String(e).trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
+      : [];
+
+    const customer = await prisma.customer.update({
+      where: { id: customerId },
+      data: { haccpAutoSendConfig: { enabled, extraEmails } },
+    });
+
+    res.json(customer);
+  } catch (error) {
+    console.error('Update HACCP settings error:', error);
+    res.status(500).json({ error: 'HACCP-instellingen bijwerken mislukt' });
   }
 });
 
