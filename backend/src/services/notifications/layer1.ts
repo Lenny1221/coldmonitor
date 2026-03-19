@@ -17,27 +17,42 @@ export async function sendLayer1Notifications(alert: AlertWithRelations): Promis
   const coldCellName = alert.coldCell?.name ?? 'Onbekende cel';
   const temp = alert.value ?? 0;
   const threshold = alert.threshold ?? 0;
-  const alertType = alert.type === 'HIGH_TEMP' ? 'te hoog' : alert.type === 'LOW_TEMP' ? 'te laag' : alert.type;
+  const alertType =
+    alert.type === 'HIGH_TEMP'
+      ? 'te hoog'
+      : alert.type === 'LOW_TEMP'
+        ? 'te laag'
+        : alert.type === 'WIFI_LOSS'
+          ? 'WiFi-verbinding verloren'
+          : alert.type === 'POWER_LOSS'
+            ? 'Stroom uitval'
+            : alert.type;
+
+  const isConnectionAlert = alert.type === 'WIFI_LOSS' || alert.type === 'POWER_LOSS';
+  const emailSubject = isConnectionAlert
+    ? `IntelliFrost – ${alertType}: ${coldCellName}`
+    : `IntelliFrost – Temperatuuralarm: ${coldCellName}`;
+  const emailBody = isConnectionAlert
+    ? `<p>Het meetapparaat van koelcel <strong>${coldCellName}</strong> is offline (geen verbinding meer).</p>
+        <p><strong>Type:</strong> ${alertType}</p>
+        <p>Controleer de WiFi-verbinding of stroomvoorziening van het apparaat.</p>`
+    : `<p>Uw koelcel <strong>${coldCellName}</strong> heeft een temperatuuralarm.</p>
+        <p><strong>Type:</strong> ${alertType}<br>
+        <strong>Huidige waarde:</strong> ${temp}°C<br>
+        <strong>Drempel:</strong> ${threshold}°C</p>`;
 
   // Client: e-mail
   if (customer?.email) {
     const dashboardUrl = `${config.frontendUrl}/dashboard`;
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.6; color: #333;">
-        <h2 style="color: #00c8ff;">IntelliFrost – Temperatuuralarm</h2>
-        <p>Uw koelcel <strong>${coldCellName}</strong> heeft een temperatuuralarm.</p>
-        <p><strong>Type:</strong> ${alertType}<br>
-        <strong>Huidige waarde:</strong> ${temp}°C<br>
-        <strong>Drempel:</strong> ${threshold}°C</p>
+        <h2 style="color: #00c8ff;">IntelliFrost – Alarm</h2>
+        ${emailBody}
         <p><a href="${dashboardUrl}" style="display: inline-block; padding: 12px 24px; background: #00c8ff; color: #060d18; text-decoration: none; border-radius: 6px; font-weight: bold;">Bekijk dashboard</a></p>
         <p style="color: #666; font-size: 12px;">Bevestig het alarm in het dashboard om verdere escalatie te stoppen.</p>
       </div>
     `;
-    await sendAlertEmail(
-      customer.email,
-      `IntelliFrost – Temperatuuralarm: ${coldCellName}`,
-      html
-    );
+    await sendAlertEmail(customer.email, emailSubject, html);
     await logEscalation(
       alert.id,
       'LAYER_1',
@@ -56,12 +71,14 @@ export async function sendLayer1Notifications(alert: AlertWithRelations): Promis
 
   // Technician: app alert + dashboard
   if (technician?.email) {
+    const techBody = isConnectionAlert
+      ? `<p><strong>Type:</strong> ${alertType}</p>`
+      : `<p><strong>Type:</strong> ${alertType}<br><strong>Waarde:</strong> ${temp}°C</p>`;
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.6; color: #333;">
         <h2 style="color: #ff9500;">IntelliFrost – Alarm (prioriteit verhoogd)</h2>
         <p>Klant <strong>${customer?.companyName}</strong> – koelcel <strong>${coldCellName}</strong>.</p>
-        <p><strong>Type:</strong> ${alertType}<br>
-        <strong>Waarde:</strong> ${temp}°C</p>
+        ${techBody}
         <p><a href="${config.frontendUrl}/technician" style="display: inline-block; padding: 12px 24px; background: #0080ff; color: white; text-decoration: none; border-radius: 6px;">Technician dashboard</a></p>
       </div>
     `;

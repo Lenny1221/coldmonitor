@@ -453,6 +453,14 @@ export class AlertService {
         },
       });
 
+      if (offlineDevices.length > 0) {
+        logger.info('Device offline check: found offline devices', {
+          count: offlineDevices.length,
+          deviceIds: offlineDevices.map((d) => d.id),
+          lastSeenAt: offlineDevices.map((d) => d.lastSeenAt),
+        });
+      }
+
       for (const device of offlineDevices) {
         // Update device status: OFFLINE = stroom niet actief
         await prisma.device.update({

@@ -117,9 +117,8 @@ router.post(
 
       const device = await prisma.device.findUnique({
         where: { id: req.deviceId },
-        select: { status: true, coldCellId: true },
+        select: { coldCellId: true },
       });
-      const wasOffline = device?.status === 'OFFLINE';
 
       const updateData: { firmwareVersion?: string; lastSeenAt: Date; status: 'ONLINE' } = {
         lastSeenAt: new Date(),
@@ -155,8 +154,10 @@ router.post(
         },
       });
 
-      // Device terug online: los WIFI_LOSS/POWER_LOSS op
-      if (wasOffline && device?.coldCellId) {
+      // Device online (heartbeat ontvangen): los WIFI_LOSS/POWER_LOSS op
+      // Let op: requireDeviceAuth zet status al op ONLINE vóór deze handler, dus we checken
+      // niet op wasOffline – we lossen altijd op bij heartbeat (device is dan online).
+      if (device?.coldCellId) {
         const { alertService } = await import('../../services/alertService');
         await alertService.resolveConnectionAlerts(device.coldCellId, uptimeSeconds);
       }

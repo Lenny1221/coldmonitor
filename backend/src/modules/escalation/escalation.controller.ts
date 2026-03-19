@@ -15,6 +15,7 @@ import { prisma } from '../../config/database';
 import { config } from '../../config/env';
 import { runEscalationCron } from '../../services/escalationService';
 import { alertService } from '../../services/alertService';
+import { jobs } from '../../jobs';
 import { generateTtsAudio, getCachedTts, setCachedTts } from '../../services/notifications/phoneChannel';
 import { logger } from '../../utils/logger';
 
@@ -90,6 +91,7 @@ router.post('/escalate', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    await jobs.checkDeviceOffline();
     await runEscalationCron();
     res.json({ success: true, message: 'Escalatie-cron uitgevoerd' });
   } catch (error) {
