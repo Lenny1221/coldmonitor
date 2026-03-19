@@ -1096,8 +1096,11 @@ void setupWiFi() {
   logger.info("WIFI: Setup starten...");
   logger.info("========================================");
   
-  wifiManager.setConfigPortalTimeout(180);   // 3 minuten voor config portal
-  wifiManager.setConnectTimeout(20);        // 20 seconden timeout voor WiFi connect
+  const unsigned long SEARCH_PHASE_MS = 3 * 60 * 1000;   // 3 min zoeken
+  const unsigned long PORTAL_PHASE_SEC = 180;             // 3 min config portal
+  const unsigned long CONNECT_ATTEMPT_MS = 30000;         // 30s per connect-poging
+  wifiManager.setConfigPortalTimeout(PORTAL_PHASE_SEC);
+  wifiManager.setConnectTimeout(20);        // 20 seconden per autoConnect-poging
   
   // Check provisioning state
   bool isProvisioned = provisioning.isProvisioned();
@@ -1186,29 +1189,44 @@ void setupWiFi() {
       logger.warn("WIFI: Geen SSID opgeslagen - start config portal");
       needsConfigPortal = true;
     } else {
-      // Setup WiFiManager with saved values
+      // Setup WiFiManager met opgeslagen waarden
       String apiUrl = provisioning.getAPIUrl();
       String apiKey = provisioning.getAPIKey();
       String deviceSerial = getEffectiveDeviceSerial();
-      
-      wifiManager.setupColdMonitorParams(
-        apiUrl.c_str(),
-        apiKey.c_str(),
-        deviceSerial.c_str()
-      );
+      wifiManager.setupColdMonitorParams(apiUrl.c_str(), apiKey.c_str(), deviceSerial.c_str());
       wifiManager.setOnSaveParamsCallback(onWifiParamsSaved);
-      
-      // Try auto-connect
-      logger.info("WIFI: Auto-connect starten (timeout: 20s)...");
-      bool connected = wifiManager.autoConnect(WIFI_SETUP_AP_SSID);
-    
-    if (!connected) {
-      logger.warn("WIFI: Auto-connect mislukt - start config portal");
-      // Clear failed credentials to prevent retry
-      WiFi.disconnect(true, true);
-      delay(200);
-      needsConfigPortal = true;
-    } else {
+
+      // Alternerende loop: 3 min zoeken -> 3 min portal -> herhaal (modem kan nog opstarten)
+      bool connected = false;
+      while (!connected) {
+        // FASE 1: Zoeken (3 min) – probeer elke 30s
+        logger.info("WIFI: Zoekfase – probeer te verbinden (max " + String(SEARCH_PHASE_MS / 1000) + "s)...");
+        unsigned long searchStart = millis();
+        while (!connected && (millis() - searchStart < SEARCH_PHASE_MS)) {
+          logger.info("WIFI: Connect-poging...");
+          connected = wifiManager.autoConnect(WIFI_SETUP_AP_SSID);
+          if (!connected) {
+            WiFi.disconnect(false);  // Niet wissen – credentials behouden
+            delay(500);
+            if (millis() - searchStart < SEARCH_PHASE_MS) {
+              unsigned long remaining = (SEARCH_PHASE_MS - (millis() - searchStart)) / 1000;
+              logger.warn("WIFI: Mislukt – volgende poging over 30s (nog " + String(remaining) + "s zoeken)");
+              delay(CONNECT_ATTEMPT_MS - 500);  // ~30s tussen pogingen
+            }
+          }
+        }
+
+        if (connected) break;
+
+        // FASE 2: Config portal (3 min) – gebruiker kan handmatig configureren
+        logger.warn("WIFI: Na " + String(SEARCH_PHASE_MS / 1000) + "s niet verbonden – config portal open (3 min)");
+        logger.warn("WIFI: Modem mogelijk nog aan het opstarten – portal sluit automatisch en zoekt opnieuw");
+        wifiManager.startConfigPortal(WIFI_SETUP_AP_SSID);
+        // Na timeout: credentials NIET wissen – gebruiker kan iets hebben ingevoerd
+        WiFi.disconnect(false);
+        delay(500);
+      }
+
       // Connected successfully
       String currentSSID = WiFi.SSID();
       String currentIP = WiFi.localIP().toString();
@@ -1259,8 +1277,7 @@ void setupWiFi() {
       
       return; // Success - exit
     }
-    } // End of else block for credentials check
-  }
+  }  // End else (credentials)
   
   // Als credentials ontbreken of autoConnect mislukte: start config portal
   if (needsConfigPortal) {

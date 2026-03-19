@@ -152,35 +152,52 @@ bool WiFiManagerWrapper::startConfigPortal(String apName) {
   logger.info("PORTAL: AP SSID = " + apName);
   logger.info("========================================");
   
-  // Light reset - WiFiManager doet de rest
-  WiFi.disconnect(true, true);
-  delay(200);
-  WiFi.mode(WIFI_OFF);
-  delay(300);
+  const int MAX_RETRIES = 3;
+  bool result = false;
   
-  // QR-code en custom velden
-  static String customHtml;
-  customHtml = buildConfigPortalCustomHtml(apName);
-  wifiManager.setCustomBodyFooter(customHtml.c_str());
-  
-  // Laat WiFiManager alles doen - geen eigen AP start (veroorzaakte conflict)
-  logger.info("PORTAL: WiFiManager start config portal (AP + web)...");
-  bool result = wifiManager.startConfigPortal(apName.c_str());
-  
-  // Verificatie
-  IPAddress apIP = WiFi.softAPIP();
-  if (apIP.toString() != "0.0.0.0" || result) {
-    connected = true;
-    logger.info("========================================");
-    logger.info("PORTAL: Config portal actief");
-    logger.info("PORTAL: AP SSID = " + apName);
-    logger.info("PORTAL: AP IP = " + apIP.toString());
-    logger.info("PORTAL: Open http://" + apIP.toString() + " in browser");
-    logger.info("========================================");
-    result = true;
+  for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 1) {
+      logger.warn("PORTAL: Retry " + String(attempt) + "/" + String(MAX_RETRIES));
+      delay(1000);  // Pauze tussen pogingen
+    }
+    
+    // WiFi-reset: disconnect en laat stack stabiliseren
+    // WiFi.mode(WIFI_OFF) kan AP-start blokkeren op sommige ESP32 – laat library mode bepalen
+    WiFi.disconnect(true, true);
+    delay(500);
+    yield();
+    
+    // QR-code en custom velden
+    static String customHtml;
+    customHtml = buildConfigPortalCustomHtml(apName);
+    wifiManager.setCustomBodyFooter(customHtml.c_str());
+    
+    logger.info("PORTAL: WiFiManager start config portal (AP + web)...");
+    result = wifiManager.startConfigPortal(apName.c_str());
+    
+    // Verificatie: controleer of AP echt draait
+    IPAddress apIP = WiFi.softAPIP();
+    if (apIP.toString() != "0.0.0.0") {
+      connected = true;
+      logger.info("========================================");
+      logger.info("PORTAL: Config portal actief");
+      logger.info("PORTAL: AP SSID = " + apName);
+      logger.info("PORTAL: AP IP = " + apIP.toString());
+      logger.info("PORTAL: Verbind met " + apName + " en open http://" + apIP.toString());
+      logger.info("========================================");
+      return true;
+    }
+    
+    if (result) {
+      // Library zegt success maar AP niet zichtbaar – retry
+      logger.warn("PORTAL: AP IP is 0.0.0.0 – portal niet gestart, retry...");
+    } else {
+      logger.warn("PORTAL: startConfigPortal mislukt, retry...");
+    }
   }
   
-  return result;
+  logger.error("PORTAL: Config portal kon na " + String(MAX_RETRIES) + " pogingen niet starten");
+  return false;
 }
 
 bool WiFiManagerWrapper::autoConnect(String apName) {
