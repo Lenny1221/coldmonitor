@@ -63,12 +63,35 @@ export async function sendLayer1Notifications(alert: AlertWithRelations): Promis
     );
   }
 
-  // Push: log (geen echte push zonder FCM/OneSignal – later uitbreiden)
-  logger.info('Layer 1: push notification (app alert)', {
-    alertId: alert.id,
-    customerId: customer?.id,
-  });
-  await logEscalation(alert.id, 'LAYER_1', 'App-alert naar klant', 'CLIENT', 'PUSH');
+  // Klant: push naar app (laag 1) – zelfde token-flow als laag 2 / technicus
+  if (customer?.id) {
+    const custRow = await prisma.customer.findUnique({
+      where: { id: customer.id },
+      select: { user: { select: { pushToken: true } } },
+    });
+    if (custRow?.user?.pushToken) {
+      const pushTitle = isConnectionAlert
+        ? `IntelliFrost – ${alertType}`
+        : 'IntelliFrost – Temperatuuralarm';
+      const pushBody = isConnectionAlert
+        ? `${coldCellName}: ${alertType}. Open de app.`
+        : `${coldCellName}: ${alertType} (${temp}°C). Bevestig in de app.`;
+      const sent = await sendPushNotification(
+        custRow.user.pushToken,
+        pushTitle,
+        pushBody,
+        { type: 'ALARM_LAYER1', alertId: alert.id }
+      );
+      if (sent) {
+        await logEscalation(alert.id, 'LAYER_1', 'Push naar klant (app)', 'CLIENT', 'PUSH');
+      }
+    } else {
+      logger.debug('Layer 1: klant heeft geen push token', {
+        alertId: alert.id,
+        customerId: customer.id,
+      });
+    }
+  }
 
   // Technician: app alert + dashboard
   if (technician?.email) {
