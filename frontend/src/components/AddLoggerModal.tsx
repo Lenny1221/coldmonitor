@@ -76,6 +76,14 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
     onClose();
   };
 
+  const handleAddAnother = () => {
+    setStep('serial');
+    setSerialNumber('');
+    setApiKey('');
+    setError(null);
+    onSuccess();
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4">
@@ -178,7 +186,7 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
                 <CheckCircleIcon className="h-16 w-16 text-green-500 mb-4" />
                 <p className="text-center font-semibold text-gray-900">Logger verbonden!</p>
                 <p className="mt-2 text-center text-sm text-gray-600">
-                  De logger stuurt nu data. Je kunt dit venster sluiten.
+                  <strong>{serialNumber}</strong> stuurt nu data naar <strong>{coldCellName}</strong>.
                 </p>
               </div>
             )}
@@ -224,13 +232,22 @@ export const AddLoggerModal: React.FC<AddLoggerModalProps> = ({
               </>
             )}
             {step === 'success' && (
-              <button
-                type="button"
-                onClick={handleDone}
-                className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                Sluiten
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleAddAnother}
+                  className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                >
+                  Nog een logger toevoegen
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDone}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Klaar
+                </button>
+              </>
             )}
             {step === 'waiting' && (
               <button

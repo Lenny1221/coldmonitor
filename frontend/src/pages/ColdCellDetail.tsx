@@ -272,19 +272,19 @@ const ColdCellDetail: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-frost-100 truncate flex-1">
             {coldCell.name}
           </h1>
-          {/* Logger-status dots */}
+          {/* Logger-status */}
           {devices.length > 0 && (
             <div className="flex items-center gap-1 shrink-0">
               {onlineCount > 0 && (
                 <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-                  {onlineCount}
+                  {onlineCount > 1 ? `${onlineCount}×` : ''} Online
                 </span>
               )}
               {offlineCount > 0 && (
                 <span className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-frost-850 px-2 py-0.5 rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" />
-                  {offlineCount}
+                  {offlineCount > 1 ? `${offlineCount}×` : ''} Offline
                 </span>
               )}
             </div>
