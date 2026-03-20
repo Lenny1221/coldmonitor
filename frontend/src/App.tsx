@@ -19,6 +19,7 @@ import LocationDetail from './pages/LocationDetail';
 import ColdCells from './pages/ColdCells';
 import ColdCellDetail from './pages/ColdCellDetail';
 import Alarmeringen from './pages/Alarmeringen';
+import ActiefAlarmen from './pages/ActiefAlarmen';
 import HACCPAuditReport from './pages/HACCPAuditReport';
 import TechnicianDashboard from './pages/TechnicianDashboard';
 import ManageCustomers from './pages/ManageCustomers';
@@ -126,6 +127,16 @@ function AppRoutes() {
           <PrivateRoute>
             <Layout>
               <Alarmeringen />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/alarmen/actief"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <ActiefAlarmen />
             </Layout>
           </PrivateRoute>
         }

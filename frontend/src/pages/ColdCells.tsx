@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { coldCellsApi, locationsApi } from '../services/api';
-import { CubeIcon, PlusIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import { CubeIcon, PlusIcon, ArrowRightIcon, CpuChipIcon } from '@heroicons/react/24/outline';
+import { AddLoggerModal } from '../components/AddLoggerModal';
 
 const ColdCells: React.FC = () => {
   const navigate = useNavigate();
@@ -18,6 +19,10 @@ const ColdCells: React.FC = () => {
     locationId: '',
   });
   const [creating, setCreating] = useState(false);
+  const [showAddLoggerSelect, setShowAddLoggerSelect] = useState(false);
+  const [loggerColdCellId, setLoggerColdCellId] = useState('');
+  const [loggerColdCellName, setLoggerColdCellName] = useState('');
+  const [showAddLoggerModal, setShowAddLoggerModal] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -96,14 +101,32 @@ const ColdCells: React.FC = () => {
             Beheer uw koel- en vriescellen
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateDialog(true)}
-          disabled={locations.length === 0}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Koelcel toevoegen
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setShowCreateDialog(true)}
+            disabled={locations.length === 0}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Koelcel toevoegen
+          </button>
+          <button
+            onClick={() => {
+              if (coldCells.length === 0) {
+                alert('Maak eerst een koelcel aan.');
+                return;
+              }
+              setLoggerColdCellId(coldCells[0]?.id || '');
+              setLoggerColdCellName(coldCells[0]?.name || '');
+              setShowAddLoggerSelect(true);
+            }}
+            disabled={coldCells.length === 0}
+            className="inline-flex items-center px-4 py-2 border border-blue-600 text-sm font-medium rounded-md text-blue-600 dark:text-blue-400 bg-white dark:bg-frost-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <CpuChipIcon className="h-5 w-5 mr-2" />
+            Logger toevoegen
+          </button>
+        </div>
       </div>
 
       {locations.length === 0 && (
@@ -196,6 +219,77 @@ const ColdCells: React.FC = () => {
             Maak je eerste koelcel aan om te beginnen met monitoren
           </p>
         </div>
+      )}
+
+      {/* Koelcel selecteren voor logger */}
+      {showAddLoggerSelect && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white dark:bg-frost-800 rounded-xl shadow-xl p-6 w-full max-w-sm mx-4 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-frost-100 mb-1">Logger toevoegen</h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mb-5">Kies de koelcel waaraan je de logger wilt koppelen.</p>
+            <div className="space-y-2 mb-6 max-h-64 overflow-y-auto">
+              {coldCells.map((cell) => (
+                <button
+                  key={cell.id}
+                  onClick={() => {
+                    setLoggerColdCellId(cell.id);
+                    setLoggerColdCellName(cell.name);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${
+                    loggerColdCellId === cell.id
+                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-200 dark:border-frost-700 hover:border-blue-400'
+                  }`}
+                >
+                  <CubeIcon className={`h-5 w-5 shrink-0 ${loggerColdCellId === cell.id ? 'text-blue-600' : 'text-gray-400'}`} />
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-900 dark:text-frost-100 truncate">{cell.name}</div>
+                    {cell.location?.locationName && (
+                      <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{cell.location.locationName}</div>
+                    )}
+                  </div>
+                  {loggerColdCellId === cell.id && (
+                    <span className="ml-auto shrink-0 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAddLoggerSelect(false)}
+                className="flex-1 py-2.5 rounded-lg border border-gray-300 dark:border-frost-600 text-gray-700 dark:text-slate-300 text-sm font-medium"
+              >
+                Annuleren
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddLoggerSelect(false);
+                  setShowAddLoggerModal(true);
+                }}
+                disabled={!loggerColdCellId}
+                className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium disabled:opacity-50"
+              >
+                Verder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddLoggerModal && loggerColdCellId && (
+        <AddLoggerModal
+          coldCellId={loggerColdCellId}
+          coldCellName={loggerColdCellName}
+          onClose={() => setShowAddLoggerModal(false)}
+          onSuccess={() => {
+            setShowAddLoggerModal(false);
+            fetchData();
+          }}
+        />
       )}
 
       {/* Create Cold Cell Dialog */}

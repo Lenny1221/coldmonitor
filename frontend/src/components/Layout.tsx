@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+
+export const LayoutContext = createContext<{ setSidebarOpen: (open: boolean) => void } | null>(null);
+export const useLayoutContext = () => useContext(LayoutContext);
 import {
   HomeIcon,
   ArrowRightOnRectangleIcon,
@@ -109,9 +112,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         : [];
 
   const userDisplay = user?.profile?.contactName || user?.profile?.name || user?.email || 'Gebruiker';
+  const isDashboard = location.pathname === '/dashboard';
 
   return (
-    <div className="min-h-screen flex bg-frost-50 dark:bg-frost-950">
+    <LayoutContext.Provider value={{ setSidebarOpen }}>
+      <div className="min-h-screen flex bg-frost-50 dark:bg-frost-950">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
@@ -237,7 +242,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile top bar – Capacitor: safe area, grotere touch targets, logo uit Dynamic Island */}
+        {/* Mobile top bar */}
         <header
           className={`lg:hidden sticky top-0 z-30 flex items-center px-4
             bg-white dark:bg-frost-800
@@ -285,11 +290,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </header>
 
-        <main className={`flex-1 p-4 sm:p-6 lg:p-8 overflow-auto ${isNative ? 'pb-[max(1.5rem,env(safe-area-inset-bottom))]' : ''}`}>
+        <main className={`flex-1 overflow-auto ${isNative ? 'pb-[max(1.5rem,env(safe-area-inset-bottom))]' : ''} ${
+          isDashboard ? 'p-0' : 'p-4 sm:p-6 lg:p-8'
+        }`}>
           {children}
         </main>
       </div>
     </div>
+    </LayoutContext.Provider>
   );
 };
 

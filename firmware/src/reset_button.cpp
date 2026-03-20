@@ -176,8 +176,15 @@ bool ResetButtonHandler::check() {
       }
     }
     
-    // Check if hold time exceeded
+        // Check if hold time exceeded
     if (holdTime >= resetHoldTimeMs) {
+      // LED: 5x snel knipperen als bevestiging
+      for (int i = 0; i < 5; i++) {
+        digitalWrite(LED_BUILTIN, LOW);
+        delay(100);
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(100);
+      }
       logger.warn("========================================");
       logger.warn("RESET: Factory reset getriggerd!");
       logger.warn("RESET: Knop " + String(resetHoldTimeMs / 1000) + " seconden ingedrukt");

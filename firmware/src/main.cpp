@@ -32,7 +32,8 @@
 ConfigManager config;
 Logger logger;
 ProvisioningManager provisioning;
-// Two-step reset: BOOT button (GPIO 0) + RESET button (GPIO 0, same pin) within 10 seconds
+// Single-button reset: BOOT knop (GPIO 0) 3 seconden vasthouden = factory reset
+// (RESET-knop op ESP32 DevKit is niet aan GPIO gekoppeld – alleen BOOT werkt)
 ResetButtonHandler resetButton(DEFAULT_BOOT_PIN, DEFAULT_RESET_PIN, BOOT_WINDOW_MS, RESET_HOLD_TIME_MS);
 Sensors sensors;
 // MAX31865: CS=5, MOSI=23, MISO=19, SCK=18 (ESP32 default SPI)
@@ -143,19 +144,16 @@ void setup() {
   // Log boot reason
   provisioning.logBootReason();
   
-  // Check two-step reset BEFORE loading settings
-  logger.info("RESET: Controleren twee-staps reset sequentie...");
-  logger.info("RESET: Stap 1 = Druk BOOT knop");
-  logger.info("RESET: Stap 2 = Binnen 10s, houd RESET knop 3s vast");
+  // Check reset knop: BOOT (GPIO 0) 3 seconden vasthouden = factory reset
+  logger.info("RESET: Houd BOOT knop 3 seconden vast voor factory reset");
   delay(300); // Stabilize button
-  
-  // Check for two-step reset sequence
+
   unsigned long resetCheckStart = millis();
-  const unsigned long resetCheckTimeout = 12000; // Check for 12 seconds max
-  
+  const unsigned long resetCheckTimeout = 8000;  // 8 seconden venster (3s vasthouden nodig)
+
   while (millis() - resetCheckStart < resetCheckTimeout) {
-      if (resetButton.checkTwoStepReset()) {
-        logger.warn("RESET: Factory reset getriggerd via twee-staps sequentie!");
+      if (resetButton.check()) {
+        logger.warn("RESET: Factory reset getriggerd via BOOT knop!");
         
         // Complete factory reset - wipe everything
         logger.warn("RESET: Uitvoeren volledige factory reset...");
@@ -337,8 +335,8 @@ void setup() {
 }
 
 void loop() {
-  // Check two-step reset sequence
-  if (resetButton.checkTwoStepReset()) {
+  // Check reset knop (BOOT 3s = factory reset)
+  if (resetButton.check()) {
     logger.warn("RESET: Factory reset getriggerd vanuit loop!");
     provisioning.factoryReset();
     wifiManager.resetSettings();
@@ -993,8 +991,8 @@ void commandTask(void *parameter) {
       }
     }
     
-    // Check two-step reset sequence periodically
-    if (resetButton.checkTwoStepReset()) {
+    // Check reset knop periodiek (BOOT 3s = factory reset)
+    if (resetButton.check()) {
       logger.warn("RESET: Factory reset getriggerd vanuit upload task!");
       provisioning.factoryReset();
       wifiManager.resetSettings();
@@ -1229,7 +1227,14 @@ void setupWiFi() {
 
       // Connected successfully
       String currentSSID = WiFi.SSID();
+      String currentPass = WiFi.psk();  // Werkt alleen als verbonden – nu kunnen we het wachtwoord ophalen
       String currentIP = WiFi.localIP().toString();
+      
+      // Backfill: als we "saved_by_wifimanager" hadden, nu het echte wachtwoord in provisioning zetten
+      if (currentPass.length() > 0) {
+        provisioning.setWiFiCredentials(currentSSID, currentPass);
+        logger.info("WIFI: Wachtwoord opgeslagen in provisioning (was via WiFiManager)");
+      }
       
       logger.info("========================================");
       logger.info("WIFI: NETWERK ONLINE");

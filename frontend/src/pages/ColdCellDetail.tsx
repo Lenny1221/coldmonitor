@@ -5,12 +5,11 @@ import { useTheme } from '../contexts/ThemeContext';
 import { coldCellsApi, coldCellStateApi, readingsApi, alertsApi, devicesApi } from '../services/api';
 import { useDoorStateSSE } from '../hooks/useDoorStateSSE';
 import {
+  Area,
   Line,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   ReferenceLine,
   ComposedChart,
@@ -44,7 +43,6 @@ const ColdCellDetail: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme } = useTheme();
-  const chartGridStroke = theme === 'dark' ? 'rgba(100,200,255,0.06)' : '#e5e7eb';
   const isTechnician = user?.role === 'TECHNICIAN' || user?.role === 'ADMIN';
   const [coldCell, setColdCell] = useState<any>(null);
   const { doorState: liveDoorState, isLive: doorStateLive, error: doorStateError, reconnect: doorStateReconnect } = useDoorStateSSE(id ?? undefined);
@@ -260,51 +258,69 @@ const ColdCellDetail: React.FC = () => {
   const customer = coldCell?.location?.customer;
   const devices = coldCell?.devices ?? [];
 
+  const onlineCount = devices.filter((d: any) => d.status === 'ONLINE').length;
+  const offlineCount = devices.filter((d: any) => d.status !== 'ONLINE').length;
+
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 shrink-0 hover:bg-gray-100 dark:hover:bg-frost-850 rounded-md text-gray-900 dark:text-frost-100"
-              aria-label="Terug"
-            >
-              <ArrowLeftIcon className="h-6 w-6" />
-            </button>
-            {isTechnician && customer && (
-              <button
-                onClick={() => navigate(`/customers/${customer.id}`)}
-                className="inline-flex items-center shrink-0 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md"
-                aria-label="Terug naar klant"
-              >
-                <LinkIcon className="h-5 w-5 mr-2" />
-                Terug naar klant
-              </button>
-            )}
-          </div>
+      <div className="flex flex-col gap-1">
+        {/* Naam-rij: terug | naam + status-dots | instellingen */}
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 shrink-0 hover:bg-gray-100 dark:hover:bg-frost-850 rounded-md text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-frost-100"
-            aria-label="Alarminstellingen"
-            title="Alarminstellingen"
+            onClick={() => navigate(-1)}
+            className="p-1.5 shrink-0 hover:bg-gray-100 dark:hover:bg-frost-850 rounded-md text-gray-700 dark:text-frost-100"
+            aria-label="Terug"
           >
-            <Cog6ToothIcon className="h-6 w-6" />
+            <ArrowLeftIcon className="h-5 w-5" />
           </button>
-        </div>
-        <div className="w-full min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-frost-100 break-words">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-frost-100 truncate flex-1">
             {coldCell.name}
           </h1>
-          <p className="text-sm text-gray-600 dark:text-slate-200 capitalize mt-0.5">{coldCell.type}</p>
+          {/* Logger-status dots */}
+          {devices.length > 0 && (
+            <div className="flex items-center gap-1 shrink-0">
+              {onlineCount > 0 && (
+                <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                  {onlineCount}
+                </span>
+              )}
+              {offlineCount > 0 && (
+                <span className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-frost-850 px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" />
+                  {offlineCount}
+                </span>
+              )}
+            </div>
+          )}
+          <button
+            onClick={() => setShowSettings(true)}
+            className="p-1.5 shrink-0 hover:bg-gray-100 dark:hover:bg-frost-850 rounded-md text-gray-600 dark:text-slate-300"
+            aria-label="Alarminstellingen"
+          >
+            <Cog6ToothIcon className="h-5 w-5" />
+          </button>
+        </div>
+        {/* Subinfo */}
+        <div className="pl-9">
+          <p className="text-sm text-gray-600 dark:text-slate-200 capitalize">{coldCell.type}</p>
           {coldCell.location && (
-            <div className="flex items-start text-sm text-gray-500 dark:text-slate-300 mt-1">
-              <MapPinIcon className="h-4 w-4 mr-1.5 flex-shrink-0 mt-0.5" />
-              <span className="break-words">
+            <div className="flex items-start text-sm text-gray-500 dark:text-slate-300 mt-0.5">
+              <MapPinIcon className="h-4 w-4 mr-1 flex-shrink-0 mt-0.5" />
+              <span>
                 {coldCell.location.locationName}
                 {coldCell.location.address && ` · ${coldCell.location.address}`}
               </span>
             </div>
+          )}
+          {isTechnician && customer && (
+            <button
+              onClick={() => navigate(`/customers/${customer.id}`)}
+              className="inline-flex items-center mt-1 text-sm font-medium text-blue-600 dark:text-blue-400"
+            >
+              <LinkIcon className="h-4 w-4 mr-1" />
+              Terug naar klant
+            </button>
           )}
         </div>
       </div>
@@ -753,68 +769,83 @@ const ColdCellDetail: React.FC = () => {
         </div>
 
         {chartData.length > 0 ? (
-          <>
-            <ResponsiveContainer width="100%" height={340}>
-              <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 30 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
+          <div className="relative -mx-6 px-2">
+            <span className="absolute top-1 left-4 text-xs font-semibold text-gray-400 dark:text-slate-500 z-10 select-none">°C</span>
+            <ResponsiveContainer width="100%" height={280}>
+              <ComposedChart data={chartData} margin={{ top: 24, right: 8, left: -8, bottom: 16 }}>
+                <defs>
+                  <linearGradient id="tempFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <XAxis
                   dataKey="timeLabel"
-                  tick={{ fontSize: 11 }}
-                  angle={timeRange === '30d' ? -45 : 0}
+                  tick={{ fontSize: 10, fill: theme === 'dark' ? '#94a3b8' : '#9ca3af' }}
+                  axisLine={false}
+                  tickLine={false}
+                  angle={timeRange === '30d' ? -35 : 0}
                   textAnchor={timeRange === '30d' ? 'end' : 'middle'}
-                  height={50}
+                  height={36}
+                  interval="preserveStartEnd"
                 />
                 <YAxis
                   domain={['auto', 'auto']}
-                  tick={{ fontSize: 12 }}
-                  label={{
-                    value: 'Temperatuur (°C)',
-                    angle: -90,
-                    position: 'insideLeft',
-                    style: { textAnchor: 'middle' },
-                  }}
+                  tick={{ fontSize: 10, fill: theme === 'dark' ? '#94a3b8' : '#9ca3af' }}
+                  tickFormatter={(v) => `${v}°`}
+                  axisLine={false}
+                  tickLine={false}
+                  width={36}
                 />
                 <Tooltip
-                  formatter={(value: number) => [`${value?.toFixed(1) ?? value} °C`, 'Temperatuur']}
-                  labelFormatter={(label) => label}
+                  cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    const val = payload[0]?.value as number | undefined;
+                    return (
+                      <div className="bg-white dark:bg-frost-800 rounded-xl shadow-lg px-3 py-2 border border-gray-100 dark:border-frost-700">
+                        <p className="text-[11px] text-gray-400 dark:text-slate-400 mb-0.5">{label}</p>
+                        <p className="text-base font-bold text-blue-600 dark:text-blue-400">
+                          {val != null ? `${val.toFixed(1)} °C` : '—'}
+                        </p>
+                      </div>
+                    );
+                  }}
                 />
-                <Legend />
-                <ReferenceLine
-                  y={minTh}
-                  stroke="#3b82f6"
-                  strokeDasharray="5 5"
-                  strokeWidth={1.5}
-                  name={`Ondergrens ${minTh} °C`}
-                />
-                <ReferenceLine
-                  y={maxTh}
-                  stroke="#ef4444"
-                  strokeDasharray="5 5"
-                  strokeWidth={1.5}
-                  name={`Bovengrens ${maxTh} °C`}
+                {minTh != null && (
+                  <ReferenceLine y={minTh} stroke="#3b82f6" strokeDasharray="4 4" strokeWidth={1.2} />
+                )}
+                {maxTh != null && (
+                  <ReferenceLine y={maxTh} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.2} />
+                )}
+                <Area
+                  type="natural"
+                  dataKey="temperature"
+                  fill="url(#tempFill)"
+                  stroke="none"
+                  dot={false}
+                  activeDot={false}
+                  legendType="none"
                 />
                 <Line
-                  type="monotone"
+                  type="natural"
                   dataKey="temperature"
                   stroke="#3b82f6"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   dot={false}
                   activeDot={(props: { payload?: { isExceedance?: boolean }; cx?: number; cy?: number }) => {
                     const { payload, cx, cy } = props;
                     return payload?.isExceedance ? (
-                      <circle cx={cx} cy={cy} r={4} fill="#ef4444" stroke="#b91c1c" strokeWidth={1} />
+                      <circle cx={cx} cy={cy} r={5} fill="#ef4444" stroke="#fff" strokeWidth={1.5} />
                     ) : (
-                      <circle cx={cx} cy={cy} r={4} fill="#3b82f6" />
+                      <circle cx={cx} cy={cy} r={5} fill="#3b82f6" stroke="#fff" strokeWidth={1.5} />
                     );
                   }}
-                  name="Gemeten temperatuur"
+                  name="Temperatuur"
                 />
               </ComposedChart>
             </ResponsiveContainer>
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
-              Rode punten = overschrijding van onder- of bovengrens.
-            </p>
-          </>
+          </div>
         ) : (
           <div className="py-12 text-center text-gray-500 dark:text-slate-400">
             Geen temperatuurdata voor deze periode.
@@ -845,44 +876,72 @@ const ColdCellDetail: React.FC = () => {
           </div>
 
           {chartData.length > 0 ? (
-            <>
-              <ResponsiveContainer width="100%" height={340}>
-                <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
+            <div className="relative -mx-6 px-2">
+              <span className="absolute top-1 left-4 text-xs font-semibold text-gray-400 dark:text-slate-500 z-10 select-none">%</span>
+              <ResponsiveContainer width="100%" height={280}>
+                <ComposedChart data={chartData} margin={{ top: 24, right: 8, left: -8, bottom: 16 }}>
+                  <defs>
+                    <linearGradient id="humidFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.18} />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <XAxis
                     dataKey="timeLabel"
-                    tick={{ fontSize: 11 }}
-                    angle={timeRange === '30d' ? -45 : 0}
+                    tick={{ fontSize: 10, fill: theme === 'dark' ? '#94a3b8' : '#9ca3af' }}
+                    axisLine={false}
+                    tickLine={false}
+                    angle={timeRange === '30d' ? -35 : 0}
                     textAnchor={timeRange === '30d' ? 'end' : 'middle'}
-                    height={50}
+                    height={36}
+                    interval="preserveStartEnd"
                   />
                   <YAxis
                     domain={[0, 100]}
-                    tick={{ fontSize: 12 }}
-                    label={{
-                      value: 'Luchtvochtigheid (%)',
-                      angle: -90,
-                      position: 'insideLeft',
-                      style: { textAnchor: 'middle' },
-                    }}
+                    tick={{ fontSize: 10, fill: theme === 'dark' ? '#94a3b8' : '#9ca3af' }}
+                    tickFormatter={(v) => `${v}%`}
+                    axisLine={false}
+                    tickLine={false}
+                    width={36}
                   />
                   <Tooltip
-                    formatter={(value: number) => [`${value?.toFixed(1) ?? value} %`, 'Luchtvochtigheid']}
-                    labelFormatter={(label) => label}
+                    cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '4 4' }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const val = payload[0]?.value as number | undefined;
+                      return (
+                        <div className="bg-white dark:bg-frost-800 rounded-xl shadow-lg px-3 py-2 border border-gray-100 dark:border-frost-700">
+                          <p className="text-[11px] text-gray-400 dark:text-slate-400 mb-0.5">{label}</p>
+                          <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                            {val != null ? `${val.toFixed(1)} %` : '—'}
+                          </p>
+                        </div>
+                      );
+                    }}
                   />
-                  <Legend />
+                  <Area
+                    type="natural"
+                    dataKey="humidity"
+                    fill="url(#humidFill)"
+                    stroke="none"
+                    dot={false}
+                    activeDot={false}
+                    legendType="none"
+                  />
                   <Line
-                    type="monotone"
+                    type="natural"
                     dataKey="humidity"
                     stroke="#10b981"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     dot={false}
-                    activeDot={{ r: 4, fill: '#10b981' }}
-                    name="Gemeten luchtvochtigheid"
+                    activeDot={(props: { cx?: number; cy?: number }) => (
+                      <circle cx={props.cx} cy={props.cy} r={5} fill="#10b981" stroke="#fff" strokeWidth={1.5} />
+                    )}
+                    name="Luchtvochtigheid"
                   />
                 </ComposedChart>
               </ResponsiveContainer>
-            </>
+            </div>
           ) : (
             <div className="py-12 text-center text-gray-500 dark:text-slate-400">
               Geen luchtvochtigheidsdata voor deze periode.

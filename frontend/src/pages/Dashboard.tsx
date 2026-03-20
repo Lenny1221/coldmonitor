@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext';
-import { dashboardApi, invitationsApi, customersApi } from '../services/api';
-import { 
-  CheckCircleIcon, 
-  ExclamationTriangleIcon, 
+import { dashboardApi, invitationsApi, customersApi, alertsApi } from '../services/api';
+import { ResolveAlertModal } from '../components/ResolveAlertModal';
+import {
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
   XCircleIcon,
-  ArrowRightIcon,
+  CubeIcon,
+  MapPinIcon,
+  UserCircleIcon,
   PhoneIcon,
   EnvelopeIcon,
-  UserIcon,
-  BellIcon,
   XMarkIcon,
-  MapPinIcon
 } from '@heroicons/react/24/outline';
+import { format, parseISO } from 'date-fns';
 
 interface ColdCell {
   id: string;
@@ -27,10 +29,9 @@ interface ColdCell {
     locationName: string;
     address?: string | null;
   };
-  _count?: {
-    alerts: number;
-  };
 }
+
+type DashboardView = 'koelcellen' | 'alarmen' | 'technicus';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -38,27 +39,32 @@ const Dashboard: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [pendingInvitationsCount, setPendingInvitationsCount] = useState(0);
+  const [, setPendingInvitationsCount] = useState(0);
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+  const [activeView, setActiveView] = useState<DashboardView>('koelcellen');
+  const [locationFilter, setLocationFilter] = useState<string>('all');
+  const [alarms, setAlarms] = useState<any[]>([]);
+  const [resolveAlert, setResolveAlert] = useState<any | null>(null);
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
     fetchDashboard();
     if (user?.role === 'CUSTOMER') {
       fetchPendingInvitations();
+      fetchAlarms();
     }
   }, [user]);
 
-  // Automatisch vernieuwen elke 20 seconden (zelfde ritme als ESP32)
   useEffect(() => {
     if (user?.role !== 'CUSTOMER') return;
     const intervalId = setInterval(() => {
       fetchDashboard(true);
       fetchPendingInvitations();
+      fetchAlarms();
     }, 20000);
     return () => clearInterval(intervalId);
   }, [user?.role]);
 
-  // Bij terugkeer naar tab direct verversen (browsers vertragen timers in achtergrond tot ~10 min)
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible' && user?.role === 'CUSTOMER') {
@@ -69,6 +75,52 @@ const Dashboard: React.FC = () => {
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [user?.role]);
+
+  const fetchAlarms = async () => {
+    try {
+      const data = await alertsApi.getAll();
+      const all = Array.isArray(data) ? data : [];
+      setAlarms(all.filter((a: any) => a.status === 'ACTIVE' || a.status === 'ESCALATING'));
+    } catch {
+      setAlarms([]);
+    }
+  };
+
+  const getAlarmIcon = (type: string) => {
+    switch (type) {
+      case 'POWER_LOSS':
+      case 'WIFI_LOSS':
+      case 'SENSOR_ERROR':
+        return <XCircleIcon className="h-5 w-5 text-red-500" />;
+      default:
+        return <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" />;
+    }
+  };
+
+  const getAlarmBorder = (type: string) => {
+    switch (type) {
+      case 'POWER_LOSS':
+      case 'WIFI_LOSS':
+      case 'SENSOR_ERROR':
+        return 'border-l-red-500';
+      case 'DOOR_OPEN':
+        return 'border-l-amber-500';
+      default:
+        return 'border-l-orange-500';
+    }
+  };
+
+  const getAlarmTitle = (type: string) => {
+    switch (type) {
+      case 'POWER_LOSS': return 'Stroomuitval';
+      case 'WIFI_LOSS': return 'Geen wifi signaal';
+      case 'DOOR_OPEN': return 'Deur open';
+      case 'HIGH_TEMP': return 'Temperatuur te hoog';
+      case 'LOW_TEMP': return 'Temperatuur te laag';
+      case 'SENSOR_ERROR': return 'Sensorfout';
+      default: return type?.replace('_', ' ') ?? 'Alarm';
+    }
+  };
 
   const fetchPendingInvitations = async () => {
     try {
@@ -81,13 +133,9 @@ const Dashboard: React.FC = () => {
   };
 
   const handleUnlinkTechnician = async () => {
-    if (!confirm('Weet je zeker dat je de koppeling met je technicus wilt verbreken? Ze hebben dan geen toegang meer tot je koelcellen.')) {
-      return;
-    }
-
+    if (!confirm('Weet je zeker dat je de koppeling met je technicus wilt verbreken?')) return;
     try {
       await customersApi.unlinkTechnician();
-      // Refresh dashboard to update technician info
       await fetchDashboard();
       setShowUnlinkModal(false);
     } catch (error: any) {
@@ -120,40 +168,35 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusDot = (status: string) => {
     switch (status) {
       case 'OK':
-        return <CheckCircleIcon className="h-6 w-6 text-green-500" />;
+        return 'bg-green-500';
       case 'WARNING':
-        return <ExclamationTriangleIcon className="h-6 w-6 text-orange-500" />;
+        return 'bg-orange-500';
       case 'ALARM':
-        return <XCircleIcon className="h-6 w-6 text-red-500" />;
+        return 'bg-red-500';
       default:
-        return null;
+        return 'bg-gray-400';
     }
   };
 
-  const getTypeLabel = (type: string) => {
-    const labels: Record<string, string> = { fridge: 'Koelkast', freezer: 'Vriezer' };
-    return labels[type?.toLowerCase()] || type;
-  };
+  const coldCells = data?.summary?.coldCells || [];
+  const activeAlarms = data?.summary?.activeAlarms ?? 0;
+  const technician = data?.customer?.linkedTechnician;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'OK':
-        return 'bg-green-50 dark:bg-green-900/25 border-green-200 dark:border-green-800/50';
-      case 'WARNING':
-        return 'bg-orange-50 dark:bg-orange-900/25 border-orange-200 dark:border-orange-800/50';
-      case 'ALARM':
-        return 'bg-red-50 dark:bg-red-900/25 border-red-200 dark:border-red-800/50';
-      default:
-        return 'bg-gray-50 dark:bg-frost-850 border-gray-200 dark:border-[rgba(100,200,255,0.12)]';
-    }
-  };
+  const locations = Array.from(
+    new Set(coldCells.map((c: ColdCell) => c.location?.locationName).filter(Boolean))
+  ) as string[];
+
+  const filteredCells =
+    locationFilter === 'all'
+      ? coldCells
+      : coldCells.filter((c: ColdCell) => c.location?.locationName === locationFilter);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-lg text-gray-900 dark:text-frost-100">Dashboard laden...</div>
       </div>
     );
@@ -162,7 +205,7 @@ const Dashboard: React.FC = () => {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 dark:bg-red-900/25 border border-red-200 dark:border-red-800/50 rounded-md p-4">
+        <div className="bg-red-50 dark:bg-red-900/25 border border-red-200 dark:border-red-800/50 rounded-xl p-4">
           <p className="text-red-800 dark:text-red-300">{error}</p>
         </div>
       </div>
@@ -172,204 +215,389 @@ const Dashboard: React.FC = () => {
   if (!data) return null;
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-frost-100">Overzicht</h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
-              Welkom terug, {data.customer?.contactName || 'Klant'}
-            </p>
-          </div>
-          {pendingInvitationsCount > 0 && (
-            <Link
-              to="/invitations"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+    <div className="min-h-full bg-[#ddeeff] dark:bg-frost-950 overflow-x-hidden">
+      {/* Boog – wit, breed, volledig ronde onderkant */}
+      <div
+        className="bg-white dark:bg-frost-800 pt-4 px-8 sm:px-10"
+        style={{
+          marginLeft: '-5%',
+          marginRight: '-5%',
+          paddingBottom: '3.5rem',
+          borderRadius: '0 0 50% 50% / 0 0 3.5rem 3.5rem',
+        }}
+      >
+        <div className="flex justify-around gap-2">
+          <button
+            onClick={() => setActiveView('koelcellen')}
+            className="flex flex-col items-center flex-1 max-w-[110px]"
+          >
+            <span className={`text-[11px] font-bold uppercase tracking-wide mb-2 ${
+              activeView === 'koelcellen' ? 'text-[#0066cc] dark:text-[#00c8ff]' : 'text-gray-500 dark:text-slate-400'
+            }`}>
+              Koelcellen
+            </span>
+            <div
+              className={`w-16 h-16 rounded-full border-2 flex items-center justify-center transition-all ${
+                activeView === 'koelcellen'
+                  ? 'bg-[#0066cc] border-[#0066cc] dark:bg-[#0052a3] dark:border-[#0052a3]'
+                  : 'bg-white dark:bg-frost-800 border-[#0066cc]/40 dark:border-[#00c8ff]/30'
+              }`}
             >
-              <BellIcon className="h-5 w-5 mr-2" />
-              {pendingInvitationsCount} openstaande uitnodiging{pendingInvitationsCount !== 1 ? 'en' : ''}
-            </Link>
-          )}
+              <CubeIcon
+                className={`h-8 w-8 ${activeView === 'koelcellen' ? 'text-white' : 'text-[#0066cc] dark:text-[#00c8ff]'}`}
+              />
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveView('alarmen')}
+            className="flex flex-col items-center flex-1 max-w-[110px]"
+          >
+            <span className={`text-[11px] font-bold uppercase tracking-wide mb-2 ${
+              activeView === 'alarmen' ? 'text-[#0066cc] dark:text-[#00c8ff]' : 'text-gray-500 dark:text-slate-400'
+            }`}>
+              Alarmen
+            </span>
+            <div className="relative">
+              <div
+                className={`w-16 h-16 rounded-full border-2 flex items-center justify-center transition-all ${
+                  activeView === 'alarmen'
+                    ? 'bg-[#0066cc] border-[#0066cc] dark:bg-[#0052a3] dark:border-[#0052a3]'
+                    : 'bg-white dark:bg-frost-800 border-[#0066cc]/40 dark:border-[#00c8ff]/30'
+                }`}
+              >
+                <ExclamationTriangleIcon
+                  className={`h-8 w-8 ${activeView === 'alarmen' ? 'text-white' : 'text-[#0066cc] dark:text-[#00c8ff]'}`}
+                />
+              </div>
+              {activeAlarms > 0 && (
+                <span className="absolute -bottom-1 -right-1 min-w-[22px] h-[22px] rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center px-1">
+                  {activeAlarms}
+                </span>
+              )}
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveView('technicus')}
+            className="flex flex-col items-center flex-1 max-w-[110px]"
+          >
+            <span className={`text-[11px] font-bold uppercase tracking-wide mb-2 ${
+              activeView === 'technicus' ? 'text-[#0066cc] dark:text-[#00c8ff]' : 'text-gray-500 dark:text-slate-400'
+            }`}>
+              Technicus
+            </span>
+            <div
+              className={`w-16 h-16 rounded-full border-2 flex items-center justify-center transition-all ${
+                activeView === 'technicus'
+                  ? 'bg-[#0066cc] border-[#0066cc] dark:bg-[#0052a3] dark:border-[#0052a3]'
+                  : 'bg-white dark:bg-frost-800 border-[#0066cc]/40 dark:border-[#00c8ff]/30'
+              }`}
+            >
+              <UserCircleIcon
+                className={`h-8 w-8 ${activeView === 'technicus' ? 'text-white' : 'text-[#0066cc] dark:text-[#00c8ff]'}`}
+              />
+            </div>
+          </button>
         </div>
       </div>
 
-      {/* Technician Info Card – boven koelcellen */}
-      {data.customer?.linkedTechnician && (
-        <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-4 flex-1">
-              <div className="flex-shrink-0">
-                <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-                  <UserIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
+      {/* Content area */}
+      <div className="min-h-screen pt-6 px-4 sm:px-6 pb-8">
+        {activeView === 'koelcellen' && (
+          <>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-frost-100">Koelingen</h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+              Aantal koelcellen: {coldCells.length}
+            </p>
+
+            {locations.length > 1 && (
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => setLocationFilter('all')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium ${
+                    locationFilter === 'all'
+                      ? 'bg-[#0066cc] text-white'
+                      : 'bg-white dark:bg-frost-800 text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-frost-700'
+                  }`}
+                >
+                  Alle locaties
+                </button>
+                {locations.map((loc) => (
+                  <button
+                    key={loc}
+                    onClick={() => setLocationFilter(loc)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium ${
+                      locationFilter === loc
+                        ? 'bg-[#0066cc] text-white'
+                        : 'bg-white dark:bg-frost-800 text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-frost-700'
+                    }`}
+                  >
+                    {loc}
+                  </button>
+                ))}
               </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">Jouw technicus</h3>
+            )}
+
+            <div className="mt-6 space-y-3">
+              {filteredCells.map((cell: ColdCell) => (
+                <button
+                  key={cell.id}
+                  onClick={() => navigate(`/coldcell/${cell.id}`)}
+                  className="w-full text-left bg-white dark:bg-frost-800 rounded-xl p-4 flex items-center gap-4 shadow-sm border border-gray-100 dark:border-frost-700 hover:shadow-md active:scale-[0.99] transition-all"
+                >
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                      <CubeIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                      {cell.currentTemperature !== null
+                        ? `${cell.currentTemperature.toFixed(1)}°`
+                        : '—'}
+                    </span>
+                  </div>
+                  <div className="h-10 w-px bg-gray-200 dark:bg-frost-700" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-gray-900 dark:text-frost-100 truncate">
+                      {cell.name}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                      Laatste meting:{' '}
+                      {cell.lastReadingAt
+                        ? new Date(cell.lastReadingAt).toLocaleString('nl-BE')
+                        : '—'}
+                    </div>
+                  </div>
+                  <div
+                    className={`w-3 h-3 rounded-full shrink-0 ${getStatusDot(cell.status)}`}
+                    title={cell.status}
+                  />
+                </button>
+              ))}
+            </div>
+
+            {filteredCells.length === 0 && (
+              <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+                <CubeIcon className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>Nog geen koelcellen</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeView === 'alarmen' && (
+          <>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-frost-100">Alarmen</h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+              {alarms.length === 0
+                ? 'Geen actieve alarmen'
+                : `${alarms.length} alarm${alarms.length !== 1 ? 'en' : ''} actief`}
+            </p>
+
+            <div className="mt-6 space-y-3">
+              {alarms.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
+                    <CheckCircleIcon className="h-9 w-9 text-green-500" />
+                  </div>
+                  <p className="font-semibold text-gray-700 dark:text-frost-100">Alles in orde</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+                    Alle systemen functioneren normaal.
+                  </p>
+                </div>
+              ) : (
+                alarms.map((alarm: any) => (
+                  <div
+                    key={alarm.id}
+                    className={`bg-white dark:bg-frost-800 rounded-xl shadow-sm border-l-4 ${getAlarmBorder(alarm.type)} p-4 flex flex-col gap-3 ${
+                      isNative && alarm.coldCellId ? 'cursor-pointer active:opacity-80' : ''
+                    }`}
+                    onClick={
+                      isNative && alarm.coldCellId
+                        ? (e) => {
+                            if ((e.target as HTMLElement).closest('button')) return;
+                            navigate(`/coldcell/${alarm.coldCellId}`);
+                          }
+                        : undefined
+                    }
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5">{getAlarmIcon(alarm.type)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-900 dark:text-frost-100">
+                          {getAlarmTitle(alarm.type)}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-2">
+                          {alarm.coldCell?.location?.locationName && (
+                            <span className="flex items-center gap-1">
+                              <MapPinIcon className="h-3.5 w-3.5" />
+                              {alarm.coldCell.location.locationName}
+                            </span>
+                          )}
+                          {alarm.coldCell?.name && (
+                            <>
+                              <span>·</span>
+                              <span className="flex items-center gap-1">
+                                <CubeIcon className="h-3.5 w-3.5" />
+                                {alarm.coldCell.name}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {alarm.value != null && alarm.type !== 'POWER_LOSS' && alarm.type !== 'WIFI_LOSS' && (
+                          <div className="text-sm text-gray-600 dark:text-slate-300 mt-1">
+                            {alarm.value} °C{alarm.threshold != null ? ` (drempel: ${alarm.threshold} °C)` : ''}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                          {format(parseISO(alarm.triggeredAt), 'dd/MM/yyyy HH:mm')}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`flex gap-2 ${isNative ? 'flex-col' : 'flex-row'}`}>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await alertsApi.acknowledge(alarm.id);
+                          fetchAlarms();
+                        }}
+                        className="flex-1 py-2 rounded-lg bg-green-600 text-white text-sm font-medium active:opacity-80"
+                      >
+                        Bevestigen
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const requireReason = alarm.coldCell?.requireResolutionReason !== false;
+                          if (requireReason) {
+                            setResolveAlert(alarm);
+                          } else {
+                            alertsApi.resolve(alarm.id).then(() => fetchAlarms());
+                          }
+                        }}
+                        className="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-medium active:opacity-80"
+                      >
+                        Oplossen
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
+
+        {activeView === 'technicus' && (
+          <div className="py-4">
+            {technician ? (
+              <div className="bg-white dark:bg-frost-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-frost-700">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                      <UserCircleIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">
+                        Jouw servicetechnicus
+                      </h3>
+                      <p className="text-gray-600 dark:text-slate-300 mt-1">
+                        {technician.name}
+                      </p>
+                      {technician.companyName && (
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+                          {technician.companyName}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                   <button
                     onClick={() => setShowUnlinkModal(true)}
-                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium inline-flex items-center"
-                    title="Technicus ontkoppelen"
+                    className="text-red-600 dark:text-red-400 text-sm font-medium shrink-0"
                   >
-                    <XMarkIcon className="h-4 w-4 mr-1" />
                     Ontkoppelen
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
-                  Neem contact op met je toegewezen technicus voor ondersteuning
-                </p>
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center text-sm text-gray-700 dark:text-slate-300">
-                    <UserIcon className="h-4 w-4 mr-2 text-gray-400 dark:text-slate-400" />
-                    <span className="font-medium">{data.customer.linkedTechnician.name}</span>
-                  </div>
-                  {data.customer.linkedTechnician.companyName && (
-                    <div className="text-sm text-gray-600 dark:text-slate-300 ml-6">
-                      {data.customer.linkedTechnician.companyName}
-                    </div>
-                  )}
-                  {data.customer.linkedTechnician.email && (
-                    <div className="flex items-center text-sm text-gray-700 dark:text-slate-300">
-                      <EnvelopeIcon className="h-4 w-4 mr-2 text-gray-400 dark:text-slate-400" />
-                      <a 
-                        href={`mailto:${data.customer.linkedTechnician.email}`}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                      >
-                        {data.customer.linkedTechnician.email}
-                      </a>
-                    </div>
-                  )}
-                  {data.customer.linkedTechnician.phone && (
-                    <div className="flex items-center text-sm text-gray-700 dark:text-slate-300">
-                      <PhoneIcon className="h-4 w-4 mr-2 text-gray-400 dark:text-slate-400" />
-                      <a 
-                        href={`tel:${data.customer.linkedTechnician.phone}`}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                      >
-                        {data.customer.linkedTechnician.phone}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cold Cells Overview */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Koelcellen</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.summary?.coldCells?.map((cell: ColdCell) => (
-            <div
-              key={cell.id}
-              className={`bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] border-2 ${getStatusColor(cell.status)} p-6 cursor-pointer hover:shadow-lg dark:hover:shadow-[0_0_24px_rgba(0,0,0,0.3)] transition-shadow`}
-              onClick={() => navigate(`/coldcell/${cell.id}`)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-frost-100">{cell.name}</h3>
-                  <p className="text-sm text-gray-600 dark:text-slate-300">{getTypeLabel(cell.type)}</p>
-                  {cell.location && (
-                    <div
-                      className="mt-1.5 flex items-center text-sm text-gray-500 dark:text-slate-400"
-                      title={cell.location.address ? `${cell.location.locationName} – ${cell.location.address}` : cell.location.locationName}
+                <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                  {technician.phone && (
+                    <button
+                      onClick={() => window.open(`tel:${technician.phone}`, '_system')}
+                      className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium active:opacity-70"
                     >
-                      <MapPinIcon className="h-4 w-4 mr-1.5 text-gray-400 dark:text-slate-400 flex-shrink-0" />
-                      <span className="truncate">{cell.location.locationName}</span>
-                    </div>
+                      <PhoneIcon className="h-5 w-5" />
+                      Bellen
+                    </button>
+                  )}
+                  {technician.email && (
+                    <button
+                      onClick={() => window.open(`mailto:${technician.email}`, '_system')}
+                      className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium active:opacity-70"
+                    >
+                      <EnvelopeIcon className="h-5 w-5" />
+                      E-mail
+                    </button>
                   )}
                 </div>
-                {getStatusIcon(cell.status)}
               </div>
-              
-              <div className="mt-4 space-y-2">
-                {cell.currentTemperature !== null ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-slate-300">Temperatuur</span>
-                    <span className="text-2xl font-bold text-gray-900 dark:text-frost-100">
-                      {cell.currentTemperature.toFixed(1)}°C
-                    </span>
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-400 dark:text-slate-400">Geen data beschikbaar</div>
-                )}
-                
-                {cell.lastReadingAt && (
-                  <div className="text-xs text-gray-500 dark:text-slate-400">
-                    Laatste meting: {new Date(cell.lastReadingAt).toLocaleString()}
-                  </div>
-                )}
+            ) : (
+              <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+                <UserCircleIcon className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>Nog geen technicus gekoppeld</p>
+                <p className="text-sm mt-2">
+                  Vraag een uitnodiging aan je technicus om te koppelen.
+                </p>
               </div>
-
-              <div className="mt-4 flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium">
-                Details bekijken
-                <ArrowRightIcon className="ml-2 h-4 w-4" />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {(!data.summary?.coldCells || data.summary.coldCells.length === 0) && (
-          <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-12 text-center border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-            <p className="text-gray-500 dark:text-slate-300">Nog geen koelcellen geconfigureerd.</p>
-            <p className="text-sm text-gray-400 dark:text-slate-400 mt-2">
-              Voeg locaties en koelcellen toe om te beginnen met monitoren.
-            </p>
+            )}
           </div>
         )}
       </div>
 
-      {/* Actieve alarmen */}
-      <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-        <div className="text-sm font-medium text-gray-500 dark:text-slate-300">Actieve alarmen</div>
-        <div className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
-          {data.summary?.activeAlarms || 0}
-        </div>
-      </div>
+      {resolveAlert && (
+        <ResolveAlertModal
+          alertType={resolveAlert.type || 'HIGH_TEMP'}
+          alertTitle={getAlarmTitle(resolveAlert.type)}
+          onResolve={async (reason) => {
+            await alertsApi.resolve(resolveAlert.id, reason);
+            setResolveAlert(null);
+            fetchAlarms();
+          }}
+          onClose={() => setResolveAlert(null)}
+        />
+      )}
 
-      {/* Unlink Technician Modal */}
+      {/* Unlink modal */}
       {showUnlinkModal && (
-        <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 dark:bg-black/60 overflow-y-auto h-full w-full z-50 flex items-center justify-center"
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
           onClick={() => setShowUnlinkModal(false)}
         >
-          <div 
-            className="relative bg-white dark:bg-frost-800 rounded-lg shadow-xl dark:shadow-[0_0_24px_rgba(0,0,0,0.3)] max-w-md w-full mx-4 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]"
+          <div
+            className="bg-white dark:bg-frost-800 rounded-xl max-w-md w-full p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <ExclamationTriangleIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
-                </div>
-                <div className="ml-3 flex-1">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-frost-100 mb-2">
-                    Technicus ontkoppelen
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-slate-300 mb-4">
-                    Weet je zeker dat je de koppeling wilt verbreken met <span className="font-semibold text-gray-900 dark:text-frost-100">{data.customer?.linkedTechnician?.name}</span>?
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-slate-300">
-                    Ze hebben dan geen toegang meer tot je locaties, koelcellen en alarmen. Je kunt later eventueel een nieuwe uitnodiging sturen.
-                  </p>
-                </div>
+            <div className="flex items-start gap-3">
+              <ExclamationTriangleIcon className="h-6 w-6 text-red-500 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-frost-100">
+                  Technicus ontkoppelen
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-slate-300 mt-2">
+                  Weet je zeker dat je de koppeling wilt verbreken met {technician?.name}?
+                </p>
               </div>
             </div>
-            <div className="bg-gray-50 dark:bg-frost-850 px-6 py-4 flex justify-end space-x-3 rounded-b-lg">
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowUnlinkModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-frost-800 border border-gray-300 dark:border-[rgba(100,200,255,0.15)] rounded-md hover:bg-gray-50 dark:hover:bg-frost-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="flex-1 py-2 rounded-lg border border-gray-300 dark:border-frost-600 text-gray-700 dark:text-slate-300 font-medium"
               >
                 Annuleren
               </button>
               <button
                 onClick={handleUnlinkTechnician}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 inline-flex items-center"
+                className="flex-1 py-2 rounded-lg bg-red-600 text-white font-medium inline-flex items-center justify-center gap-2"
               >
-                <XMarkIcon className="h-4 w-4 mr-2" />
-                Ja, ontkoppelen
+                <XMarkIcon className="h-4 w-4" />
+                Ontkoppelen
               </button>
             </div>
           </div>

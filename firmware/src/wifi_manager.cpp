@@ -162,9 +162,10 @@ bool WiFiManagerWrapper::startConfigPortal(String apName) {
     }
     
     // WiFi-reset: disconnect en laat stack stabiliseren
-    // WiFi.mode(WIFI_OFF) kan AP-start blokkeren op sommige ESP32 – laat library mode bepalen
-    WiFi.disconnect(true, true);
-    delay(500);
+    // NIET WiFi.disconnect(true, true) – dat wist credentials en veroorzaakt "No wifi saved" bij volgende autoConnect
+    // ESP32 WiFi-hardware heeft ~1000ms nodig om vrij te geven na disconnect
+    WiFi.disconnect(true, false);
+    delay(1500);
     yield();
     
     // QR-code en custom velden
