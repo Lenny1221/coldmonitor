@@ -3,6 +3,7 @@
  */
 import { config } from '../config/env';
 import { logger } from '../utils/logger';
+import { debugSessionLog } from '../utils/debugSessionLog';
 import { isLikelyApnsDeviceToken, sendApnsPush } from './apnsService';
 
 async function sendFcmPush(
@@ -66,14 +67,42 @@ export async function sendPushNotification(
 ): Promise<boolean> {
   if (!token || token.trim().length === 0) {
     logger.debug('Push: geen token, overslaan');
+    // #region agent log
+    debugSessionLog({
+      hypothesisId: 'H4',
+      location: 'pushService.ts:sendPushNotification',
+      message: 'skip empty token',
+      data: {},
+    });
+    // #endregion
     return false;
   }
 
-  if (isLikelyApnsDeviceToken(token)) {
-    return sendApnsPush(token, title, body, data);
-  }
+  const branch = isLikelyApnsDeviceToken(token) ? 'apns' : 'fcm';
+  // #region agent log
+  debugSessionLog({
+    hypothesisId: 'H4',
+    location: 'pushService.ts:sendPushNotification',
+    message: 'send entry',
+    data: { tokenLen: token.length, branch, titleLen: title.length },
+  });
+  // #endregion
 
-  return sendFcmPush(token, title, body, data);
+  const ok =
+    branch === 'apns'
+      ? await sendApnsPush(token, title, body, data)
+      : await sendFcmPush(token, title, body, data);
+
+  // #region agent log
+  debugSessionLog({
+    hypothesisId: 'H4',
+    location: 'pushService.ts:sendPushNotification',
+    message: 'send result',
+    data: { ok, branch },
+  });
+  // #endregion
+
+  return ok;
 }
 
 /**

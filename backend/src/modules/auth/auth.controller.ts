@@ -8,6 +8,7 @@ import { requireAuth, AuthRequest, generateTokens, verifyRefreshToken } from '..
 import { authRateLimiter } from '../../middleware/rateLimiter';
 import { CustomError } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
+import { debugSessionLog } from '../../utils/debugSessionLog';
 import { sendVerificationEmail } from '../../utils/email';
 
 const router = Router();
@@ -391,6 +392,18 @@ router.patch('/me/push-token', requireAuth, async (req: AuthRequest, res, next) 
       where: { id: req.userId! },
       data: { pushToken: data.pushToken },
     });
+    // #region agent log
+    debugSessionLog({
+      hypothesisId: 'H3',
+      location: 'auth.controller.ts:push-token',
+      message: 'push token stored for user',
+      data: {
+        userId: req.userId ?? null,
+        tokenLen: data.pushToken?.length ?? 0,
+        cleared: data.pushToken == null,
+      },
+    });
+    // #endregion
     res.json({ success: true });
   } catch (error) {
     next(error);
