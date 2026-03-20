@@ -26,12 +26,9 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   UserGroupIcon,
-  CpuChipIcon,
   LinkIcon,
-  PlusCircleIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
-import { AddLoggerModal } from '../components/AddLoggerModal';
 import { ColdCellSettingsModal } from '../components/ColdCellSettingsModal';
 import { ResolveAlertModal } from '../components/ResolveAlertModal';
 import RegelaarCommandoPaneel from '../components/RegelaarCommandoPaneel';
@@ -51,7 +48,6 @@ const ColdCellDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
-  const [showAddLogger, setShowAddLogger] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [resolveAlert, setResolveAlert] = useState<any | null>(null);
   const [rs485Status, setRs485Status] = useState<{
@@ -405,78 +401,6 @@ const ColdCellDetail: React.FC = () => {
             </button>
           </div>
         </div>
-      )}
-
-      {/* Loggers in deze cel */}
-      <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 flex items-center">
-            <CpuChipIcon className="h-6 w-6 mr-2 text-gray-600 dark:text-slate-300" />
-            Loggers in deze cel
-          </h2>
-          <button
-            onClick={() => setShowAddLogger(true)}
-            className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <PlusCircleIcon className="h-5 w-5 mr-2" />
-            Logger toevoegen
-          </button>
-        </div>
-        {devices.length > 0 ? (
-          <div className="overflow-x-auto table-scroll">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase">Serienummer</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase">Status</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase">Laatst gezien</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase">Firmware</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-[rgba(100,200,255,0.1)]">
-                {devices.map((device: any) => (
-                  <tr key={device.id} className="hover:bg-gray-50 dark:hover:bg-frost-850">
-                    <td className="px-4 py-3 text-sm font-mono text-gray-900 dark:text-frost-100">{device.serialNumber}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          device.status === 'ONLINE'
-                            ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300'
-                            : 'bg-gray-100 dark:bg-frost-850 text-gray-800 dark:text-slate-300'
-                        }`}
-                      >
-                        {device.status === 'ONLINE' ? 'Online' : 'Offline'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-300">
-                      {device.lastSeenAt
-                        ? format(parseISO(device.lastSeenAt), 'dd/MM/yyyy HH:mm')
-                        : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-300">{device.firmwareVersion ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="rounded-lg border-2 border-dashed border-gray-200 dark:border-[rgba(100,200,255,0.15)] p-8 text-center">
-            <CpuChipIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-slate-400" />
-            <p className="mt-2 text-sm text-gray-600 dark:text-slate-300">Nog geen loggers gekoppeld.</p>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Klik op &quot;Logger toevoegen&quot; om je eerste logger te koppelen.</p>
-          </div>
-        )}
-      </div>
-
-      {showAddLogger && (
-        <AddLoggerModal
-          coldCellId={id!}
-          coldCellName={coldCell.name}
-          onClose={() => setShowAddLogger(false)}
-          onSuccess={() => {
-            fetchColdCell();
-          }}
-        />
       )}
 
       {/* Huidige status: alleen sensoren die data hebben, stroom altijd Actief */}
