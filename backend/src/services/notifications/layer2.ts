@@ -1,10 +1,11 @@
 import { logEscalation } from '../escalationService';
 import { sendAlertEmail } from './emailChannel';
 import { sendSms } from './smsChannel';
-import { EscalationChannel, EscalationRecipient } from '@prisma/client';
 import type { AlertWithRelations } from '../escalationService';
 import { config } from '../../config/env';
 import { logger } from '../../utils/logger';
+import { prisma } from '../../config/database';
+import { sendPushNotification } from '../pushService';
 
 /**
  * Layer 2: Client SMS + push repeat + backup contact
@@ -43,6 +44,25 @@ export async function sendLayer2Notifications(alert: AlertWithRelations): Promis
       html
     );
     await logEscalation(alert.id, 'LAYER_2', 'E-mail herhaling naar klant', 'CLIENT', 'EMAIL');
+  }
+
+  // Klant: push-herhaling (escalatie)
+  if (customer?.id) {
+    const custRow = await prisma.customer.findUnique({
+      where: { id: customer.id },
+      select: { user: { select: { pushToken: true } } },
+    });
+    if (custRow?.user?.pushToken) {
+      const sent = await sendPushNotification(
+        custRow.user.pushToken,
+        'IntelliFrost – Escalatie',
+        `Alarm ${coldCellName} niet bevestigd. Open de app.`,
+        { type: 'ALARM_ESCALATION', alertId: alert.id }
+      );
+      if (sent) {
+        await logEscalation(alert.id, 'LAYER_2', 'Push herhaling naar klant', 'CLIENT', 'PUSH');
+      }
+    }
   }
 
   // Backup contacten: SMS

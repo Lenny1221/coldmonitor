@@ -1,9 +1,10 @@
 import { logEscalation } from '../escalationService';
 import { sendAlertEmail } from './emailChannel';
-import { EscalationChannel, EscalationRecipient } from '@prisma/client';
 import type { AlertWithRelations } from '../escalationService';
 import { config } from '../../config/env';
 import { logger } from '../../utils/logger';
+import { prisma } from '../../config/database';
+import { sendPushNotification } from '../pushService';
 
 /**
  * Layer 1: Client push + email met temperatuurgrafiek
@@ -94,5 +95,24 @@ export async function sendLayer1Notifications(alert: AlertWithRelations): Promis
       'TECHNICIAN',
       'EMAIL'
     );
+  }
+
+  // Technicus: push naar app
+  if (technician?.id) {
+    const techRow = await prisma.technician.findUnique({
+      where: { id: technician.id },
+      select: { user: { select: { pushToken: true } } },
+    });
+    if (techRow?.user?.pushToken) {
+      const pushTitle = 'IntelliFrost – Alarm';
+      const pushBody = `${customer?.companyName ?? 'Klant'} – ${coldCellName}`;
+      const sent = await sendPushNotification(techRow.user.pushToken, pushTitle, pushBody, {
+        type: 'ALARM_TECH',
+        alertId: alert.id,
+      });
+      if (sent) {
+        await logEscalation(alert.id, 'LAYER_1', 'Push naar technicus (app)', 'TECHNICIAN', 'PUSH');
+      }
+    }
   }
 }

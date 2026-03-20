@@ -1,23 +1,18 @@
 /**
- * Push notification service – FCM (Firebase Cloud Messaging)
- * Verstuurt push notificaties naar de app wanneer o.a. een ticket wordt geaccepteerd/ingepland.
+ * Push: iOS via APNs (hex device token), Android via FCM legacy API.
  */
 import { config } from '../config/env';
 import { logger } from '../utils/logger';
+import { isLikelyApnsDeviceToken, sendApnsPush } from './apnsService';
 
-export async function sendPushNotification(
+async function sendFcmPush(
   token: string,
   title: string,
   body: string,
   data?: Record<string, string>
 ): Promise<boolean> {
-  if (!token || token.trim().length === 0) {
-    logger.debug('Push: geen token, overslaan');
-    return false;
-  }
-
   if (!config.fcmServerKey) {
-    logger.debug('Push: FCM_SERVER_KEY niet geconfigureerd, overslaan');
+    logger.debug('Push FCM: FCM_SERVER_KEY niet geconfigureerd, overslaan');
     return false;
   }
 
@@ -52,12 +47,33 @@ export async function sendPushNotification(
       return false;
     }
 
-    logger.info('Push verzonden', { title });
+    logger.info('FCM push verzonden', { title });
     return true;
   } catch (error) {
     logger.error('Push FCM error', error as Error);
     return false;
   }
+}
+
+/**
+ * Verstuur push: kiest automatisch APNs (iOS/Capacitor) of FCM (Android).
+ */
+export async function sendPushNotification(
+  token: string,
+  title: string,
+  body: string,
+  data?: Record<string, string>
+): Promise<boolean> {
+  if (!token || token.trim().length === 0) {
+    logger.debug('Push: geen token, overslaan');
+    return false;
+  }
+
+  if (isLikelyApnsDeviceToken(token)) {
+    return sendApnsPush(token, title, body, data);
+  }
+
+  return sendFcmPush(token, title, body, data);
 }
 
 /**

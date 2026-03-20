@@ -71,6 +71,17 @@ export const config = {
   // Cron secret voor /api/escalate endpoint
   cronSecret: process.env.CRON_SECRET || process.env.API_CRON_KEY || '',
 
-  // Push notificaties (FCM) – voor ticket-acceptatie, alarmen, etc.
+  // Push notificaties – Android: FCM legacy key; iOS: APNs (.p8) + bundle id
   fcmServerKey: process.env.FCM_SERVER_KEY || '',
+
+  /** Apple Push: Key ID uit Developer portal */
+  apnsKeyId: process.env.APNS_KEY_ID || '',
+  /** Apple Team ID (10 tekens) */
+  apnsTeamId: process.env.APNS_TEAM_ID || '',
+  /** Inhoud van AuthKey_XXX.p8 (inclusief BEGIN/END), of één regel met \\n voor newlines */
+  apnsPrivateKey: process.env.APNS_PRIVATE_KEY || '',
+  /** Moet gelijk zijn aan iOS bundle id (bv. io.projectlogger.coldmonitor) */
+  apnsBundleId: process.env.APNS_BUNDLE_ID || 'io.projectlogger.coldmonitor',
+  /** true = api.sandbox.push.apple.com (TestFlight/dev builds) */
+  apnsUseSandbox: process.env.APNS_USE_SANDBOX === 'true' || process.env.APNS_USE_SANDBOX === '1',
 };
