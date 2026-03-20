@@ -41,6 +41,8 @@ const ColdCellDetail: React.FC = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const isTechnician = user?.role === 'TECHNICIAN' || user?.role === 'ADMIN';
+  /** Klant & technicus: deur-badge altijd "Live" (geen vertraagd/opnieuw verbinden) */
+  const doorBadgeAlwaysLive = user?.role === 'CUSTOMER' || isTechnician;
   const [coldCell, setColdCell] = useState<any>(null);
   const { doorState: liveDoorState, isLive: doorStateLive, error: doorStateError, reconnect: doorStateReconnect } = useDoorStateSSE(id ?? undefined);
   const [readingsResult, setReadingsResult] = useState<{ stats?: any; data?: any[] }>({});
@@ -438,8 +440,10 @@ const ColdCellDetail: React.FC = () => {
                   <span className="text-sm font-medium">Deur</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {doorStateLive ? (
-                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded">Live</span>
+                  {doorBadgeAlwaysLive || doorStateLive ? (
+                    <span className="text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded">
+                      Live
+                    </span>
                   ) : doorStateError ? (
                     <button
                       type="button"
@@ -450,7 +454,9 @@ const ColdCellDetail: React.FC = () => {
                       Opnieuw verbinden
                     </button>
                   ) : displayDoorState != null ? (
-                    <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded" title="Polling (elke 0,5s)">Vertraagd</span>
+                    <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded" title="Polling (elke 0,5s)">
+                      Vertraagd
+                    </span>
                   ) : (
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">Verbinden…</span>
                   )}

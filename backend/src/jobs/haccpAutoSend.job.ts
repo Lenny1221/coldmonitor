@@ -3,6 +3,7 @@
  * Draait dagelijks (bv. 6:00) en verstuurt HACCP-rapporten naar klanten met auto-send ingeschakeld
  */
 import { subWeeks, format } from 'date-fns';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { fetchHaccpAuditData, generateHaccpPdf, type HaccpReportParams } from '../modules/reports/haccpReportService';
 import { sendEmailWithAttachment } from '../utils/email';
@@ -19,7 +20,7 @@ export async function haccpAutoSendJob() {
 
     const customers = await prisma.customer.findMany({
       where: {
-        haccpAutoSendConfig: { not: null },
+        haccpAutoSendConfig: { not: Prisma.DbNull },
       },
       select: {
         id: true,
