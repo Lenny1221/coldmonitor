@@ -162,15 +162,7 @@ const ServicePartner: React.FC = () => {
               </div>
               <h1 className="font-['Exo_2'] text-4xl sm:text-5xl font-bold text-white mb-4 leading-tight">
                 Serv-Ice<br />
-                <span
-                  className="text-transparent"
-                  style={{
-                    background: 'linear-gradient(90deg, #00c8ff, #0080ff)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
+                <span className="text-white">
                   Diepgevroren expertise
                 </span>
               </h1>
@@ -180,7 +172,7 @@ const ServicePartner: React.FC = () => {
               <div className="flex flex-wrap gap-3">
                 <a
                   href="#servicecontracten"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-[#0D1B2E] bg-[#00c8ff] hover:bg-[#00e5ff] transition-colors shadow-lg shadow-[#00c8ff]/25"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white bg-[#00c8ff] hover:bg-[#00e5ff] transition-colors shadow-lg shadow-[#00c8ff]/25"
                 >
                   Bekijk servicecontracten
                   <ArrowRightIcon className="h-4 w-4" />
@@ -238,8 +230,8 @@ const ServicePartner: React.FC = () => {
                   </div>
                   <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold text-white mb-4 leading-tight">
                     IntelliFrost monitoring<br />
-                    <span className="text-[#00c8ff]">+ Serv-Ice servicecontract</span><br />
-                    = dubbele voordelen
+                    <span className="text-white">+ Serv-Ice servicecontract</span><br />
+                    <span className="text-white">= dubbele voordelen</span>
                   </h2>
                   <p className="text-white/65 leading-relaxed mb-6">
                     Neem u tegelijk een IntelliFrost monitoringabonnement én een Serv-Ice servicecontract?
@@ -263,7 +255,7 @@ const ServicePartner: React.FC = () => {
                   <div className="flex flex-wrap gap-3">
                     <Link
                       to="/contact"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-[#0D1B2E] bg-[#00c8ff] hover:bg-[#00e5ff] transition-colors text-sm"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white bg-[#00c8ff] hover:bg-[#00e5ff] transition-colors text-sm"
                     >
                       Combodeal aanvragen
                       <ArrowRightIcon className="h-4 w-4" />
@@ -598,7 +590,7 @@ const ServicePartner: React.FC = () => {
                 <p className="text-sm text-white/55 mb-4">IntelliFrost monitoring + Serv-Ice servicecontract = exclusieve korting.</p>
                 <Link
                   to="/contact"
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-[#0D1B2E] bg-[#00c8ff] hover:bg-[#00e5ff] transition-colors text-sm w-full"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white bg-[#00c8ff] hover:bg-[#00e5ff] transition-colors text-sm w-full"
                 >
                   Combodeal aanvragen
                   <ArrowRightIcon className="h-4 w-4" />

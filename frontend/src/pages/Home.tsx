@@ -357,15 +357,7 @@ const Home: React.FC = () => {
               </div>
               <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold text-white mb-3 leading-tight">
                 Monitoring én onderhoud –{' '}
-                <span
-                  className="text-transparent"
-                  style={{
-                    background: 'linear-gradient(90deg, #00c8ff, #0080ff)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
+                <span className="text-white">
                   Serv-Ice regelt de rest
                 </span>
               </h2>
@@ -444,34 +436,6 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Visuele tussensectie – grote foto met overlay */}
-      <section className="relative mb-24 mx-4 sm:mx-8 lg:mx-16 rounded-3xl overflow-hidden shadow-2xl">
-        <img
-          src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1600&q=85"
-          alt="Groot koelcel magazijn voor industriële opslag"
-          className="w-full h-72 sm:h-96 object-cover"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0D1B2E]/90 via-[#0D1B2E]/60 to-transparent" />
-        <div className="absolute inset-0 flex items-center px-10 sm:px-16">
-          <div className="max-w-lg">
-            <h2 className="font-['Exo_2'] text-2xl sm:text-4xl font-bold !text-white mb-4">
-              Uw koelketen, continu bewaakt
-            </h2>
-            <p className="text-white/80 mb-6 leading-relaxed">
-              Elke seconde telt bij een defecte koelcel. IntelliFrost zorgt ervoor dat u altijd en overal
-              op de hoogte bent – dag en nacht.
-            </p>
-            <Link
-              to="/contact"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-[#0D1B2E] bg-[#00c8ff] hover:bg-[#00e5ff] transition-colors"
-            >
-              Start vandaag
-              <ArrowRightIcon className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
 
       {/* CTA */}
       <section className="max-w-3xl mx-auto px-6 mb-20">
