@@ -645,7 +645,9 @@ const ColdCellDetail: React.FC = () => {
                         : alert.type?.replace('_', ' ') ?? 'Alarm'}
                   </div>
                   {alert.type === 'POWER_LOSS' ? (
-                    <div className="text-sm text-red-700 dark:text-red-300">USB uitgetrokken – stroom uitgevallen</div>
+                    <div className="text-sm text-red-700 dark:text-red-300">
+                      Geen externe voeding meer gedetecteerd (VIN) — stroom uitgevallen
+                    </div>
                   ) : alert.type === 'WIFI_LOSS' ? (
                     <div className="text-sm text-red-700 dark:text-red-300">Geen wifi signaal meer – device offline</div>
                   ) : alert.value != null ? (

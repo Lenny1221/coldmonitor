@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "board_pins.h"
 
-// USB / netvoeding via ADC (DevKit: GPIO 35; LilyGO: BOARD_USB_ADC_PIN = GPIO 5).
+// Externe voeding via ADC (DevKit: GPIO 35 = USB-sense; LilyGO: GPIO 5 = VIN/solar, geen USB-kabelsensor).
 #if defined(BOARD_POWER_MONITOR_DISABLED)
 #define USB_ADC_PIN 255
 #elif defined(BOARD_USB_ADC_PIN)

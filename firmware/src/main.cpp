@@ -475,7 +475,12 @@ void loop() {
     int percentage = batteryMonitor.getPercentage();
     
     if (voltage < 1.0f) {
-      logger.info("Batterij-meetpin: " + String(voltage, 2) + "V (geen batterij aangesloten; voeding via USB/PSU is OK)");
+      uint32_t adcMv = batteryMonitor.getLastRawAdcMilliVolts();
+      logger.info(
+          "Batterij ADC: ruw " + String((unsigned long)adcMv) +
+          " mV op GPIO → ~" + String(voltage, 2) +
+          " V pack (na kalibr.). <1 V: BMS/open cel, of verkeerde build (Standard: pio run -e lilygo-t-sim7670g-s3-standard). "
+          "Interne bedrading; geen extra draad naar ADC nodig.");
     } else {
       logger.info("Battery: " + String(voltage, 2) + "V (" + String(percentage) + "%)");
     }
@@ -644,10 +649,9 @@ void sensorTask(void *parameter) {
         float vUsb = powerMonitor.getUsbVoltage();
         int batPct = batteryMonitor.getPercentage();
 #if defined(BOARD_LILYGO_T_SIM7670G_S3)
-        // GPIO5 kan ~0 V zijn bij voeding via USB-C naar PC (meetpunt volgt VIN/adapter beter).
-        // Geen powerStatus:false sturen → app "Niet actief" + backend POWER_LOSS op false positives.
+        // VIN-ADC kan ~0 V zijn bij USB-C naar PC; power_monitor zet usbConnected ook bij USB-CDC mounted.
         bool usbSenseOk = (vUsb >= BOARD_USB_SENSE_MIN_VALID_V);
-        bool charging = usbSenseOk && usbConnected && (batPct < 100);
+        bool charging = usbConnected && (batPct < 100);
 #else
         bool charging = usbConnected && (batPct < 100);
 #endif
@@ -657,11 +661,12 @@ void sensorTask(void *parameter) {
         doc["temperature"] = round(data.temperature * 10) / 10.0;  // 1 decimaal
         doc["doorStatus"] = data.doorOpen;
 #if defined(BOARD_LILYGO_T_SIM7670G_S3)
-        if (usbSenseOk) {
+        /* Geen powerStatus bij ruis-ADC alleen op batterij; wél bij geldige ADC óf bij USB-CDC (voeding gemeld). */
+        if (usbSenseOk || usbConnected) {
           doc["powerStatus"] = usbConnected;
         }
 #else
-        doc["powerStatus"] = usbConnected;  // true = USB/stroom, false = batterij
+        doc["powerStatus"] = usbConnected;
 #endif
         doc["batteryLevel"] = batPct;
         doc["batteryVoltage"] = batteryMonitor.getVoltage();

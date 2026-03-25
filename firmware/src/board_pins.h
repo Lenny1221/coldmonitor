@@ -5,18 +5,24 @@
  * Pinmapping per hardware.
  *
  * LilyGO T-SIM7670G S3: modem/reserve volgens
- * https://github.com/Xinyuan-LilyGO/LilyGo-Modem-Series (utilities.h → LILYGO_T_SIM7670G_S3)
+ * https://github.com/Xinyuan-LilyGO/LilyGo-Modem-Series (utilities.h → LILYGO_T_SIM7670G_S3
+ * en LILYGO_SIM7670G_S3_STAN voor de "Standard"-PCB)
  * Product: https://lilygo.cc/products/t-sim-7670g-s3
  *
- * Build: pio run -e lilygo-t-sim7670g-s3  (zet -DBOARD_LILYGO_T_SIM7670G_S3)
+ * Build:
+ *   pio run -e lilygo-t-sim7670g-s3          — klassieke pinmap (BAT=4, VIN/solar=5)
+ *   pio run -e lilygo-t-sim7670g-s3-standard — Standard (BAT=8, VIN/solar=18)
  */
 
 #if defined(BOARD_LILYGO_T_SIM7670G_S3)
 
+#if defined(BOARD_LILYGO_T_SIM7670G_S3_STANDARD)
+#define COLDMONITOR_BOARD_NAME "LilyGO T-SIM7670G S3 (Standard)"
+#else
 #define COLDMONITOR_BOARD_NAME "LilyGO T-SIM7670G S3"
+#endif
 
-/* Gereserveerd op het board (niet gebruiken): 3,4,5,9,10,11,12,13,14,17,18,21,47
-   + Qwiic/shield I²C: 1=SCL, 2=SDA (LilyGO utilities.h) */
+/* Gereserveerd / modem-SD: zie LilyGO utilities voor jouw variant. Qwiic: 1=SCL, 2=SDA. */
 
 #define BOARD_BOOT_PIN 0
 
@@ -24,12 +30,15 @@
 #define BOARD_STATUS_LED_PIN 12
 #define BOARD_LED_ACTIVE_LOW 1
 
-/* MAX31865 SPI – pins 6,7,15 zijn op het board als SimShield-SPI gelabeld;
-   zonder SimShield vrije GPIO. Niet de SD-SPI (13,14,21,47) gebruiken. */
-#define BOARD_MAX31865_CS 8
+/* MAX31865 SPI – 6,7,15 = SimShield-SPI datalijnen. CS: klassiek = GPIO8; Standard: GPIO8 = BAT-ADC → CS = 38 (verifieer op schematic). */
 #define BOARD_MAX31865_MOSI 15
 #define BOARD_MAX31865_MISO 7
 #define BOARD_MAX31865_SCK 6
+#if defined(BOARD_LILYGO_T_SIM7670G_S3_STANDARD)
+#define BOARD_MAX31865_CS 38
+#else
+#define BOARD_MAX31865_CS 8
+#endif
 
 #define BOARD_DOOR_PIN 21
 
@@ -38,26 +47,35 @@
 #define BOARD_RS485_TX 34
 #define BOARD_RS485_DE 35
 
-/* LilyGO onboard batterij-ADC (BOARD_BAT_ADC_PIN in utilities.h = 4) */
+#if defined(BOARD_LILYGO_T_SIM7670G_S3_STANDARD)
+#define BOARD_BATTERY_ADC_PIN 8
+#else
 #define BOARD_BATTERY_ADC_PIN 4
+#endif
 
 /*
- * Pinout (T-SIM7670G S3): ADC op GPIO4; GPIO12 deelt met user-LED en schakelt de
- * meetketen aan (HIGH = actief, zie LilyGO-diagram). Tijdens sampling kort LED uit.
+ * Geen extra draden: 18650 in houder of VBAT volgens LilyGO-manual.
+ * GPIO12 = BOARD_LED_PIN alleen; geen HOLD hier.
  */
-#define BOARD_BATTERY_ADC_HOLD_PIN 12
-#define BOARD_BATTERY_ADC_HOLD_LEVEL HIGH
 
 /*
- * Netvoeding / USB: LilyGO utilities.h → BOARD_SOLAR_ADC_PIN (5). Geschaalde VIN/USB.
- * - USB-C naar PC: divider staat soms ~0 V → geen betrouwbare "stroom actief"-bit; zie main.cpp.
- * - Netadapter op VIN: vaak wel spanning op GPIO5; lagere drempels vangen zwakke delers.
+ * Netvoeding: LilyGO BOARD_SOLAR_ADC_PIN — klassiek GPIO5, Standard GPIO18.
+ * USB-C naar PC: deler kan ~0 V; zie power_monitor (USB-CDC + multisample).
  */
+#if defined(BOARD_LILYGO_T_SIM7670G_S3_STANDARD)
+#define BOARD_USB_ADC_PIN 18
+#else
 #define BOARD_USB_ADC_PIN 5
-#define USB_CONNECTED_THRESHOLD_V 0.22f
-#define USB_DISCONNECTED_THRESHOLD_V 0.10f
-/** Onder deze ADC-spanning (V) is de meetketen als onbetrouwbaar beschouwd (geen powerStatus in API). */
-#define BOARD_USB_SENSE_MIN_VALID_V 0.05f
+#endif
+#define USB_CONNECTED_THRESHOLD_V 0.08f
+#define USB_DISCONNECTED_THRESHOLD_V 0.04f
+/** Alleen ADC onbetrouwbaar onder dit niveau; USB-CDC kan alsnog voeding signaleren. */
+#define BOARD_USB_SENSE_MIN_VALID_V 0.03f
+/**
+ * Label voor serial/logs op GPIO5: LilyGO meet VIN/solar (utilities.h), geen USB-kabelsensor.
+ * LiPo los kan dezelfde ADC doen dalen als “voeding weg”.
+ */
+#define BOARD_POWER_MONITOR_LOG_NAME "Externe voeding (VIN)"
 
 #else /* Standaard ESP32 DevKit (historisch) */
 
@@ -87,6 +105,7 @@
 #define BOARD_BATTERY_ADC_PIN 34
 
 #undef BOARD_POWER_MONITOR_DISABLED
+#define BOARD_POWER_MONITOR_LOG_NAME "USB"
 
 #endif
 

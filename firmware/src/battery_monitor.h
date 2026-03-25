@@ -24,6 +24,8 @@ private:
   unsigned long lastUpdate;
   unsigned long updateInterval;
   bool voltageInitialized;
+  /** Gemiddelde spanning op ADC-ingang (mV vóór ×2 deler). */
+  uint32_t lastRawAdcMilliVolts;
   
   float readVoltage();
   int calculatePercentage(float voltage);
@@ -36,6 +38,7 @@ public:
   void update();
   float getVoltage();
   int getPercentage();
+  uint32_t getLastRawAdcMilliVolts() const { return lastRawAdcMilliVolts; }
   bool isLow();
   bool isCritical();
 };

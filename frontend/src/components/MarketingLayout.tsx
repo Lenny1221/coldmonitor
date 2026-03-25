@@ -86,6 +86,7 @@ const navItems = [
   { to: '/prijzen', label: 'Prijzen' },
   { to: '/handleidingen', label: 'Handleidingen' },
   { to: '/faq', label: 'FAQ' },
+  { to: '/servicepartner', label: 'Servicepartner' },
   { to: '/contact', label: 'Contact' },
 ];
 

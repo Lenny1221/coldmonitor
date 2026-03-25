@@ -86,7 +86,7 @@ Board-target: `esp32-s3-devkitc-1` met `qio_opi` PSRAM (pas aan als upload of bo
 
 **Let op:** De firmware gebruikt **WiFi** zoals op de klassieke ESP32. **4G (SIM7670)** is **niet** in deze codebase gekoppeld (geen PPP/data via modem). Modem-pinnen blijven ongemoeid zolang je geen LTE-stack toevoegt.
 
-**LED + batterijmeetketen (GPIO 12):** Zelfde pin als op de pinout (**EN** / user-LED). *Active low:* laag = LED aan. Vóór elke **batterij-ADC-meting** zet de firmware kort **GPIO 12 HIGH** (meetpad aan, LED even uit). Daarna weer normale heartbeat.
+**LED (GPIO 12):** User-LED zoals LilyGO `BOARD_LED_PIN`; *active low.* Batterij-ADC gebruikt alleen **GPIO 4** (zoals LilyGo ReadBattery: `analogReadMilliVolts` × 2), **zonder** aparte enable-pin op 12.
 
 **Niet gebruiken voor eigen sensoren** (gereserveerd door board/modem/SD): o.a. **1, 2** (Qwiic / shield), **3, 4, 5, 9, 10, 11, 12, 13, 14, 17, 18, 21, 47** — zie LilyGO `utilities.h` (`LILYGO_T_SIM7670G_S3`).
 
@@ -102,8 +102,8 @@ Board-target: `esp32-s3-devkitc-1` met `qio_opi` PSRAM (pas aan als upload of bo
 | **RS485 RO → RX** | **33** | UART2 RX |
 | **RS485 DI ← TX** | **34** | UART2 TX |
 | **RS485 DE + RE** | **35** | Driver enable |
-| **Batterijspanning** | **4** (ADC) + **12** (enable) | **Geen extra draden:** 18650 op **VBAT**/GND op het board. GPIO **4** = ADC (hardware-deler ×2, zie `battery_monitor`). GPIO **12** schakelt de meetketen (deelt functionaliteit met LED). |
-| **Netvoeding / USB-ingelogd** | **5** (ADC) | **Geen extra draad:** intern LilyGO-net (`BOARD_SOLAR_ADC_PIN` / geschaalde VIN). `powerStatus` / `on_mains` / opladen-indicatie. **Drempels** in `board_pins.h` (`USB_CONNECTED_THRESHOLD_V`); bij fout alarm, meet ruwe spanning in Serial en pas aan. |
+| **Batterijspanning** | **4** (ADC) | **Geen extra draden:** 18650 in houder / VBAT. GPIO **4** = ADC (deler ×2). Serial logt ruwe ADC mV bij lage spanning. **T-SIM7670G-S3-Standard** gebruikt GPIO **8** — andere pinmap. |
+| **Externe voeding (VIN)** | **5** (ADC) | **Geen USB-kabelsensor:** intern LilyGO-net (`BOARD_SOLAR_ADC_PIN`, geschaalde VIN). Loskoppelen LiPo kan hetzelfde signaal beïnvloeden als adapter weg. `powerStatus` / opladen-heuristiek. **Drempels** in `board_pins.h`; Serial toont `Externe voeding (VIN)`. |
 
 **ESP32 DevKit:** USB-detectie blijft op **GPIO 35** (eigen spanningsdeler op dat board).
 

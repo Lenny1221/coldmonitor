@@ -3,7 +3,8 @@
 
 extern Logger logger;
 
-BatteryMonitor::BatteryMonitor() : voltage(0.0), percentage(0), lastUpdate(0), updateInterval(1000), voltageInitialized(false) {
+BatteryMonitor::BatteryMonitor()
+    : voltage(0.0), percentage(0), lastUpdate(0), updateInterval(1000), voltageInitialized(false), lastRawAdcMilliVolts(0) {
 }
 
 BatteryMonitor::~BatteryMonitor() {
@@ -34,7 +35,8 @@ float BatteryMonitor::readVoltage() {
     sumMv += analogReadMilliVolts(BATTERY_ADC_PIN);
     delay(2);
   }
-  float vBatt = (float)sumMv / 5.0f * BATTERY_VOLTAGE_DIVIDER_RATIO / 1000.0f;
+  lastRawAdcMilliVolts = sumMv / 5;
+  float vBatt = (float)lastRawAdcMilliVolts * BATTERY_VOLTAGE_DIVIDER_RATIO / 1000.0f;
   return vBatt;
 }
 

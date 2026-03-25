@@ -10,6 +10,7 @@ import Prijzen from './pages/Prijzen';
 import Handleidingen from './pages/Handleidingen';
 import FAQ from './pages/FAQ';
 import Contact from './pages/Contact';
+import ServicePartner from './pages/ServicePartner';
 import MarketingLayout from './components/MarketingLayout';
 import VerifyEmailSent from './pages/VerifyEmailSent';
 import VerifyEmailRequired from './pages/VerifyEmailRequired';
@@ -241,6 +242,7 @@ function AppRoutes() {
       <Route path="/prijzen" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Prijzen /></MarketingLayout>} />
       <Route path="/handleidingen" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Handleidingen /></MarketingLayout>} />
       <Route path="/faq" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><FAQ /></MarketingLayout>} />
+      <Route path="/servicepartner" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><ServicePartner /></MarketingLayout>} />
       <Route path="/contact" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Contact /></MarketingLayout>} />
     </Routes>
   );
