@@ -474,15 +474,16 @@ void loop() {
     float voltage = batteryMonitor.getVoltage();
     int percentage = batteryMonitor.getPercentage();
     
+    uint32_t adcMv = batteryMonitor.getLastRawAdcMilliVolts();
     if (voltage < 1.0f) {
-      uint32_t adcMv = batteryMonitor.getLastRawAdcMilliVolts();
-      logger.info(
-          "Batterij ADC: ruw " + String((unsigned long)adcMv) +
-          " mV op GPIO → ~" + String(voltage, 2) +
-          " V pack (na kalibr.). <1 V: BMS/open cel, of verkeerde build (Standard: pio run -e lilygo-t-sim7670g-s3-standard). "
-          "Interne bedrading; geen extra draad naar ADC nodig.");
+      logger.warn(
+          String("Batterij <1V! ADC GPIO") + BOARD_BATTERY_ADC_PIN +
+          " = " + adcMv + " mV ruw → " + String(voltage, 2) + " V (na deler+kalibr.)"
+          " | Oorzaken: geen cel in houder, BMS tripped, of verkeerde build"
+          " (Standard-PCB → pio run -e lilygo-t-sim7670g-s3-standard)");
     } else {
-      logger.info("Battery: " + String(voltage, 2) + "V (" + String(percentage) + "%)");
+      logger.info(String("Batterij: ") + String(voltage, 2) + " V (" + percentage + "%)"
+                  + " | ADC GPIO" + BOARD_BATTERY_ADC_PIN + " ruw=" + adcMv + " mV");
     }
     
     // Geen deep sleep bij USB-voeding (batterij laadt, percentage kan onbetrouwbaar zijn)

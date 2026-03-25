@@ -16,8 +16,18 @@ bool BatteryMonitor::init() {
   digitalWrite(BOARD_BATTERY_ADC_HOLD_PIN, BOARD_BATTERY_ADC_HOLD_LEVEL);
 #endif
   pinMode(BATTERY_ADC_PIN, INPUT);
-  analogSetAttenuation(ADC_11db);  // 0-3.3V range
   analogReadResolution(12);
+  analogSetPinAttenuation(BATTERY_ADC_PIN, ADC_11db);  // Per-pin 0-3.1V, werkt ook als global al gezet is
+  delay(10);  // ADC stabiel laten worden na herconfiguratie
+
+  // Diagnostiek: lees direct ruwe ADC-waarden om te verifiëren dat het circuit werkt
+  uint32_t rawCounts  = analogRead(BATTERY_ADC_PIN);
+  uint32_t rawMv      = analogReadMilliVolts(BATTERY_ADC_PIN);
+  logger.info(String("Batterij ADC init – GPIO") + BATTERY_ADC_PIN +
+              ": raw=" + rawCounts + " counts, " + rawMv + " mV" +
+              " | divider×" + String(BATTERY_VOLTAGE_DIVIDER_RATIO, 1) +
+              " → " + String(rawMv * BATTERY_VOLTAGE_DIVIDER_RATIO / 1000.0f, 2) + " V geschat");
+
   update();
   logger.info("Battery monitor initialized: " + String(voltage, 2) + "V (" + String(percentage) + "%)");
   return true;
@@ -31,12 +41,26 @@ float BatteryMonitor::readVoltage() {
   delayMicroseconds(800);
 #endif
   uint32_t sumMv = 0;
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 8; i++) {
     sumMv += analogReadMilliVolts(BATTERY_ADC_PIN);
     delay(2);
   }
-  lastRawAdcMilliVolts = sumMv / 5;
-  float vBatt = (float)lastRawAdcMilliVolts * BATTERY_VOLTAGE_DIVIDER_RATIO / 1000.0f;
+  lastRawAdcMilliVolts = sumMv / 8;
+
+  // Als analogReadMilliVolts 0 teruggeeft maar analogRead wél counts heeft →
+  // fallback: bereken mV zelf (3100 mV = full scale bij 11dB, 4095 counts)
+  if (lastRawAdcMilliVolts == 0) {
+    uint32_t counts = analogRead(BATTERY_ADC_PIN);
+    if (counts > 0) {
+      lastRawAdcMilliVolts = (uint32_t)((float)counts / 4095.0f * 3100.0f);
+    }
+  }
+
+  // Kalibratiegeboekte ×divider, dan ×calibratie — eenmalig hier, NIET in update()
+  float vBatt = (float)lastRawAdcMilliVolts
+                * BATTERY_VOLTAGE_DIVIDER_RATIO
+                * BATTERY_CALIBRATION_FACTOR
+                / 1000.0f;
   return vBatt;
 }
 
@@ -69,7 +93,7 @@ void BatteryMonitor::update() {
     } else {
       voltage = voltage * (1.0f - BATTERY_SMOOTH_ALPHA) + rawVoltage * BATTERY_SMOOTH_ALPHA;
     }
-    voltage *= BATTERY_CALIBRATION_FACTOR;  // Compenseer ADC-afwijking
+    // Kalibratiegeboekte zit al verwerkt in readVoltage() – niet opnieuw toepassen
     
     int rawPercent = calculatePercentage(voltage);
     // Bij 100% (opgeladen): direct tonen, geen rate limit
