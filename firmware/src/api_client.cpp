@@ -199,12 +199,13 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
           JsonObject payload = cmd["payload"].as<JsonObject>();
           if (strcmp(cmdType, "RESTART") == 0) {
             logger.info("Remote command: RESTART");
-            reportRemoteCommandResult(cmdId, "EXECUTED", nullptr);
+            reportRemoteCommandResultLocked(cmdId, "EXECUTED", nullptr);
+            xSemaphoreGive(httpMutex);
             delay(500);
             ESP.restart();
           } else if (strcmp(cmdType, "WIFI_SCAN") == 0) {
             int n = WiFi.scanNetworks();
-            DynamicJsonDocument resultDoc(1024);
+            DynamicJsonDocument resultDoc(2048);
             JsonArray networks = resultDoc.to<JsonArray>();
             for (int i = 0; i < n && i < 20; i++) {
               JsonObject net = networks.createNestedObject();
@@ -212,43 +213,44 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
               net["rssi"] = WiFi.RSSI(i);
               net["encryption"] = (int)WiFi.encryptionType(i);
             }
+            WiFi.scanDelete();
             String resultStr;
             serializeJson(resultDoc, resultStr);
-            reportRemoteCommandResult(cmdId, "EXECUTED", resultStr.c_str());
+            reportRemoteCommandResultLocked(cmdId, "EXECUTED", resultStr.c_str());
           } else if (strcmp(cmdType, "WIFI_CONNECT") == 0 && !payload.isNull()) {
             const char* ssid = payload["ssid"];
             const char* password = payload["password"];
             if (ssid) {
               WiFi.disconnect(true);
               delay(500);
-              bool ok = WiFi.begin(ssid, password ? password : "");
+              WiFi.begin(ssid, password ? password : "");
               int attempts = 0;
               while (WiFi.status() != WL_CONNECTED && attempts < 30) {
                 delay(500);
                 attempts++;
               }
               if (WiFi.status() == WL_CONNECTED) {
-                reportRemoteCommandResult(cmdId, "EXECUTED", "{\"connected\":true}");
+                reportRemoteCommandResultLocked(cmdId, "EXECUTED", "{\"connected\":true}");
               } else {
-                reportRemoteCommandResult(cmdId, "FAILED", "{\"error\":\"connection timeout\"}");
+                reportRemoteCommandResultLocked(cmdId, "FAILED", "{\"error\":\"connection timeout\"}");
               }
             } else {
-              reportRemoteCommandResult(cmdId, "FAILED", "{\"error\":\"missing ssid\"}");
+              reportRemoteCommandResultLocked(cmdId, "FAILED", "{\"error\":\"missing ssid\"}");
             }
           } else if (strcmp(cmdType, "FIRMWARE_UPDATE") == 0 && !payload.isNull()) {
             const char* url = payload["url"];
             if (url) {
               logger.info("Remote command: FIRMWARE_UPDATE from " + String(url));
-              reportRemoteCommandResult(cmdId, "EXECUTED", "{\"started\":true}");
+              reportRemoteCommandResultLocked(cmdId, "EXECUTED", "{\"started\":true}");
               xSemaphoreGive(httpMutex);
               WiFiClient client;
               t_httpUpdate_return ret = httpUpdate.update(client, url);
               xSemaphoreTake(httpMutex, portMAX_DELAY);
               if (ret != HTTP_UPDATE_OK) {
-                reportRemoteCommandResult(cmdId, "FAILED", "{\"error\":\"update failed\"}");
+                reportRemoteCommandResultLocked(cmdId, "FAILED", "{\"error\":\"update failed\"}");
               }
             } else {
-              reportRemoteCommandResult(cmdId, "FAILED", "{\"error\":\"missing url\"}");
+              reportRemoteCommandResultLocked(cmdId, "FAILED", "{\"error\":\"missing url\"}");
             }
           }
         }
@@ -468,12 +470,12 @@ bool APIClient::checkAndApplyFirmwareUpdate() {
   return (ret == HTTP_UPDATE_OK);
 }
 
-bool APIClient::reportRemoteCommandResult(const char* commandId, const char* status, const char* payloadJson) {
+bool APIClient::reportRemoteCommandResultLocked(const char* commandId, const char* status,
+                                                const char* payloadJson) {
   if (!WiFi.isConnected() || apiUrl.length() == 0 || apiKey.length() == 0) return false;
-  if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
   unsigned long now = millis();
   if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
-  
+
   String url = apiUrl + "/devices/commands/remote/" + String(commandId);
   String jsonData;
   if (payloadJson && strlen(payloadJson) > 0) {
@@ -481,18 +483,24 @@ bool APIClient::reportRemoteCommandResult(const char* commandId, const char* sta
   } else {
     jsonData = "{\"status\":\"" + String(status) + "\"}";
   }
-  
+
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("x-device-key", apiKey);
   http.setConnectTimeout(10000);
   http.setTimeout(5000);
-  
+
   int httpCode = http.PATCH(jsonData);
   http.end();
   lastHttpEndMs = millis();
-  xSemaphoreGive(httpMutex);
   return (httpCode == 200);
+}
+
+bool APIClient::reportRemoteCommandResult(const char* commandId, const char* status, const char* payloadJson) {
+  if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
+  bool ok = reportRemoteCommandResultLocked(commandId, status, payloadJson);
+  xSemaphoreGive(httpMutex);
+  return ok;
 }
 
 bool APIClient::uploadDoorEvent(const char* state, uint32_t seq, uint64_t timestamp, int rssi, unsigned long uptimeMs) {

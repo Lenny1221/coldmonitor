@@ -18,8 +18,8 @@ const coldCellSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  min_temp: z.number().min(-40).max(20),
-  max_temp: z.number().min(-40).max(20),
+  min_temp: z.number().min(-40).max(50),
+  max_temp: z.number().min(-40).max(50),
   door_alarm_delay_seconds: z.number().int().min(1).max(3600),
   require_resolution_reason: z.boolean().optional(),
 }).refine((data) => data.min_temp < data.max_temp, {

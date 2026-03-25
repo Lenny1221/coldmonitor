@@ -2,37 +2,27 @@
 #define SENSORS_H
 
 #include <Arduino.h>
+#include "board_pins.h"
 
-// Pin configuratie (ESP32)
-#define PIN_DHT_DATA     27   // DHT11 DATA
-#define PIN_DOOR         32   // Deurstatus: één draad naar GPIO32, andere naar GND (toggle switch ertussen)
-#define I2C_SDA          21   // BMP180 I²C SDA
-#define I2C_SCL          22   // BMP180 I²C SCL
+#define PIN_DOOR BOARD_DOOR_PIN
 
 // Deur: INPUT_PULLUP. Schakelaar gesloten (pin→GND) = LOW = deur dicht. Schakelaar open = HIGH = deur open.
 // Als bij jou de melding verkeerd om staat: zet PIN_DOOR_INVERTED op 1.
-#define PIN_DOOR_INVERTED 0   // 0 = LOW=dicht HIGH=open; 1 = omgekeerd
+#define PIN_DOOR_INVERTED 0  // 0 = LOW=dicht HIGH=open; 1 = omgekeerd
 
 struct SensorData {
-  float temperature;    // °C
-  float humidity;       // % (0-100)
-  bool doorOpen;        // true = deur open (na eventuele invert)
-  bool doorPinHigh;     // ruwe GPIO (1=HIGH, 0=LOW) voor debug
-  float pressure;       // hPa (van BMP180, optioneel)
-  bool valid;           // Minimaal temperatuur geldig
+  float temperature;  // Alleen gebruikt door main (MAX31865); sensors.read zet 0
+  bool doorOpen;      // true = deur open (na eventuele invert)
+  bool doorPinHigh;   // ruwe GPIO (1=HIGH, 0=LOW) voor debug
+  bool valid;         // true als MAX31865 geldige temperatuur levert (main zet dit)
 };
 
 class Sensors {
-public:
+ public:
   Sensors();
   bool init();
   SensorData read();
-  // Snelle enkel deur-read (voor onmiddellijke event bij open/dicht)
   bool readDoorOnly();
-  
-private:
-  bool bmpReady;
-  bool dhtReady;
 };
 
 #endif

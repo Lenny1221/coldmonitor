@@ -358,6 +358,8 @@ const ColdCells: React.FC = () => {
                     id="minTemp"
                     type="number"
                     step="0.1"
+                    min={-40}
+                    max={50}
                     value={formData.temperatureMinThreshold}
                     onChange={(e) => setFormData({ ...formData, temperatureMinThreshold: parseFloat(e.target.value) })}
                     required
@@ -372,6 +374,8 @@ const ColdCells: React.FC = () => {
                     id="maxTemp"
                     type="number"
                     step="0.1"
+                    min={-40}
+                    max={50}
                     value={formData.temperatureMaxThreshold}
                     onChange={(e) => setFormData({ ...formData, temperatureMaxThreshold: parseFloat(e.target.value) })}
                     required

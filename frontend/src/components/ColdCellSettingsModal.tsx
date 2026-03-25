@@ -3,7 +3,7 @@ import { XMarkIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { coldCellsApi, getErrorMessage } from '../services/api';
 
 const TEMP_MIN = -40;
-const TEMP_MAX = 20;
+const TEMP_MAX = 50;
 const DOOR_DELAY_MIN = 1;
 const DOOR_DELAY_MAX = 3600;
 

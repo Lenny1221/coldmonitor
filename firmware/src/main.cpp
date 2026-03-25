@@ -1,10 +1,16 @@
 #include <Arduino.h>
+#include <Wire.h>  // LDF: Wire-pad voor Adafruit BusIO (MAX31865); geen I²C-sensoren in firmware
 #include <WiFi.h>
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 
-#ifndef LED_BUILTIN
-#define LED_BUILTIN 2
+#include "board_pins.h"
+
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+#undef LED_BUILTIN
+#define LED_BUILTIN BOARD_STATUS_LED_PIN
+#elif !defined(LED_BUILTIN)
+#define LED_BUILTIN BOARD_STATUS_LED_PIN
 #endif
 #include <SPIFFS.h>
 #include <ArduinoJson.h>
@@ -36,8 +42,9 @@ ProvisioningManager provisioning;
 // (RESET-knop op ESP32 DevKit is niet aan GPIO gekoppeld – alleen BOOT werkt)
 ResetButtonHandler resetButton(DEFAULT_BOOT_PIN, DEFAULT_RESET_PIN, BOOT_WINDOW_MS, RESET_HOLD_TIME_MS);
 Sensors sensors;
-// MAX31865: CS=5, MOSI=23, MISO=19, SCK=18 (ESP32 default SPI)
-Adafruit_MAX31865 thermo = Adafruit_MAX31865(5, 23, 19, 18);
+// MAX31865 SPI: zie board_pins.h (DevKit vs LilyGO T-SIM7670G S3)
+Adafruit_MAX31865 thermo = Adafruit_MAX31865(
+    BOARD_MAX31865_CS, BOARD_MAX31865_MOSI, BOARD_MAX31865_MISO, BOARD_MAX31865_SCK);
 #define RREF      4300.0
 #define RNOMINAL  1000.0
 static bool max31865Initialized = false;
@@ -118,15 +125,15 @@ void setup() {
   
   // Boot banner
   logger.info("========================================");
-  logger.info("=== ColdMonitor ESP32 Firmware ===");
+  logger.info(String("=== ColdMonitor Firmware [") + COLDMONITOR_BOARD_NAME + "] ===");
   logger.info("Version: " + String(FIRMWARE_VERSION));
   logger.info("========================================");
   
-  // Initialize LED
+  // Onboard status-LED (GPIO12 op LilyGO T-SIM7670G S3, active low)
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(LED_BUILTIN, BOARD_LED_LEVEL_ON);
   delay(100);
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(LED_BUILTIN, BOARD_LED_LEVEL_OFF);
   
   // Initialize SPIFFS
   if (!SPIFFS.begin(true)) {
@@ -222,15 +229,26 @@ void setup() {
     logger.warn("API: Gebruikt config manager (provisioning niet compleet)");
   }
   
+  // Offline queue vóór WiFi: na HTTP/LwIP is de heap sterk gefragmenteerd; databuffer-NVS
+  // openen ná MAX31865 gaf TLSF heap-asserts op ESP32-S3.
+  dataBuffer.init();
+  logger.info("Data buffer initialized (offline queue)");
+  
+  // ADC/deur vóór WiFi: setupWiFi() gebruikt battery/power voor API-handshake
+  sensors.init();
+  logger.info("Sensors (door) initialized");
+  batteryMonitor.init();
+  powerMonitor.init();
+  
   // WiFi Setup (with provisioning flow)
   setupWiFi();
   
+  // TCP/IP even laten wegsterven na HTTP; vermindert heap-fragmentatie vóór SPI/taken
+  delay(300);
+  yield();
+  
   // Initialize components
   logger.info("Initializing hardware...");
-  
-  // Deurstatus (BMP180/DHT11 optioneel – temperatuur via MAX31865)
-  sensors.init();
-  logger.info("Sensors (door) initialized");
   
   // MAX31865 (SPI) – primaire temperatuursensor (PT1000, 2-wire)
   thermo.begin(MAX31865_2WIRE);
@@ -244,7 +262,13 @@ void setup() {
   }
   
   // Initialize RS485: Carel PJEZ (supervisie) OF Modbus RTU
+  // LilyGO: NVS kan nog carelProtocolEnabled:true hebben; Serial2/Carel hoort niet op het
+  // standaard board en droeg bij aan heap/crash — forceer uit op deze build.
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  const bool carelMode = false;
+#else
   bool carelMode = config.getCarelProtocolEnabled();
+#endif
   if (carelMode) {
     ModbusConfig mcfg = config.getModbusConfig();
     if (carel.init(mcfg.rxPin, mcfg.txPin, mcfg.dePin)) {
@@ -259,16 +283,6 @@ void setup() {
       logger.error("RS485/Modbus initialization failed!");
     }
   }
-  
-  // Initialize data buffer
-  dataBuffer.init();
-  logger.info("Data buffer initialized");
-  
-  // Initialize battery monitor
-  batteryMonitor.init();
-  
-  // Initialize power monitor (USB detection on GPIO 35)
-  powerMonitor.init();
   
   // Initialize power manager
   powerManager.init();
@@ -289,7 +303,7 @@ void setup() {
     1
   );
   
-  if (config.getModbusEnabled() && !config.getCarelProtocolEnabled()) {
+  if (config.getModbusEnabled() && !carelMode) {
     xTaskCreatePinnedToCore(
       modbusTask,
       "ModbusTask",
@@ -311,8 +325,8 @@ void setup() {
     0
   );
   
-  // Command task for RS485 commands (Modbus or Carel PJEZ)
-  if (config.getModbusEnabled() || config.getCarelProtocolEnabled()) {
+  // Command task for RS485 commands (Modbus of Carel PJEZ)
+  if (config.getModbusEnabled() || carelMode) {
     xTaskCreatePinnedToCore(
       commandTask,
       "CommandTask",
@@ -361,7 +375,7 @@ void loop() {
   
   unsigned long now = millis();
   
-  // USB-detectie (GPIO 35) – logt bij aan/uit
+  // USB-detectie (indien USB_ADC geconfigureerd)
   powerMonitor.update();
   
   // NTP sync bij WiFi‑connect (ook na reconnect)
@@ -371,13 +385,15 @@ void loop() {
     ntpInitDone = true;
   }
   
-  // Heartbeat LED
+  // Heartbeat: onboard LED (LilyGO: GPIO12)
   if (now - lastHeartbeat > 1000) {
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    BOARD_LED_TOGGLE(LED_BUILTIN);
     lastHeartbeat = now;
   }
   
-  // Eenmalige Carel connectietest ~8s na boot (voor Serial Monitor debug)
+  // Eenmalige Carel connectietest ~8s na boot (niet op LilyGO: Carel wordt daar niet geïnitialiseerd;
+  // oude NVS kan nog carelProtocolEnabled:true hebben.)
+#if !defined(BOARD_LILYGO_T_SIM7670G_S3)
   static bool carelTestDone = false;
   if (!carelTestDone && now > 8000 && config.getCarelProtocolEnabled()) {
     carelTestDone = true;
@@ -396,6 +412,7 @@ void loop() {
     }
     logger.info("=== EINDE CONNECTIETEST ===");
   }
+#endif
   
   // Periodieke API heartbeat (exponentiële backoff bij failure)
   if (WiFi.isConnected() && provisioning.hasAPICredentials()) {
@@ -444,6 +461,11 @@ void loop() {
   } else {
     deviceStatus.connectedToWifi = WiFi.isConnected();
     deviceStatus.connectedToApi = false;
+    if (!WiFi.isConnected()) {
+      deviceStatus.lastError = "WiFi disconnected";
+    } else if (!provisioning.hasAPICredentials()) {
+      deviceStatus.lastError = "API not configured";
+    }
   }
   
   // Battery check
@@ -610,7 +632,6 @@ void sensorTask(void *parameter) {
         logger.warn("MAX31865 | GEEN DATA | fault=0x" + String(max31865Fault, HEX) + 
                     " temp=" + String(max31865Temp, 1) + " | Deur: " + (data.doorOpen ? "OPEN" : "dicht") +
                     " (pin=" + String(data.doorPinHigh ? 1 : 0) + ")");
-        // Fallback naar BMP/DHT indien beschikbaar
       }
       
       if (data.valid) {
@@ -620,20 +641,33 @@ void sensorTask(void *parameter) {
         batteryMonitor.update();
         powerMonitor.update();
         bool usbConnected = powerMonitor.isUsbConnected();
+        float vUsb = powerMonitor.getUsbVoltage();
         int batPct = batteryMonitor.getPercentage();
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+        // GPIO5 kan ~0 V zijn bij voeding via USB-C naar PC (meetpunt volgt VIN/adapter beter).
+        // Geen powerStatus:false sturen → app "Niet actief" + backend POWER_LOSS op false positives.
+        bool usbSenseOk = (vUsb >= BOARD_USB_SENSE_MIN_VALID_V);
+        bool charging = usbSenseOk && usbConnected && (batPct < 100);
+#else
         bool charging = usbConnected && (batPct < 100);
+#endif
 
         DynamicJsonDocument doc(512);
         doc["deviceId"] = getEffectiveDeviceSerial();
         doc["temperature"] = round(data.temperature * 10) / 10.0;  // 1 decimaal
         doc["doorStatus"] = data.doorOpen;
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+        if (usbSenseOk) {
+          doc["powerStatus"] = usbConnected;
+        }
+#else
         doc["powerStatus"] = usbConnected;  // true = USB/stroom, false = batterij
+#endif
         doc["batteryLevel"] = batPct;
         doc["batteryVoltage"] = batteryMonitor.getVoltage();
         doc["batteryCharging"] = charging;
         doc["timestamp"] = now;
-        if (data.pressure > 0) doc["pressure"] = round(data.pressure * 10) / 10.0;
-        
+
         String jsonData;
         serializeJson(doc, jsonData);
         dataBuffer.add(jsonData);

@@ -1,11 +1,9 @@
 #include "reset_button.h"
 #include "logger.h"
 
-#ifndef LED_BUILTIN
-#define LED_BUILTIN 2
-#endif
-
 extern Logger logger;
+
+static const uint8_t kStatusLed = BOARD_STATUS_LED_PIN;
 
 ResetButtonHandler::ResetButtonHandler(uint8_t bootPin, uint8_t resetPin, 
                                       unsigned long bootWindow, unsigned long resetHoldTime)
@@ -45,14 +43,14 @@ bool ResetButtonHandler::checkTwoStepReset() {
       // LED slow blink while waiting for RESET button
       static unsigned long lastLedToggle = 0;
       if (now - lastLedToggle >= 500) {
-        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        BOARD_LED_TOGGLE(kStatusLed);
         lastLedToggle = now;
       }
       
       // Check if boot window expired
       if (now - bootPressTime > bootWindowMs) {
         logger.info("RESET: Timeout - reset geannuleerd (geen RESET knop binnen " + String(bootWindowMs / 1000) + "s)");
-        digitalWrite(LED_BUILTIN, LOW);
+        digitalWrite(kStatusLed, BOARD_LED_LEVEL_OFF);
         state = RESET_IDLE;
         bootPressTime = 0;
         break;
@@ -64,7 +62,7 @@ bool ResetButtonHandler::checkTwoStepReset() {
         resetPressStartTime = now;
         logger.info("RESET: RESET knop ingedrukt - houd 3 seconden vast...");
         logger.info("RESET: LED knippert nu sneller - laat los om te annuleren");
-        digitalWrite(LED_BUILTIN, HIGH); // Start with LED on
+        digitalWrite(kStatusLed, BOARD_LED_LEVEL_ON);
       }
       
       // Log remaining time every second
@@ -84,8 +82,7 @@ bool ResetButtonHandler::checkTwoStepReset() {
         unsigned long holdTime = now - resetPressStartTime;
         logger.info("RESET: RESET knop losgelaten na " + String(holdTime) + "ms (niet lang genoeg)");
         logger.info("RESET: Reset geannuleerd - probeer opnieuw");
-        // Turn off LED
-        digitalWrite(LED_BUILTIN, LOW);
+        digitalWrite(kStatusLed, BOARD_LED_LEVEL_OFF);
         state = RESET_IDLE;
         resetPressStartTime = 0;
         bootPressTime = 0;
@@ -98,18 +95,14 @@ bool ResetButtonHandler::checkTwoStepReset() {
         
         // LED feedback: blink faster as we approach 3 seconds
         static unsigned long lastLedToggle = 0;
-        bool ledState = false;
         if (holdTime < resetHoldTimeMs) {
-          // Blink faster as we get closer to 3 seconds
-          unsigned long blinkInterval = 200 - (holdTime * 150 / resetHoldTimeMs); // 200ms -> 50ms
+          unsigned long blinkInterval = 200 - (holdTime * 150 / resetHoldTimeMs);  // 200ms -> 50ms
           if (now - lastLedToggle >= blinkInterval) {
-            ledState = !digitalRead(LED_BUILTIN);
-            digitalWrite(LED_BUILTIN, ledState ? HIGH : LOW);
+            BOARD_LED_TOGGLE(kStatusLed);
             lastLedToggle = now;
           }
         } else {
-          // Solid on when 3 seconds reached
-          digitalWrite(LED_BUILTIN, HIGH);
+          digitalWrite(kStatusLed, BOARD_LED_LEVEL_ON);
         }
         
         // Log progress every second
@@ -123,13 +116,12 @@ bool ResetButtonHandler::checkTwoStepReset() {
         // Check if hold time exceeded
         if (holdTime >= resetHoldTimeMs) {
           state = RESET_TRIGGERED;
-          // LED solid on + 5 quick blinks for confirmation
-          digitalWrite(LED_BUILTIN, HIGH);
+          digitalWrite(kStatusLed, BOARD_LED_LEVEL_ON);
           delay(200);
           for (int i = 0; i < 5; i++) {
-            digitalWrite(LED_BUILTIN, LOW);
+            digitalWrite(kStatusLed, BOARD_LED_LEVEL_OFF);
             delay(100);
-            digitalWrite(LED_BUILTIN, HIGH);
+            digitalWrite(kStatusLed, BOARD_LED_LEVEL_ON);
             delay(100);
           }
           logger.warn("========================================");
@@ -178,11 +170,10 @@ bool ResetButtonHandler::check() {
     
         // Check if hold time exceeded
     if (holdTime >= resetHoldTimeMs) {
-      // LED: 5x snel knipperen als bevestiging
       for (int i = 0; i < 5; i++) {
-        digitalWrite(LED_BUILTIN, LOW);
+        digitalWrite(kStatusLed, BOARD_LED_LEVEL_OFF);
         delay(100);
-        digitalWrite(LED_BUILTIN, HIGH);
+        digitalWrite(kStatusLed, BOARD_LED_LEVEL_ON);
         delay(100);
       }
       logger.warn("========================================");

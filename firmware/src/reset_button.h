@@ -2,6 +2,7 @@
 #define RESET_BUTTON_H
 
 #include <Arduino.h>
+#include "board_pins.h"
 
 /**
  * RESET BUTTON HANDLER - TWO-STEP RESET
@@ -20,8 +21,8 @@
  * - Bij detectie wordt factory reset uitgevoerd
  */
 
-#define DEFAULT_BOOT_PIN 0      // GPIO 0 = BOOT button (eerste stap)
-#define DEFAULT_RESET_PIN 0     // GPIO 0 = zelfde pin (tweede stap: 3s hold)
+#define DEFAULT_BOOT_PIN BOARD_BOOT_PIN
+#define DEFAULT_RESET_PIN BOARD_BOOT_PIN
 #define BOOT_WINDOW_MS 10000    // 10 seconden om RESET knop in te drukken na BOOT
 #define RESET_HOLD_TIME_MS 3000 // 3 seconden RESET knop vasthouden
 

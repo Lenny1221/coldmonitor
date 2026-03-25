@@ -46,10 +46,8 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 
 ## Features
 
-- ✅ **BMP180** (I²C) temperatuur + luchtdruk
-- ✅ **DHT11** temperatuur + luchtvochtigheid
-- ✅ **Deurstatus** (droog contact, GPIO 25)
-- ✅ **PT1000 RTD** (optioneel) via MAX31865 over SPI
+- ✅ **Deurstatus** (droog contact; GPIO zie pin-tabel per board)
+- ✅ **PT1000 RTD** via MAX31865 over SPI (primaire temperatuur)
 - ✅ **RS485/Modbus RTU** communication with refrigeration controllers
 - ✅ **Offline Data Buffering** using SPIFFS (up to 100 readings)
 - ✅ **WiFi Connectivity** with automatic reconnection
@@ -81,17 +79,40 @@ Production-grade ESP32 firmware for IoT refrigeration logger with PT1000 RTD tem
 
 ## Pin Configuration
 
-### Sensoren (BMP180 + DHT11 + deurstatus)
+### LilyGO T-SIM7670G S3 ([productpagina](https://lilygo.cc/products/t-sim-7670g-s3), [modem-voorbeelden / pindefs](https://github.com/Xinyuan-LilyGO/LilyGo-Modem-Series))
+
+**Build:** `pio run -e lilygo-t-sim7670g-s3` (of `-e lilygo-t-sim7670g-s3-release`).  
+Board-target: `esp32-s3-devkitc-1` met `qio_opi` PSRAM (pas aan als upload of boot faalt op jouw revisie).
+
+**Let op:** De firmware gebruikt **WiFi** zoals op de klassieke ESP32. **4G (SIM7670)** is **niet** in deze codebase gekoppeld (geen PPP/data via modem). Modem-pinnen blijven ongemoeid zolang je geen LTE-stack toevoegt.
+
+**LED + batterijmeetketen (GPIO 12):** Zelfde pin als op de pinout (**EN** / user-LED). *Active low:* laag = LED aan. Vóór elke **batterij-ADC-meting** zet de firmware kort **GPIO 12 HIGH** (meetpad aan, LED even uit). Daarna weer normale heartbeat.
+
+**Niet gebruiken voor eigen sensoren** (gereserveerd door board/modem/SD): o.a. **1, 2** (Qwiic / shield), **3, 4, 5, 9, 10, 11, 12, 13, 14, 17, 18, 21, 47** — zie LilyGO `utilities.h` (`LILYGO_T_SIM7670G_S3`).
+
+| Functie | GPIO | Aansluiting |
+|--------|------|-------------|
+| **Factory reset** | **0** | BOOT-knop (3 s bij start) |
+| **Status-LED** | **12** | Onboard user-LED (active low; heartbeat + reset-feedback) |
+| **MAX31865 SCK** | **6** | SPI klok |
+| **MAX31865 MISO** | **7** | SPI MISO |
+| **MAX31865 CS** | **8** | Chip select |
+| **MAX31865 MOSI** | **15** | SPI MOSI |
+| **Deur** (INPUT_PULLUP) | **21** | Schakelaar naar GND (pin **21** op linkerheader; niet combineren met actief TF/SD-SPI) |
+| **RS485 RO → RX** | **33** | UART2 RX |
+| **RS485 DI ← TX** | **34** | UART2 TX |
+| **RS485 DE + RE** | **35** | Driver enable |
+| **Batterijspanning** | **4** (ADC) + **12** (enable) | **Geen extra draden:** 18650 op **VBAT**/GND op het board. GPIO **4** = ADC (hardware-deler ×2, zie `battery_monitor`). GPIO **12** schakelt de meetketen (deelt functionaliteit met LED). |
+| **Netvoeding / USB-ingelogd** | **5** (ADC) | **Geen extra draad:** intern LilyGO-net (`BOARD_SOLAR_ADC_PIN` / geschaalde VIN). `powerStatus` / `on_mains` / opladen-indicatie. **Drempels** in `board_pins.h` (`USB_CONNECTED_THRESHOLD_V`); bij fout alarm, meet ruwe spanning in Serial en pas aan. |
+
+**ESP32 DevKit:** USB-detectie blijft op **GPIO 35** (eigen spanningsdeler op dat board).
+
+---
+
+### Sensoren (deurstatus) — ESP32 DevKit (klassiek)
 
 | Sensor | Verbinding | ESP32 GPIO |
 |--------|------------|------------|
-| **BMP180** (I²C) | VCC → 3V3 | - |
-| | GND → GND | - |
-| | SCL → **GPIO 22** | SCL |
-| | SDA → **GPIO 21** | SDA |
-| **DHT11** (digital) | VCC → 3V3 | - |
-| | GND → GND | - |
-| | DATA → **GPIO 27** | DATA (10kΩ pull-up naar 3V3 indien niet onboard) |
 | **Deurstatus** (droog contact) | COM → GND | - |
 | | NO (normally open) → **GPIO 32** | INPUT_PULLUP |
 
@@ -240,11 +261,11 @@ Format:
 {
   "deviceId": "ESP32-XXXXXX",
   "temperature": 4.5,
-  "humidity": 65.2,
   "doorStatus": false,
   "powerStatus": true,
   "batteryLevel": 85,
   "batteryVoltage": 3.8,
+  "batteryCharging": false,
   "timestamp": 1234567890
 }
 ```

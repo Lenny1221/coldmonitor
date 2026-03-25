@@ -10,23 +10,32 @@ BatteryMonitor::~BatteryMonitor() {
 }
 
 bool BatteryMonitor::init() {
+#if defined(BOARD_BATTERY_ADC_HOLD_PIN)
+  pinMode(BOARD_BATTERY_ADC_HOLD_PIN, OUTPUT);
+  digitalWrite(BOARD_BATTERY_ADC_HOLD_PIN, BOARD_BATTERY_ADC_HOLD_LEVEL);
+#endif
   pinMode(BATTERY_ADC_PIN, INPUT);
-  analogSetAttenuation(ADC_11db); // 0-3.3V range
+  analogSetAttenuation(ADC_11db);  // 0-3.3V range
+  analogReadResolution(12);
   update();
   logger.info("Battery monitor initialized: " + String(voltage, 2) + "V (" + String(percentage) + "%)");
   return true;
 }
 
 float BatteryMonitor::readVoltage() {
-  // Gemiddelde van 5 metingen om ADC-ruis te verminderen
-  long sum = 0;
+#if defined(BOARD_BATTERY_ADC_HOLD_PIN)
+  const uint8_t holdPin = BOARD_BATTERY_ADC_HOLD_PIN;
+  pinMode(holdPin, OUTPUT);
+  digitalWrite(holdPin, BOARD_BATTERY_ADC_HOLD_LEVEL);
+  delayMicroseconds(800);
+#endif
+  uint32_t sumMv = 0;
   for (int i = 0; i < 5; i++) {
-    sum += analogRead(BATTERY_ADC_PIN);
+    sumMv += analogReadMilliVolts(BATTERY_ADC_PIN);
     delay(2);
   }
-  int adcValue = sum / 5;
-  float v = (float)adcValue * BATTERY_VOLTAGE_DIVIDER_RATIO * BATTERY_VREF / 4095.0;
-  return v;
+  float vBatt = (float)sumMv / 5.0f * BATTERY_VOLTAGE_DIVIDER_RATIO / 1000.0f;
+  return vBatt;
 }
 
 int BatteryMonitor::calculatePercentage(float voltage) {

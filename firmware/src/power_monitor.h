@@ -2,12 +2,23 @@
 #define POWER_MONITOR_H
 
 #include <Arduino.h>
+#include "board_pins.h"
 
-// USB detection via voltage divider on GPIO 35
-// 22k + 32k from USB 5V: ~2.96V when USB connected, ~0V when disconnected
+// USB / netvoeding via ADC (DevKit: GPIO 35; LilyGO: BOARD_USB_ADC_PIN = GPIO 5).
+#if defined(BOARD_POWER_MONITOR_DISABLED)
+#define USB_ADC_PIN 255
+#elif defined(BOARD_USB_ADC_PIN)
+#define USB_ADC_PIN BOARD_USB_ADC_PIN
+#else
 #define USB_ADC_PIN 35
-#define USB_CONNECTED_THRESHOLD_V 2.0   // Above this = USB connected
-#define USB_DISCONNECTED_THRESHOLD_V 0.5 // Below this = USB disconnected
+#endif
+
+#ifndef USB_CONNECTED_THRESHOLD_V
+#define USB_CONNECTED_THRESHOLD_V 2.0f
+#endif
+#ifndef USB_DISCONNECTED_THRESHOLD_V
+#define USB_DISCONNECTED_THRESHOLD_V 0.5f
+#endif
 #define USB_VREF 3.3
 
 class PowerMonitor {

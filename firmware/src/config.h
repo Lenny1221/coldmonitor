@@ -17,7 +17,12 @@
 #define DEFAULT_API_URL FIXED_API_URL
 #define DEFAULT_API_KEY ""
 #define DEFAULT_MODBUS_ENABLED false
+// LilyGO: geen Carel op het board; Serial2 init vermijden tenzij expliciet in NVS aangezet.
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+#define DEFAULT_CAREL_PROTOCOL_ENABLED false
+#else
 #define DEFAULT_CAREL_PROTOCOL_ENABLED true   // Carel PJEZ (supervisie 1200 8N2)
+#endif
 #define DEFAULT_MODBUS_INTERVAL 30         // seconds
 #define DEFAULT_DEEP_SLEEP_ENABLED false
 #define DEFAULT_DEEP_SLEEP_DURATION 3600   // seconds (1 hour)

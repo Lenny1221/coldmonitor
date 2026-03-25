@@ -57,6 +57,9 @@ public:
   
 private:
   String serialNumber;
+
+  // Alleen aanroepen terwijl httpMutex al door dezelfde taak is genomen (bv. vanuit apiHandshakeOrHeartbeat).
+  bool reportRemoteCommandResultLocked(const char* commandId, const char* status, const char* payloadJson);
 };
 
 #endif

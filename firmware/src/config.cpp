@@ -1,4 +1,5 @@
 #include "config.h"
+#include "board_pins.h"
 
 ConfigManager::ConfigManager() : loaded(false) {
   // Don't open preferences here - open when needed in load/save
@@ -23,17 +24,17 @@ void ConfigManager::setDefaults() {
   configDoc["deepSleepDuration"] = DEFAULT_DEEP_SLEEP_DURATION;
   configDoc["otaPassword"] = DEFAULT_OTA_PASSWORD;
   
-  // SPI defaults
-  configDoc["spi"]["csPin"] = 5;
+  // SPI defaults (MAX31865 – pins volgens board_pins.h)
+  configDoc["spi"]["csPin"] = BOARD_MAX31865_CS;
   configDoc["spi"]["rtdNominal"] = 1000;  // PT1000
   configDoc["spi"]["refResistor"] = 4300;
   configDoc["spi"]["wires"] = 4;
   
-  // Modbus/RS485 defaults: DI=GPIO17, RO=GPIO16, DE&RE=GPIO4
-  configDoc["modbus"]["rxPin"] = 16;   // RO (Receiver Output)
-  configDoc["modbus"]["txPin"] = 17;  // DI (Driver Input)
-  configDoc["modbus"]["dePin"] = 4;   // DE & RE (same pin)
-  configDoc["modbus"]["rePin"] = 4;
+  // Modbus/RS485 defaults
+  configDoc["modbus"]["rxPin"] = BOARD_RS485_RX;
+  configDoc["modbus"]["txPin"] = BOARD_RS485_TX;
+  configDoc["modbus"]["dePin"] = BOARD_RS485_DE;
+  configDoc["modbus"]["rePin"] = BOARD_RS485_DE;
   configDoc["modbus"]["baudRate"] = 9600;
   configDoc["modbus"]["slaveId"] = 1;
   configDoc["modbus"]["writeEnabled"] = true;  // Ontdooiing vereist schrijven
@@ -65,6 +66,7 @@ bool ConfigManager::load() {
   
   if (configJson.length() == 0) {
     Serial.println("Config: No saved configuration found");
+    preferences.end();
     return false;
   }
   
@@ -75,6 +77,7 @@ bool ConfigManager::load() {
   if (error) {
     Serial.println("Config: JSON parse error: " + String(error.c_str()));
     Serial.println("Config JSON: " + configJson);
+    preferences.end();
     return false;
   }
   
@@ -87,6 +90,9 @@ bool ConfigManager::load() {
   Serial.println("Loaded API URL: " + apiUrl);
   Serial.println("Loaded API Key: " + (apiKey.length() > 0 ? String(apiKey.substring(0, 8)) + "..." : "(leeg)"));
   
+  // Sluit NVS zodra JSON in configDoc staat; save() opent opnieuw. Twee open Preferences-
+  // sessies tegelijk (coldmonitor + databuffer) gaven op ESP32-S3 TLSF heap-asserts.
+  preferences.end();
   return true;
 }
 
@@ -260,10 +266,10 @@ void ConfigManager::setModbusInterval(unsigned long interval) {
 
 ModbusConfig ConfigManager::getModbusConfig() {
   ModbusConfig config;
-  config.rxPin = configDoc["modbus"]["rxPin"] | 16;
-  config.txPin = configDoc["modbus"]["txPin"] | 17;
-  config.dePin = configDoc["modbus"]["dePin"] | 4;
-  config.rePin = configDoc["modbus"]["rePin"] | 4;
+  config.rxPin = configDoc["modbus"]["rxPin"] | BOARD_RS485_RX;
+  config.txPin = configDoc["modbus"]["txPin"] | BOARD_RS485_TX;
+  config.dePin = configDoc["modbus"]["dePin"] | BOARD_RS485_DE;
+  config.rePin = configDoc["modbus"]["rePin"] | BOARD_RS485_DE;
   config.baudRate = configDoc["modbus"]["baudRate"] | 9600;
   config.slaveId = configDoc["modbus"]["slaveId"] | 1;
   config.writeEnabled = configDoc["modbus"]["writeEnabled"] | true;
@@ -306,7 +312,7 @@ void ConfigManager::setDeepSleepDuration(unsigned long duration) {
 
 SPIConfig ConfigManager::getSPIConfig() {
   SPIConfig config;
-  config.csPin = configDoc["spi"]["csPin"] | 5;
+  config.csPin = configDoc["spi"]["csPin"] | BOARD_MAX31865_CS;
   config.rtdNominal = configDoc["spi"]["rtdNominal"] | 1000;
   config.refResistor = configDoc["spi"]["refResistor"] | 4300;
   config.wires = configDoc["spi"]["wires"] | 4;
