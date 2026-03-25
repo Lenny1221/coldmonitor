@@ -15,6 +15,8 @@ import {
   WrenchScrewdriverIcon,
   CheckCircleIcon,
   ArrowRightIcon,
+  SparklesIcon,
+  TagIcon,
 } from '@heroicons/react/24/outline';
 
 const stats = [
@@ -328,6 +330,117 @@ const Home: React.FC = () => {
             Bekijk alle sectoren
             <ArrowRightIcon className="h-4 w-4" />
           </Link>
+        </div>
+      </section>
+
+      {/* Serv-Ice servicepartner sectie */}
+      <section className="max-w-5xl mx-auto px-6 mb-24">
+        <div className="relative rounded-3xl overflow-hidden">
+          {/* Dark bg + grid */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#050f1a] via-[#0a1e35] to-[#050f1a]" />
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage:
+                'linear-gradient(rgba(0,200,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,255,0.4) 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
+            }}
+          />
+          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#00c8ff]/15 blur-3xl pointer-events-none" />
+
+          <div className="relative p-8 sm:p-10 grid md:grid-cols-2 gap-8 items-center">
+            {/* Left: tekst */}
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00c8ff]/20 border border-[#00c8ff]/40 text-[#00c8ff] text-xs font-semibold mb-4">
+                <WrenchScrewdriverIcon className="h-3.5 w-3.5" />
+                Officiële servicepartner
+              </div>
+              <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold text-white mb-3 leading-tight">
+                Monitoring én onderhoud –{' '}
+                <span
+                  className="text-transparent"
+                  style={{
+                    background: 'linear-gradient(90deg, #00c8ff, #0080ff)',
+                    WebkitBackgroundClip: 'text',
+                    backgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  Serv-Ice regelt de rest
+                </span>
+              </h2>
+              <p className="text-white/65 leading-relaxed mb-5 text-sm">
+                IntelliFrost bewaakt uw installatie 24/7. Gaat er iets mis? Dan staat onze officiële servicepartner <strong className="text-white">Serv-Ice</strong> klaar voor snelle interventie — met meer dan 8 jaar expertise in koeltechnieken.
+              </p>
+              <ul className="space-y-2 mb-6">
+                {[
+                  'Herstelling & preventief onderhoud ter plaatse',
+                  'Alle gangbare merken koelinstallaties',
+                  'Servicecontracten voor zorgeloze bewaking',
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm text-white/75">
+                    <CheckCircleIcon className="h-4 w-4 text-[#00c8ff] flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to="/servicepartner"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-[#0D1B2E] bg-[#00c8ff] hover:bg-[#00e5ff] transition-colors text-sm"
+              >
+                Meer over Serv-Ice
+                <ArrowRightIcon className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {/* Right: combo deal highlight */}
+            <div className="flex flex-col gap-3">
+              <div className="p-5 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-[#00c8ff]/20 flex items-center justify-center flex-shrink-0">
+                  <CubeIcon className="h-5 w-5 text-[#00c8ff]" />
+                </div>
+                <div>
+                  <div className="text-white font-semibold text-sm">IntelliFrost Monitoring</div>
+                  <div className="text-white/45 text-xs">24/7 bewaking · HACCP · escalatie</div>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                <div className="w-7 h-7 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-white/40 font-bold text-sm">+</div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-[#00c8ff]/20 flex items-center justify-center flex-shrink-0">
+                  <WrenchScrewdriverIcon className="h-5 w-5 text-[#00c8ff]" />
+                </div>
+                <div>
+                  <div className="text-white font-semibold text-sm">Serv-Ice Servicecontract</div>
+                  <div className="text-white/45 text-xs">Preventief onderhoud · prioriteitsinterventie</div>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                <div className="w-7 h-7 rounded-full bg-amber-400/20 border border-amber-400/35 flex items-center justify-center text-amber-400 font-bold text-sm">=</div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-400/15 to-[#00c8ff]/10 border border-amber-400/30">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <TagIcon className="h-4 w-4 text-amber-400 flex-shrink-0" />
+                  <div className="font-bold text-white text-sm">Exclusieve combodeal</div>
+                </div>
+                <div className="text-white/55 text-xs leading-relaxed">
+                  1 maand IntelliFrost gratis + korting op servicecontract
+                </div>
+                <Link
+                  to="/servicepartner"
+                  className="inline-flex items-center gap-1.5 text-amber-400 text-xs font-semibold mt-2 hover:underline"
+                >
+                  <SparklesIcon className="h-3.5 w-3.5" />
+                  Combodeal bekijken
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
