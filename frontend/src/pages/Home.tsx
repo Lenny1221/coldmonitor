@@ -355,9 +355,9 @@ const Home: React.FC = () => {
                 <WrenchScrewdriverIcon className="h-3.5 w-3.5" />
                 Officiële servicepartner
               </div>
-              <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold text-white mb-3 leading-tight">
-                Monitoring én onderhoud –{' '}
-                <span className="text-white">
+              <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold mb-3 leading-tight" style={{ color: '#ffffff' }}>
+                <span style={{ color: '#ffffff' }}>Monitoring én onderhoud –{' '}</span>
+                <span style={{ color: '#ffffff' }}>
                   Serv-Ice regelt de rest
                 </span>
               </h2>
