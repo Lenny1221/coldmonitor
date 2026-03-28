@@ -32,6 +32,7 @@ import RefrigerantLogbook from './pages/RefrigerantLogbook';
 import RefrigerantLogbookClient from './pages/RefrigerantLogbookClient';
 import Layout from './components/Layout';
 import CookieBanner from './components/CookieBanner';
+import Privacy from './pages/Privacy';
 
 function NavigateToDashboard() {
   const { user } = useAuth();
@@ -245,6 +246,7 @@ function AppRoutes() {
       <Route path="/faq" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><FAQ /></MarketingLayout>} />
       <Route path="/servicepartner" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><ServicePartner /></MarketingLayout>} />
       <Route path="/contact" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Contact /></MarketingLayout>} />
+      <Route path="/privacy" element={<Privacy />} />
     </Routes>
   );
 }
