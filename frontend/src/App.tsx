@@ -31,6 +31,7 @@ import OnderhoudTickets from './pages/OnderhoudTickets';
 import RefrigerantLogbook from './pages/RefrigerantLogbook';
 import RefrigerantLogbookClient from './pages/RefrigerantLogbookClient';
 import Layout from './components/Layout';
+import CookieBanner from './components/CookieBanner';
 
 function NavigateToDashboard() {
   const { user } = useAuth();
@@ -254,6 +255,7 @@ function App() {
       <Router>
         <AuthProvider>
           <AppRoutes />
+          <CookieBanner />
         </AuthProvider>
       </Router>
     </ThemeProvider>
