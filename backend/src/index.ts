@@ -115,6 +115,30 @@ app.use('/api/invitations', invitationRoutes);
 // Serve frontend (wanneer gebouwd met backend - alles via Railway)
 const publicDir = path.join(__dirname, '../public');
 if (fs.existsSync(publicDir)) {
+  // CSP-headers: staan GA4 en andere externe bronnen expliciet toe
+  const cspMiddleware = (_req: express.Request, res: express.Response, next: express.NextFunction) => {
+    res.setHeader(
+      'Content-Security-Policy',
+      [
+        "default-src 'self'",
+        // 'unsafe-inline' nodig voor Vite-bundel + inline styles; gtag.js mag laden
+        "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com",
+        // GA4 stuurt beacons naar deze domeinen
+        "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com wss:",
+        // Afbeeldingen: eigen domein + Unsplash + GA4-pixel
+        "img-src 'self' data: blob: https://www.google-analytics.com https://www.googletagmanager.com https://images.unsplash.com",
+        // Fonts via Google Fonts
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "frame-src 'none'",
+        "object-src 'none'",
+        "base-uri 'self'",
+      ].join('; ')
+    );
+    next();
+  };
+
+  app.use(cspMiddleware);
   app.use(express.static(publicDir));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
