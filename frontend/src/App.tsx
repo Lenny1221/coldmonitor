@@ -33,6 +33,7 @@ import RefrigerantLogbookClient from './pages/RefrigerantLogbookClient';
 import Layout from './components/Layout';
 import CookieBanner from './components/CookieBanner';
 import Privacy from './pages/Privacy';
+import { usePageTracking } from './hooks/usePageTracking';
 
 function NavigateToDashboard() {
   const { user } = useAuth();
@@ -56,6 +57,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   const { user } = useAuth();
+  usePageTracking();
 
   return (
     <Routes>
