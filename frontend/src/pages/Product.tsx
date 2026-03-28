@@ -18,72 +18,72 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
-const tabs = ['Hardware', 'Overzicht', 'Escalatie', 'Compliance'];
+const tabs = ['De sensor', 'Dashboard', 'Alarmsysteem', 'Certificeringen'];
 
 const hardwareSpecs = [
-  { label: 'Meetbereik temperatuur', value: '-40°C tot +85°C' },
+  { label: 'Temperatuurbereik', value: '-40°C tot +85°C' },
   { label: 'Nauwkeurigheid', value: '± 0,1°C' },
-  { label: 'Meetinterval', value: 'Configureerbaar (1 – 60 min.)' },
-  { label: 'Verbinding', value: 'WiFi 2.4GHz / 4G LTE' },
-  { label: 'Batterijduur', value: 'Tot 2 jaar (afhankelijk van interval)' },
-  { label: 'Beschermingsgraad', value: 'IP67 (stof- en waterdicht)' },
-  { label: 'Deurstatus', value: 'Reed-schakelaar, detectie < 1 seconde' },
-  { label: 'Montage', value: 'Zelfklevend of schroefbevestiging' },
+  { label: 'Hoe vaak meten?', value: 'Elke 1 tot 60 minuten (naar keuze)' },
+  { label: 'Verbinding', value: 'WiFi of 4G mobiel netwerk' },
+  { label: 'Batterijduur', value: 'Tot 2 jaar zonder vervangen' },
+  { label: 'Weerbestendig', value: 'Stof- en waterdicht (IP67)' },
+  { label: 'Detecteert open deur', value: 'Ja, binnen 1 seconde' },
+  { label: 'Installatie', value: 'Zelfklevend of met schroeven' },
 ];
 
 const dashboardFeatures = [
-  { icon: ChartBarIcon, title: 'Realtime grafieken', desc: 'Bekijk de temperatuurcurve per koelcel live. Zoom in op elk tijdsvenster van de afgelopen 2 jaar.' },
-  { icon: SignalIcon, title: 'Live statusoverzicht', desc: 'In één oogopslag de status van alle koelcellen: OK, Waarschuwing of Alarm. Met kleurcodering.' },
-  { icon: MagnifyingGlassIcon, title: 'Alarm-historiek', desc: 'Volledig logboek van alle alarmen: tijdstip, duur, escalatieniveau en wie reageerde.' },
-  { icon: DocumentCheckIcon, title: 'HACCP-rapporten', desc: 'Genereer automatisch temperatuurrapportages voor voedselveiligheidsaudits. Exporteer als PDF of CSV.' },
-  { icon: UserGroupIcon, title: 'Gebruikersbeheer', desc: 'Voeg medewerkers, managers en technici toe met verschillende toegangsrechten.' },
-  { icon: CloudArrowUpIcon, title: 'Cloudopslag', desc: 'Al uw data wordt veilig opgeslagen in de cloud. Geen lokale server nodig.' },
+  { icon: ChartBarIcon, title: 'Live temperatuurgrafieken', desc: 'Zie de temperatuur van elke koelcel in real-time. Zoom terug tot 2 jaar geschiedenis om trends of problemen te spotten.' },
+  { icon: SignalIcon, title: 'Alles in één overzicht', desc: 'Groen = alles OK. Oranje = let op. Rood = actie nodig. U ziet in één blik hoe al uw koelcellen het doen.' },
+  { icon: MagnifyingGlassIcon, title: 'Historiek van alle alarmen', desc: 'Bekijk wanneer een alarm inging, hoe lang het duurde en wie er op reageerde. Niets gaat verloren.' },
+  { icon: DocumentCheckIcon, title: 'Rapporten met één klik', desc: 'Bij een voedselveiligheidscontrole download u direct een volledig rapport. Geen papieren registratie meer nodig.' },
+  { icon: UserGroupIcon, title: 'Meerdere gebruikers', desc: 'Voeg uw collega\'s, managers of technici toe. U bepaalt wie wat mag zien en doen.' },
+  { icon: CloudArrowUpIcon, title: 'Alles online bewaard', desc: 'Uw gegevens staan veilig online opgeslagen. Geen lokale server, geen backups — wij regelen dat voor u.' },
 ];
 
 const escalationLayers = [
   {
-    layer: 'Laag 1 – Direct alarm',
+    layer: 'Stap 1 – Onmiddellijk alarm',
     color: 'border-green-400 bg-green-50',
     badge: 'bg-green-100 text-green-700',
-    trigger: 'Onmiddellijk bij overschrijding drempelwaarde',
+    trigger: 'Zodra de temperatuur de grens overschrijdt',
     actions: [
-      'E-mail naar alle geconfigureerde contacten',
-      'Push-notificatie via webbrowser',
-      'Alarm zichtbaar in dashboard',
+      'E-mail naar uw contacten',
+      'Melding op uw smartphone of computer',
+      'Alarm zichtbaar in het dashboard',
     ],
-    config: 'Drempelwaarden per koelcel instelbaar. Separate alarm voor hoog/laag en voor deuren.',
+    config: 'U stelt zelf de temperatuurgrens in per koelcel — apart voor te hoog, te laag of een deur die te lang openstaat.',
   },
   {
-    layer: 'Laag 2 – Escalatie',
+    layer: 'Stap 2 – Verdere verwittinging',
     color: 'border-orange-400 bg-orange-50',
     badge: 'bg-orange-100 text-orange-700',
-    trigger: 'Geen reactie na X minuten (configureerbaar)',
+    trigger: 'Als niemand reageert na een instelbaar aantal minuten',
     actions: [
-      'SMS naar primaire contacten',
-      'SMS naar backup contacten',
-      'Technicus automatisch verwittigd',
+      'SMS naar uw hoofdcontact',
+      'SMS naar een reserve-contact',
+      'Technicus wordt automatisch verwittigd',
     ],
-    config: 'Reactietijdvenster en backup contacten volledig configureerbaar per locatie.',
+    config: 'U bepaalt zelf hoe lang het systeem wacht en wie het reserve-contact is.',
   },
   {
-    layer: 'Laag 3 – AI-telefoon',
+    layer: 'Stap 3 – Automatische telefoonoproep',
     color: 'border-red-400 bg-red-50',
     badge: 'bg-red-100 text-red-700',
-    trigger: 'Na verdere non-respons op laag 2',
+    trigger: 'Als ook de SMS geen reactie opleverde',
     actions: [
-      'AI-telefoonoproep naar primaire contacten',
-      'AI-oproep naar backup contacten',
-      'Technicus wordt ingeschakeld',
+      'Automatische telefoonoproep naar uw contacten',
+      'Oproep naar uw reserve-contact',
+      'Technicus grijpt in',
     ],
-    config: 'AI-stem meldt koelcel, temperatuur en alarmduur. Wacht op bevestiging van de gebelde persoon.',
+    config: 'Een automatische stem belt u op en vertelt welke koelcel een probleem heeft en hoe lang al. U bevestigt dat u het gehoord heeft.',
   },
 ];
 
 const complianceItems = [
-  { icon: ShieldCheckIcon, title: 'HACCP', desc: 'Automatische temperatuurregistratie voldoet aan HACCP-vereisten. Exporteerbaar auditlogboek per locatie en periode.' },
-  { icon: DocumentCheckIcon, title: 'GDP / GMP (farmaceutisch)', desc: 'Gecertificeerde datalogging met tijdstempel voor farmaceutische distributie en bewaring.' },
-  { icon: ClockIcon, title: '2 jaar dataretentie', desc: 'Alle temperatuurmetingen worden minimaal 2 jaar bewaard voor traceerbaarheid en audits.' },
-  { icon: CpuChipIcon, title: 'Gesensorde alertketen', desc: 'Volledige audit trail: welk alarm, wanneer, wie verwittigd, wie reageerde en hoelang.' },
+  { icon: ShieldCheckIcon, title: 'Voedselveiligheid (HACCP)', desc: 'IntelliFrost registreert automatisch alle temperaturen. Bij een inspectie download u met één klik een volledig rapport. Geen handmatige boekhouding meer.' },
+  { icon: DocumentCheckIcon, title: 'Farmacie & medische sector', desc: 'Ook geschikt voor apotheken, ziekenhuizen en farmaceutische distributeurs met strenge bewaarregels voor geneesmiddelen.' },
+  { icon: ClockIcon, title: '2 jaar bewaard', desc: 'Elke meting wordt minstens 2 jaar bijgehouden. Zo bent u altijd gedekt bij een controle, discussie of klacht.' },
+  { icon: CpuChipIcon, title: 'Volledig traceerbaar', desc: 'U ziet precies: welk alarm, wanneer het inging, wie verwittigd werd en wie er op reageerde. Niets gaat verloren.' },
 ];
 
 const Product: React.FC = () => {
@@ -92,12 +92,12 @@ const Product: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto px-6">
       <Helmet>
-        <title>Product – IntelliFrost | IoT-sensoren, dashboard & escalatie</title>
-        <meta name="description" content="Ontdek hoe IntelliFrost werkt: draadloze IoT-sensoren (±0,1°C), realtime dashboard, 3-laagse escalatie en HACCP-conforme rapportage voor koel- en vriescellen." />
-        <meta name="keywords" content="IoT temperatuursensor, koelcel sensor, HACCP dashboard, escalatiesysteem koelcel, temperatuurlogger, GDP compliant" />
+        <title>Wat is IntelliFrost? – Slimme bewaking van uw koelcellen</title>
+        <meta name="description" content="IntelliFrost bewaakt uw koelcellen dag en nacht. Ontvang automatisch een melding als de temperatuur afwijkt — via e-mail, SMS of telefoon. Klaar voor voedselveiligheidscontroles." />
+        <meta name="keywords" content="koelcel bewaking, temperatuur alarm, voedselveiligheid koelcel, HACCP rapport, koelcel sensor, temperatuurregistratie automatisch" />
         <link rel="canonical" href="https://intellifrost.be/product" />
-        <meta property="og:title" content="Product – IntelliFrost | IoT-sensoren & slimme escalatie" />
-        <meta property="og:description" content="Draadloze IoT-sensoren, realtime dashboard en 3-laagse escalatie voor betrouwbare koelcelmonitoring." />
+        <meta property="og:title" content="Wat is IntelliFrost? – Nooit meer zorgen over uw koelcellen" />
+        <meta property="og:description" content="Kleine sensor, groot gemak. IntelliFrost bewaakt uw koelcellen en waarschuwt u meteen als er iets mis gaat." />
         <meta property="og:url" content="https://intellifrost.be/product" />
       </Helmet>
 
@@ -107,17 +107,17 @@ const Product: React.FC = () => {
           Wat is IntelliFrost?
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl leading-relaxed">
-          IntelliFrost is een end-to-end bewakingsplatform voor koel- en vriescellen. Het combineert
-          IoT-sensoren, een krachtige cloud-backend en een slimme escalatie-engine in één gebruiksvriendelijk product.
+          IntelliFrost bewaakt uw koelcellen dag en nacht — ook als u er niet bij bent. Loopt de temperatuur op
+          of staat er een deur te lang open? Dan krijgt u automatisch een melding, zodat u altijd op tijd kunt ingrijpen en voedselverspilling voorkomt.
         </p>
       </div>
 
       {/* Quick value props */}
       <div className="grid sm:grid-cols-3 gap-4 mb-14">
         {[
-          { icon: WifiIcon, text: 'Draadloze sensoren, eenvoudig te installeren' },
-          { icon: BellAlertIcon, text: '3-laagse escalatie – tot AI-telefoon' },
-          { icon: ShieldCheckIcon, text: 'HACCP & GDP compliant' },
+          { icon: WifiIcon, text: 'Klaar in 5 minuten – geen elektricien nodig' },
+          { icon: BellAlertIcon, text: 'Altijd verwittigd – ook \'s nachts en in het weekend' },
+          { icon: ShieldCheckIcon, text: 'Klaar voor voedselveiligheidscontroles' },
         ].map((vp) => (
           <div key={vp.text} className="flex items-center gap-3 p-4 rounded-xl bg-[#00c8ff]/8 border border-[#00c8ff]/20">
             <vp.icon className="h-5 w-5 text-[#00c8ff] flex-shrink-0" />
@@ -149,11 +149,11 @@ const Product: React.FC = () => {
       {activeTab === 0 && (
         <div className="mb-14">
           <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
-            IoT-sensoren & hardware
+            De sensor – klein, discreet en betrouwbaar
           </h2>
           <p className="text-gray-600 mb-8 leading-relaxed">
-            De IntelliFrost-sensor meet zowel temperatuur als deurstatus en stuurt data continu naar het cloudplatform.
-            Installatie duurt minder dan 5 minuten per cel. Geen bekabeling, geen speciale gereedschappen.
+            U hangt of plakt de sensor in uw koelcel. Dat is alles. Geen kabels, geen technici, geen gedoe.
+            De sensor meet continu de temperatuur en detecteert of een deur te lang openstaat. Alles wordt automatisch doorgestuurd naar uw persoonlijk dashboard.
           </p>
 
           {/* Hardware foto + specs naast elkaar */}
@@ -187,8 +187,8 @@ const Product: React.FC = () => {
             <div className="flex items-start gap-3">
               <CubeIcon className="h-5 w-5 text-[#00c8ff] flex-shrink-0 mt-0.5" />
               <p className="text-sm text-gray-700">
-                <strong>Meerdere connectiviteitsopties:</strong> De sensoren ondersteunen WiFi 2.4GHz voor vaste installaties
-                en 4G LTE voor locaties zonder WiFi-dekking. Data wordt versleuteld verstuurd (TLS 1.3).
+                <strong>Geen WiFi in uw koelruimte?</strong> Geen probleem. De sensor werkt ook via het 4G mobiel netwerk —
+                zo bent u overal gedekt, ook in kelders of grote opslagplaatsen.
               </p>
             </div>
           </div>
@@ -198,11 +198,11 @@ const Product: React.FC = () => {
       {activeTab === 1 && (
         <div className="mb-14">
           <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
-            Dashboard & rapportage
+            Uw dashboard – altijd en overal
           </h2>
           <p className="text-gray-600 mb-8 leading-relaxed">
-            Het webdashboard geeft u op elk moment een volledig overzicht van al uw locaties en koelcellen.
-            Alle data is live en historisch raadpleegbaar – van elk toestel, altijd.
+            Op uw computer, tablet of smartphone ziet u in één oogopslag hoe al uw koelcellen het doen.
+            Of u nu thuis bent, op de baan of op vakantie — u hebt altijd controle.
           </p>
           <div className="grid md:grid-cols-2 gap-5">
             {dashboardFeatures.map((f) => (
@@ -223,11 +223,11 @@ const Product: React.FC = () => {
       {activeTab === 2 && (
         <div className="mb-14">
           <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
-            Escalatie in 3 lagen
+            Het alarmsysteem – niemand wordt vergeten
           </h2>
           <p className="text-gray-600 mb-8 leading-relaxed">
-            Het escalatiesysteem is volledig configureerbaar en zorgt ervoor dat alarmen altijd de juiste persoon bereiken –
-            ook midden in de nacht of in het weekend.
+            Als er iets misgaat, stuurt IntelliFrost automatisch een alarm. Reageert niemand? Dan escaleert het systeem stap voor stap,
+            tot iemand ingrijpt — ook 's nachts en in het weekend.
           </p>
           <div className="space-y-5">
             {escalationLayers.map((layer) => (
@@ -264,11 +264,11 @@ const Product: React.FC = () => {
       {activeTab === 3 && (
         <div className="mb-14">
           <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
-            Compliance & wetgeving
+            Automatisch voldoen aan de regels
           </h2>
           <p className="text-gray-600 mb-8 leading-relaxed">
-            IntelliFrost helpt u voldoen aan voedselveiligheids- en farmaceutische regelgeving.
-            Auditklare rapporten zijn met één klik beschikbaar.
+            IntelliFrost regelt de temperatuurregistratie volledig automatisch voor u. Bij een controle heeft u alles bij de hand
+            — zonder extra moeite of papierwerk.
           </p>
           <div className="grid md:grid-cols-2 gap-5 mb-8">
             {complianceItems.map((item) => (
@@ -285,8 +285,8 @@ const Product: React.FC = () => {
           </div>
           <div className="p-5 rounded-xl bg-[#00c8ff]/8 border border-[#00c8ff]/20">
             <p className="text-sm text-gray-700">
-              <strong>Tip:</strong> Bij een voedselinspectie kunt u direct een rapport downloaden met alle
-              temperatuurmetingen van de geselecteerde periode. Geen handmatige registratie meer nodig.
+              <strong>Bij een inspectie?</strong> Download in enkele seconden een volledig rapport met alle temperatuurmetingen van de gewenste periode.
+              De inspecteur heeft alles wat hij nodig heeft — en u hoeft er niets extra voor te doen.
             </p>
           </div>
         </div>
@@ -320,10 +320,10 @@ const Product: React.FC = () => {
       {/* CTA */}
       <section className="text-center p-10 rounded-3xl bg-gradient-to-br from-[#00c8ff]/15 to-transparent border border-[#00c8ff]/20">
         <h2 className="font-['Exo_2'] text-xl font-semibold text-gray-900 mb-3">
-          Overtuigd? Vraag een demo aan.
+          Zelf zien hoe het werkt?
         </h2>
         <p className="text-gray-600 mb-6">
-          Onze experts tonen u het platform en bespreken de beste configuratie voor uw situatie.
+          We tonen u het systeem live en bekijken samen wat de beste oplossing is voor uw situatie. Vrijblijvend en op maat.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
