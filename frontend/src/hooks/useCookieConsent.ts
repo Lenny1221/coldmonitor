@@ -16,11 +16,13 @@ function initGA4(): void {
   if (document.getElementById('ga4-script')) return;
 
   window.dataLayer = window.dataLayer || [];
-  window.gtag = function (...args: unknown[]) {
-    window.dataLayer.push(args);
-  };
+  // Google vereist het 'arguments'-object (geen rest-params) zodat gtag.js
+  // de dataLayer-entries correct herkent en verwerkt.
+  // eslint-disable-next-line prefer-rest-params
+  (window as any).gtag = function () { window.dataLayer.push(arguments); };
   window.gtag('js', new Date());
-  window.gtag('config', GA4_ID, { anonymize_ip: true });
+  // anonymize_ip bestaat niet in GA4 (alleen UA) – weglaten
+  window.gtag('config', GA4_ID);
 
   const script = document.createElement('script');
   script.id = 'ga4-script';
