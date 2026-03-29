@@ -378,9 +378,32 @@ void loop() {
   // USB-detectie (indien USB_ADC geconfigureerd)
   powerMonitor.update();
   
-  // NTP sync bij WiFi‑connect (ook na reconnect)
+  // WiFi auto-reconnect: detecteer verlies en probeer automatisch opnieuw
+  static bool wifiWasConnected = false;
+  static unsigned long wifiLostAt = 0;
+  static unsigned long lastReconnectAttempt = 0;
+  bool wifiNowConnected = WiFi.isConnected();
+
+  if (wifiWasConnected && !wifiNowConnected && wifiLostAt == 0) {
+    wifiLostAt = now;
+    logger.warn("WiFi verbinding verloren! Automatisch reconnect over 5s...");
+  }
+  if (!wifiNowConnected && wifiLostAt > 0 && (now - lastReconnectAttempt >= 15000)) {
+    lastReconnectAttempt = now;
+    logger.info("WiFi reconnect poging (" + String((now - wifiLostAt) / 1000) + "s geleden verloren)...");
+    WiFi.reconnect();
+  }
+  if (wifiNowConnected && wifiLostAt > 0) {
+    logger.info("WiFi herverbonden na " + String((now - wifiLostAt) / 1000) + "s");
+    wifiLostAt = 0;
+    lastReconnectAttempt = 0;
+  }
+  wifiWasConnected = wifiNowConnected;
+
+  // NTP sync bij WiFi‑connect (ook na reconnect – ntpInitDone reset bij verlies)
   static bool ntpInitDone = false;
-  if (WiFi.isConnected() && !ntpInitDone) {
+  if (!wifiNowConnected) ntpInitDone = false;  // Reset bij verlies zodat NTP opnieuw synct
+  if (wifiNowConnected && !ntpInitDone) {
     initNtpTime();
     ntpInitDone = true;
   }
@@ -564,8 +587,12 @@ void loop() {
   // Check for OTA updates
   otaUpdate.handle();
   
-  // Check if we should enter deep sleep (power saving mode)
-  if (config.getDeepSleepEnabled() && !WiFi.isConnected()) {
+  // Deep sleep alleen als WiFi weg is ÉN USB niet aangesloten ÉN niet in reconnect-window
+  // Bij USB-voeding nooit slapen: toestel is bereikbaar en batterij laadt
+  if (config.getDeepSleepEnabled()
+      && !WiFi.isConnected()
+      && !powerMonitor.isUsbConnected()
+      && (wifiLostAt == 0 || (now - wifiLostAt >= 120000))) {  // Minstens 2 min wachten voor deep sleep
     deepSleepIfNeeded();
   }
   

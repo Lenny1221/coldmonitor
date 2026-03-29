@@ -581,6 +581,21 @@ const ColdCellDetail: React.FC = () => {
               const batLevel = latestReading?.batteryLevel;
               const charging = latestReading?.batteryCharging;
               const hasBatteryData = batLevel !== undefined && batLevel !== null;
+
+              if (charging) {
+                // USB aangesloten: batterijpercentage verbergen (ADC leest onbetrouwbaar tijdens laden)
+                return (
+                  <>
+                    <div className="text-lg font-semibold text-green-600 dark:text-green-400">
+                      ⚡ Aan het opladen
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                      Batterijpercentage niet beschikbaar tijdens opladen
+                    </p>
+                  </>
+                );
+              }
+
               return (
                 <>
                   <div className="text-2xl font-bold text-gray-900 dark:text-frost-100">
@@ -588,11 +603,7 @@ const ColdCellDetail: React.FC = () => {
                   </div>
                   {hasBatteryData && (
                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                      {charging ? (
-                        <span className="text-green-600 dark:text-green-400 font-medium">Aan het opladen</span>
-                      ) : (
-                        <span className="text-gray-500 dark:text-slate-400">Niet aan het opladen</span>
-                      )}
+                      Op batterijvoeding
                     </p>
                   )}
                 </>
