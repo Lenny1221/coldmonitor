@@ -121,8 +121,8 @@ if (fs.existsSync(publicDir)) {
       'Content-Security-Policy',
       [
         "default-src 'self'",
-        // 'unsafe-inline' nodig voor Vite-bundel + inline styles; gtag.js mag laden
-        "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com",
+        // 'unsafe-inline' + 'unsafe-eval' nodig: Vite-bundel + gtag.js gebruikt eval() intern
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
         // GA4 stuurt beacons naar deze domeinen
         "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com wss:",
         // Afbeeldingen: eigen domein + Unsplash + GA4-pixel
