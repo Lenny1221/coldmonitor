@@ -181,6 +181,16 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Bepaal de effectieve status op basis van actieve alarms,
+  // zodat het lampje klopt ook als cell.status nog niet bijgewerkt is.
+  const getCellEffectiveStatus = (cell: ColdCell): string => {
+    const cellAlarms = alarms.filter((a: any) => a.coldCellId === cell.id);
+    if (cellAlarms.length === 0) return cell.status;
+    const criticalTypes = ['POWER_LOSS', 'WIFI_LOSS', 'SENSOR_ERROR'];
+    const hasCritical = cellAlarms.some((a: any) => criticalTypes.includes(a.type));
+    return hasCritical ? 'ALARM' : 'WARNING';
+  };
+
   const coldCells = data?.summary?.coldCells || [];
   const activeAlarms = data?.summary?.activeAlarms ?? 0;
   const technician = data?.customer?.linkedTechnician;
@@ -369,8 +379,8 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
                   <div
-                    className={`w-3 h-3 rounded-full shrink-0 ${getStatusDot(cell.status)}`}
-                    title={cell.status}
+                    className={`w-3 h-3 rounded-full shrink-0 ${getStatusDot(getCellEffectiveStatus(cell))}`}
+                    title={getCellEffectiveStatus(cell)}
                   />
                 </button>
               ))}
