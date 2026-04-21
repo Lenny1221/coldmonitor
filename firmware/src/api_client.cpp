@@ -171,7 +171,7 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
   http.setConnectTimeout(15000);
   http.setTimeout(10000);
   
-  DynamicJsonDocument doc(768);
+  DynamicJsonDocument doc(1024);  // ruimte voor legacy + semantische sensor-velden
   doc["deviceId"] = WiFi.macAddress();
   doc["firmwareVersion"] = FIRMWARE_VERSION;
   doc["ip"] = ip.length() > 0 ? ip : WiFi.localIP().toString();
@@ -183,16 +183,33 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
   if (batteryPercent >= 0) doc["battery_percent"] = batteryPercent;
   if (onMains) doc["on_mains"] = onMains;
 
-  // Carrier-PCB v1 telemetrie
-  float t0 = readSensor(0);
-  float t1 = readSensor(1);
-  if (isnan(t0)) doc["sensor_1_temp"] = (const char*)nullptr; else doc["sensor_1_temp"] = t0;
-  if (isnan(t1)) doc["sensor_2_temp"] = (const char*)nullptr; else doc["sensor_2_temp"] = t1;
-  doc["sensor_1_fault"] = sensorFault(0);
-  doc["sensor_2_fault"] = sensorFault(1);
-  doc["door_open"]      = isDoorOpen();
-  doc["relay_state"]    = getRelayState();
-  doc["ext_power"]      = isExternalPowerPresent();
+  // Carrier-PCB v1.1 telemetrie
+  // PT1000 #1 = ruimte (koelcel-ambient), PT1000 #2 = verdamper (evaporator).
+  // Zowel index-velden (legacy) als semantische aliassen meegestuurd zodat
+  // de backend geen migratie nodig heeft om beide te tonen.
+  float tRoom = readRoomTempC();
+  float tEvap = readEvaporatorTempC();
+  if (isnan(tRoom)) {
+    doc["sensor_1_temp"] = (const char*)nullptr;
+    doc["room_temp"]     = (const char*)nullptr;
+  } else {
+    doc["sensor_1_temp"] = tRoom;
+    doc["room_temp"]     = tRoom;
+  }
+  if (isnan(tEvap)) {
+    doc["sensor_2_temp"]    = (const char*)nullptr;
+    doc["evaporator_temp"]  = (const char*)nullptr;
+  } else {
+    doc["sensor_2_temp"]    = tEvap;
+    doc["evaporator_temp"]  = tEvap;
+  }
+  doc["sensor_1_fault"]    = roomSensorFault();
+  doc["sensor_2_fault"]    = evaporatorFault();
+  doc["room_fault"]        = doc["sensor_1_fault"];
+  doc["evaporator_fault"]  = doc["sensor_2_fault"];
+  doc["door_open"]         = isDoorOpen();
+  doc["relay_state"]       = getRelayState();
+  doc["ext_power"]         = isExternalPowerPresent();
 
   String jsonData;
   serializeJson(doc, jsonData);

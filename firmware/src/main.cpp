@@ -687,23 +687,38 @@ void sensorTask(void *parameter) {
     // Volledige sensorread op interval (temp via MAX31865, deur)
     if (now - lastReading >= interval) {
       SensorData data = sensors.read();
-      
-      // MAX31865 #1 (primary PT1000) via sensors_pt1000-laag
-      float max31865Temp = readSensor(0);
-      uint8_t max31865Fault = sensorFault(0);
-      bool max31865Ok = max31865Initialized && sensorOk(0) && !isnan(max31865Temp);
 
-      if (max31865Ok) {
-        data.temperature = max31865Temp;
+      // PT1000 #1 = RUIMTE (koelcel-ambient, primaire temperatuur)
+      float   roomTemp  = readRoomTempC();
+      uint8_t roomFlt   = roomSensorFault();
+      bool    roomOk    = max31865Initialized && roomSensorOk() && !isnan(roomTemp);
+
+      // PT1000 #2 = VERDAMPER (evaporator-coil, diagnose/defrost)
+      float   evapTemp  = readEvaporatorTempC();
+      uint8_t evapFlt   = evaporatorFault();
+      bool    evapOk    = max31865Initialized && evaporatorSensorOk() && !isnan(evapTemp);
+
+      if (roomOk) {
+        data.temperature = roomTemp;
         data.valid = true;
-        logger.info("MAX31865 | Temp: " + String(data.temperature, 2) + " °C | Deur: " + (data.doorOpen ? "OPEN" : "dicht"));
-      } else {
-        // Altijd MAX31865-status én deur tonen in Serial Monitor voor debugging
-        logger.warn("MAX31865 | GEEN DATA | fault=0x" + String(max31865Fault, HEX) + 
-                    " temp=" + String(max31865Temp, 1) + " | Deur: " + (data.doorOpen ? "OPEN" : "dicht") +
-                    " (pin=" + String(data.doorPinHigh ? 1 : 0) + ")");
       }
-      
+
+      // Gecombineerde log: tonen welke voeler wel/niet werkt.
+      String logLine = "MAX31865 | ruimte=";
+      logLine += roomOk ? (String(roomTemp, 2) + "°C")
+                        : ("--- (fault=0x" + String(roomFlt, HEX) + ")");
+      logLine += " | verdamper=";
+      logLine += evapOk ? (String(evapTemp, 2) + "°C")
+                        : ("--- (fault=0x" + String(evapFlt, HEX) + ")");
+      logLine += " | Deur: ";
+      logLine += data.doorOpen ? "OPEN" : "dicht";
+      if (roomOk) {
+        logger.info(logLine);
+      } else {
+        logLine += " (pin=" + String(data.doorPinHigh ? 1 : 0) + ")";
+        logger.warn(logLine);
+      }
+
       if (data.valid) {
         lastKnownTemp = data.temperature;
         hasValidReading = true;
@@ -718,7 +733,14 @@ void sensorTask(void *parameter) {
 
         DynamicJsonDocument doc(512);
         doc["deviceId"] = getEffectiveDeviceSerial();
-        doc["temperature"] = round(data.temperature * 10) / 10.0;  // 1 decimaal
+        doc["temperature"] = round(data.temperature * 10) / 10.0;  // ruimte, 1 decimaal
+        // Verdamper-voeler: enkel meesturen als geldig; bij fout null.
+        if (evapOk) {
+          doc["evaporatorTemp"] = round(evapTemp * 10) / 10.0;
+        } else {
+          doc["evaporatorTemp"] = (const char*)nullptr;  // JSON null
+        }
+        doc["evaporatorFault"] = evapFlt;
         doc["doorStatus"] = data.doorOpen;
         /* Carrier: VBUS_DETECT is digitaal, dus powerStatus is altijd geldig. */
         doc["powerStatus"] = usbConnected;
