@@ -8,7 +8,7 @@
  *
  * Dit module combineert TWEE onafhankelijke watchdogs:
  *
- * 1. Hardware-WDT (TPL5010 op carrier, DONE = GPIO 4)
+ * 1. Hardware-WDT (TPL5010 op carrier, DONE = GPIO 5 — U6-pin 12)
  *    - Gedreven door een FreeRTOS-task op core 0 (10 ms ritme, 100 µs puls).
  *    - Reset de ESP32 via EN als hij niet gekickt wordt. Stand van zaken:
  *      op carrier v1.1 ziet de TPL5010 onze kicks niet (zie comment in

@@ -7,8 +7,8 @@
 
 /*
  * PowerMonitor op de carrier-PCB v1.1:
- *   - Digitale VBUS_DETECT ingang (PIN_VBUS_DETECT = GPIO 12), actief-hoog
- *     via BAT54 + weerstandsdeler. Geen ADC meer.
+ *   - Digitale VBUS_DETECT ingang (PIN_VBUS_DETECT = GPIO 1 op carrier v1.1),
+ *     actief-hoog via BAT54 + weerstandsdeler achter USB-C. Geen ADC meer.
  *   - Op niet-carrier builds (BOARD_POWER_MONITOR_DISABLED niet gezet, maar
  *     BOARD_USB_ADC_PIN wél) valt PowerMonitor terug op de klassieke
  *     ADC-meting.

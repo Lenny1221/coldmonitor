@@ -6,9 +6,10 @@
 
 #include "board_pins.h"
 
-/* Carrier v1.1 heeft geen gebruiker-LED (GPIO12 = VBUS_DETECT).
- * Laat LED_BUILTIN bestaan voor externe libs, maar alle driver-ops gaan via
- * BOARD_LED_SET/TOGGLE die no-ops zijn bij BOARD_HAS_STATUS_LED=0. */
+/* Carrier v1.1 heeft geen gebruiker-LED (GPIO 12 = LilyGO charge-LED, op
+ * carrier niet gebruikt). Laat LED_BUILTIN bestaan voor externe libs, maar
+ * alle driver-ops gaan via BOARD_LED_SET/TOGGLE die no-ops zijn bij
+ * BOARD_HAS_STATUS_LED=0. */
 #undef LED_BUILTIN
 #define LED_BUILTIN BOARD_STATUS_LED_PIN
 #include <SPIFFS.h>
@@ -136,7 +137,7 @@ void setup() {
   logger.info("Version: " + String(FIRMWARE_VERSION));
   logger.info("========================================");
 
-  // Onboard status-LED: carrier v1.1 heeft er geen (GPIO12 = VBUS_DETECT).
+  // Onboard status-LED: carrier v1.1 heeft er geen.
   // BOARD_LED_*-macros zijn no-op wanneer BOARD_HAS_STATUS_LED=0.
   BOARD_LED_PINMODE(LED_BUILTIN);
   BOARD_LED_SET(LED_BUILTIN, BOARD_LED_LEVEL_ON);
@@ -271,8 +272,7 @@ void setup() {
   kickWatchdog();
   initRelay();
   initDoor();
-  // RS485 (MAX3485): carrier-pinnen zijn GPIO 43/44/2 (niet meer de PSRAM-
-  // pinnen van de vorige build), dus veilig om Serial1 nu al op te zetten.
+  // RS485 (MAX3485) op carrier v1.1: TX=GPIO38, RX=GPIO39, DE=GPIO40 (U7).
   // DE wordt LOW gezet (ontvanger actief). Een latere Modbus-init mag
   // Serial1 opnieuw configureren.
   initRS485(9600);
@@ -448,7 +448,7 @@ void loop() {
     ntpInitDone = true;
   }
   
-  // Heartbeat: onboard LED (LilyGO: GPIO12)
+  // Heartbeat: onboard LED (no-op op carrier, LED is niet aangesloten).
   if (now - lastHeartbeat > 1000) {
     BOARD_LED_TOGGLE(LED_BUILTIN);
     lastHeartbeat = now;
@@ -531,8 +531,9 @@ void loop() {
     }
   }
   
-  // Battery check — op carrier v1.1 is er geen battery-ADC (GPIO4 = WDT_DONE).
-  // BatteryMonitor is een no-op; we tonen enkel periodiek de VBUS-status.
+  // Battery check — op carrier v1.1 is er geen battery-ADC; GPIO 4 is niet
+  // als ADC gebruikt en WDT_DONE zit op GPIO 5. BatteryMonitor is een no-op;
+  // we tonen enkel periodiek de VBUS-status.
   if (now - lastBatteryCheck > 60000) { // Every minute
     batteryMonitor.update();
 #if !defined(BOARD_BATTERY_MONITOR_DISABLED)

@@ -13,7 +13,7 @@ BatteryMonitor::~BatteryMonitor() {
 #if defined(BOARD_BATTERY_MONITOR_DISABLED)
 
 bool BatteryMonitor::init() {
-  logger.info("Battery monitor: uit (carrier v1.1 heeft geen Li-Po ADC; GPIO4 = WDT_DONE)");
+  logger.info("Battery monitor: uit (carrier v1.1 heeft geen Li-Po ADC)");
   voltage = 0.0f;
   percentage = -1;
   voltageInitialized = false;

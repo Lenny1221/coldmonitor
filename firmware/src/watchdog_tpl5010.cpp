@@ -17,25 +17,16 @@ extern Logger logger;
  * (esp_task_wdt, ingebouwd in ESP32). Zie header voor achtergrond.
  *
  * 1) TPL5010-hardware-watchdog
- *    Net WDT_DONE  = ESP32 GPIO 4
- *    Net WDT_RESET = TPL5010 RST → ESP32 EN (hardware-reset pad)
+ *    Net WDT_DONE  = ESP32 GPIO 5 (U6 pin 12 op carrier v1.1)
+ *    Net WDT_RESET = TPL5010 RST → ESP32 RST (hardware-reset pad, U6-14)
  *
  *    Strategie: een dedicated FreeRTOS-task (core 0, prio 5, 10 ms periode)
- *    pulseert GPIO 4 via directe register-writes (IRAM-safe, niet afhankelijk
+ *    pulseert GPIO 5 via directe register-writes (IRAM-safe, niet afhankelijk
  *    van loop() of een specifieke core). De task overleeft blocking calls in
  *    setup()/loop() zoals NVS-writes, SPI-transacties en WiFi-scans.
  *
- *    BEKEND GEDRAG OP CARRIER v1.1 (hardware-issue, NIET software):
- *    Ondanks dat de kick-task aantoonbaar op 10 ms ritme pulseert (zie
- *    s_kicks-teller), reset de TPL5010 het board rond ~10 s uptime (reset-
- *    reden POWERON, d.w.z. EN wordt extern laag getrokken). Waarschijnlijke
- *    oorzaken:
- *      - DONE-trace op carrier niet correct gerouteerd naar TPL5010 pin 4.
- *      - Pulse-amplitude/edge wordt afgezwakt door de LilyGO battery-divider
- *        op GPIO 4.
- *      - TPL5010 DELAY/M_RST verkeerd gedimensioneerd.
- *    Diagnose: scope GPIO 4 op header én op TPL5010 pin 4. Verwachting:
- *    100 µs pulses @ 100 Hz.
+ *    Diagnose bij twijfel: scope GPIO 5 op de header én op TPL5010 pin 5.
+ *    Verwachting: 100 µs pulses @ 100 Hz.
  *    Workaround voor development: cut-and-jump WDT_RESET los van ESP32 EN,
  *    of zet een pull-up op WDT_RESET zodat de TPL5010 geen reset meer kan
  *    trekken. De firmware blijft kicken; zodra de hardware-fix er is werkt

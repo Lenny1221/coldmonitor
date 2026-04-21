@@ -5,7 +5,7 @@
 #include "board_pins.h"
 
 // Battery monitoring using ADC (voltage divider: Battery -> R1 -> ADC -> R2 -> GND).
-// Op de carrier-PCB v1.1 is GPIO 4 hertoegewezen aan WDT_DONE (TPL5010), dus
+// Op de carrier-PCB v1.1 is er geen Li-Po ADC (geen batterij-deler), dus
 // BOARD_BATTERY_MONITOR_DISABLED is gezet en deze klasse draait als no-op.
 #if defined(BOARD_BATTERY_MONITOR_DISABLED)
 #define BATTERY_ADC_PIN 255

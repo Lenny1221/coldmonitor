@@ -8,8 +8,8 @@
  * HIGH wanneer externe 12-24 V DC op de schroefterminal aanwezig is, of
  * wanneer USB-C stroom voert.
  *
- * Bewust LOS van power_monitor (dat kijkt naar GPIO12 charge-LED +
- * GPIO4 battery-ADC). Gedraagt zich als pure getter; wijzigt geen
+ * Bewust LOS van power_monitor (dat historisch naar de LilyGO charge-LED
+ * en battery-ADC keek). Gedraagt zich als pure getter; wijzigt geen
  * bestaande USB-logica.
  */
 
