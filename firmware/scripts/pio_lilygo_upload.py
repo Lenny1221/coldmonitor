@@ -1,5 +1,6 @@
-# LilyGO T-SIM7670G S3 (OPI flash): stub-based verify faalt vaak op USB-CDC.
-# Voeg --no-stub toe vóór het write_flash subcommando.
+# LilyGO T-SIM7670G S3 (OPI flash, USB-CDC): stub-based verify faalt vaak op
+# macOS (flush/configure van de poort gaat mis tijdens stub upload).
+# --no-stub gebruikt de ROM-loader direct; iets trager, veel stabieler.
 Import("env")
 
 

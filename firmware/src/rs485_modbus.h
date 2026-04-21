@@ -66,4 +66,12 @@ public:
   uint16_t getUInt16(uint8_t index);
 };
 
+/* ----------------------------------------------------------------------- *
+ * Carrier-API (spec): eenvoudige free-function init op Serial1 + DE-pin.
+ * Coexistent met RS485Modbus; niet tegelijk gebruiken met die klasse, anders
+ * claimen beide Serial1. Full Modbus-framing volgt in een latere taak.
+ * ----------------------------------------------------------------------- */
+void initRS485(uint32_t baud = 9600);
+void rs485TxEnable(bool en);
+
 #endif

@@ -1,7 +1,9 @@
 #include "wifi_manager.h"
 #include "config.h"
 #include "logger.h"
+#include "watchdog_tpl5010.h"
 #include <qrcode.h>
+#include <esp_wifi.h>
 
 extern Logger logger;
 
@@ -47,6 +49,14 @@ static String buildConfigPortalCustomHtml(const String& apName) {
 
 static WiFiManagerWrapper* s_wifiWrapper = nullptr;
 
+// Klem WiFi-zendvermogen op 8.5 dBm (max_tx_power in 0.25 dBm-stappen: 34).
+// Voorkomt brown-out / POWERON-reset op LilyGO via carrier/USB-CDC bij hoge
+// startup-piek. 8.5 dBm is genoeg voor lokale AP en de meeste huis-SSIDs.
+static inline void clampWifiTxPowerLow() {
+  esp_wifi_set_max_tx_power(34);
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+}
+
 WiFiManagerWrapper::WiFiManagerWrapper() : connected(false), paramApiKey(nullptr), paramDeviceSerial(nullptr), onSaveParamsCb(nullptr) {
   s_wifiWrapper = this;
 }
@@ -58,13 +68,19 @@ WiFiManagerWrapper::~WiFiManagerWrapper() {
 
 bool WiFiManagerWrapper::connect(String ssid, String password) {
   WiFi.mode(WIFI_STA);
+  delay(200);
+  clampWifiTxPowerLow();
+  kickWatchdog();
   WiFi.begin(ssid.c_str(), password.c_str());
-  
+  clampWifiTxPowerLow();  // WiFi.begin kan power resetten
+
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < 20) {
     delay(500);
+    if ((attempts % 4) == 0) kickWatchdog();  // ~elke 2 s kicken
     attempts++;
   }
+  kickWatchdog();
   
   connected = (WiFi.status() == WL_CONNECTED);
   
@@ -167,14 +183,26 @@ bool WiFiManagerWrapper::startConfigPortal(String apName) {
     WiFi.disconnect(true, false);
     delay(1500);
     yield();
-    
+
+    // Carrier/USB-CDC leveren vaak niet genoeg piekstroom als de AP op vol vermogen start
+    // → board reset (POWERON loop). Forceer AP-mode met laag zendvermogen vóór startConfigPortal.
+    WiFi.mode(WIFI_AP);
+    delay(200);
+    clampWifiTxPowerLow();
+    delay(100);
+    yield();
+
     // QR-code en custom velden
     static String customHtml;
     customHtml = buildConfigPortalCustomHtml(apName);
     wifiManager.setCustomBodyFooter(customHtml.c_str());
-    
-    logger.info("PORTAL: WiFiManager start config portal (AP + web)...");
+
+    logger.info("PORTAL: WiFiManager start config portal (AP + web, lage TX-power)...");
+    kickWatchdog();
+    wifiManager.setWebServerCallback([]() { kickWatchdog(); });
     result = wifiManager.startConfigPortal(apName.c_str());
+    kickWatchdog();
+    clampWifiTxPowerLow();  // WiFiManager kan softAP-power terugzetten
     
     // Verificatie: controleer of AP echt draait
     IPAddress apIP = WiFi.softAPIP();
@@ -202,11 +230,19 @@ bool WiFiManagerWrapper::startConfigPortal(String apName) {
 }
 
 bool WiFiManagerWrapper::autoConnect(String apName) {
-  if (!wifiManager.autoConnect(apName.c_str())) {
+  // Klem vóór autoConnect: WiFiManager initialiseert intern STA én kan AP-fallback starten.
+  // Beide paden mogen op carrier/USB geen hoge TX-piek hebben.
+  clampWifiTxPowerLow();
+  kickWatchdog();
+  wifiManager.setWebServerCallback([]() { kickWatchdog(); });
+  bool ok = wifiManager.autoConnect(apName.c_str());
+  kickWatchdog();
+  clampWifiTxPowerLow();  // opnieuw klemmen: WiFi.begin in WiFiManager reset power
+  if (!ok) {
     logger.error("Failed to connect and hit timeout");
     return false;
   }
-  
+
   connected = true;
   logger.info("WiFi connected via portal");
   return true;

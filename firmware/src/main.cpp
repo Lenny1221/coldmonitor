@@ -20,7 +20,7 @@
 #include "provisioning.h"
 #include "reset_button.h"
 #include "sensors.h"
-#include <Adafruit_MAX31865.h>
+#include "sensors_pt1000.h"
 #include "rs485_modbus.h"
 #include "carel_protocol.h"
 #include "data_buffer.h"
@@ -29,10 +29,15 @@
 #include "battery_monitor.h"
 #include "power_monitor.h"
 #include "door_events.h"
+#include "door_contact.h"
 #include "boot_state.h"
 #include "time_utils.h"
 #include "ota_update.h"
 #include "power_manager.h"
+#include "pins_carrier.h"
+#include "watchdog_tpl5010.h"
+#include "relay_control.h"
+#include "vbus_external.h"
 
 // Global objects
 ConfigManager config;
@@ -42,12 +47,9 @@ ProvisioningManager provisioning;
 // (RESET-knop op ESP32 DevKit is niet aan GPIO gekoppeld – alleen BOOT werkt)
 ResetButtonHandler resetButton(DEFAULT_BOOT_PIN, DEFAULT_RESET_PIN, BOOT_WINDOW_MS, RESET_HOLD_TIME_MS);
 Sensors sensors;
-// MAX31865 SPI: zie board_pins.h (DevKit vs LilyGO T-SIM7670G S3)
-Adafruit_MAX31865 thermo = Adafruit_MAX31865(
-    BOARD_MAX31865_CS, BOARD_MAX31865_MOSI, BOARD_MAX31865_MISO, BOARD_MAX31865_SCK);
-#define RREF      4300.0
-#define RNOMINAL  1000.0
-static bool max31865Initialized = false;
+// MAX31865 (PT1000) wordt nu beheerd door sensors_pt1000.* op carrier-PCB:
+// 2× sensor op gedeelde SPI, RREF = 4020 Ω, 2-wire, 50 Hz filter.
+static bool max31865Initialized = false;  // true als minstens 1 sensor OK bij init
 RS485Modbus modbus;
 CarelProtocol carel;
 DataBuffer dataBuffer;
@@ -239,7 +241,24 @@ void setup() {
   logger.info("Sensors (door) initialized");
   batteryMonitor.init();
   powerMonitor.init();
-  
+
+  // --- Carrier-PCB v1 hardware layer (vóór connectivity) --------------------
+  // Watchdog eerst: vanaf hier hebben we ~30 s marge tijdens lange init.
+  initWatchdog();
+  // PT1000 × 2 op gedeelde SPI; moet uit de heap zijn vóór WiFi-geheugen claimt.
+  max31865Initialized = initSensors();
+  initRelay();
+  initDoor();
+  // LET OP: initRS485() hier NIET aanroepen zolang BOARD_RS485_* = 33/34/35.
+  // Die pinnen zijn op de LilyGO T-SIM7670G-S3 (N16R8) in gebruik door de
+  // octal-PSRAM → pinMode/Serial1.begin erop veroorzaakt spinlock-panic.
+  // De bestaande RS485Modbus-klasse (verderop in setup) gebruikt dezelfde
+  // defaults en wordt alleen geactiveerd als Modbus in config AAN staat.
+  // Zet initRS485(9600) hier pas aan wanneer pins_carrier.h definitief
+  // juiste, beschikbare GPIOs voor TX_RS/RX_RS/DE_RS bevat.
+  initExternalPowerSense();
+  kickWatchdog();  // opnieuw kicken na alle hardware-init
+
   // WiFi Setup (with provisioning flow)
   setupWiFi();
   
@@ -250,16 +269,13 @@ void setup() {
   // Initialize components
   logger.info("Initializing hardware...");
   
-  // MAX31865 (SPI) – primaire temperatuursensor (PT1000, 2-wire)
-  thermo.begin(MAX31865_2WIRE);
-  delay(100);
-  float testTemp = thermo.temperature(RNOMINAL, RREF);
-  if (!isnan(testTemp) && testTemp > -200 && testTemp < 200) {
-    max31865Initialized = true;
-    logger.info("MAX31865 (PT1000, 2-wire) initialized – primaire temperatuursensor");
+  // MAX31865 × 2 zijn al geïnitialiseerd hierboven via initSensors(). Status:
+  if (max31865Initialized) {
+    logger.info("PT1000 sensors beschikbaar (zie [SENSOR] log hierboven)");
   } else {
-    logger.warn("MAX31865 init failed – geen temperatuurvoeler (check Rref 4.3kΩ, PT1000 op F+/F-)");
+    logger.warn("Geen PT1000 OK – check bedrading (F+/F-) en Rref=4.02kΩ op carrier");
   }
+
   
   // Initialize RS485: Carel PJEZ (supervisie) OF Modbus RTU
   // LilyGO: NVS kan nog carelProtocolEnabled:true hebben; Serial2/Carel hoort niet op het
@@ -349,6 +365,10 @@ void setup() {
 }
 
 void loop() {
+  // Carrier-PCB: hardware-watchdog eerst kicken en deur pollen (debounce + duur).
+  kickWatchdog();
+  updateDoor();
+
   // Check reset knop (BOOT 3s = factory reset)
   if (resetButton.check()) {
     logger.warn("RESET: Factory reset getriggerd vanuit loop!");
@@ -649,13 +669,11 @@ void sensorTask(void *parameter) {
     if (now - lastReading >= interval) {
       SensorData data = sensors.read();
       
-      // MAX31865 (PT1000, 2-wire) is primaire temperatuursensor
-      float max31865Temp = thermo.temperature(RNOMINAL, RREF);
-      uint8_t max31865Fault = thermo.readFault();
-      bool max31865Ok = max31865Initialized && (max31865Fault == 0) && !isnan(max31865Temp) && max31865Temp > -200 && max31865Temp < 200;
-      
-      if (max31865Fault) thermo.clearFault();
-      
+      // MAX31865 #1 (primary PT1000) via sensors_pt1000-laag
+      float max31865Temp = readSensor(0);
+      uint8_t max31865Fault = sensorFault(0);
+      bool max31865Ok = max31865Initialized && sensorOk(0) && !isnan(max31865Temp);
+
       if (max31865Ok) {
         data.temperature = max31865Temp;
         data.valid = true;
@@ -852,6 +870,22 @@ void commandTask(void *parameter) {
             
             bool success = false;
             DynamicJsonDocument result(512);
+
+            // Carrier-PCB relay: protocol-onafhankelijk, vóór Carel/Modbus-dispatch
+            if (commandType == "RELAY_ON") {
+              setRelay(true);
+              success = true;
+              result["relay_state"] = true;
+              apiClient.completeCommand(commandId, success, result);
+              continue;
+            } else if (commandType == "RELAY_OFF") {
+              setRelay(false);
+              success = true;
+              result["relay_state"] = false;
+              apiClient.completeCommand(commandId, success, result);
+              continue;
+            }
+
             // API controller_type overrides config when set
             bool useCarel = config.getCarelProtocolEnabled();
             if (controllerTypeFromApi.length() > 0) {

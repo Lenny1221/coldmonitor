@@ -1,7 +1,26 @@
 #include "rs485_modbus.h"
+#include "pins_carrier.h"
 #include "logger.h"
 
 extern Logger logger;
+
+/* -------------------------- Carrier-API (free) ------------------------- */
+namespace {
+bool s_carrierInitialized = false;
+} // namespace
+
+void initRS485(uint32_t baud) {
+  if (s_carrierInitialized) return;
+  pinMode(PIN_RS485_DE, OUTPUT);
+  digitalWrite(PIN_RS485_DE, LOW);  // default: RX-mode
+  Serial1.begin(baud, SERIAL_8N1, PIN_RS485_RX, PIN_RS485_TX);
+  s_carrierInitialized = true;
+  logger.info("[RS485] ready @ " + String(baud) + " 8N1");
+}
+
+void rs485TxEnable(bool en) {
+  digitalWrite(PIN_RS485_DE, en ? HIGH : LOW);
+}
 
 RS485Modbus::RS485Modbus() : serial(nullptr), initialized(false), dePin(0), rePin(0), responseLength(0), defrostDebug(false) {
 }

@@ -2,7 +2,13 @@
 #include "door_events.h"
 #include "logger.h"
 #include "config.h"
+#include "sensors_pt1000.h"
+#include "door_contact.h"
+#include "relay_control.h"
+#include "vbus_external.h"
+#include "watchdog_tpl5010.h"
 #include <HTTPUpdate.h>
+#include <math.h>
 
 extern Logger logger;
 extern ConfigManager config;
@@ -176,7 +182,18 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
   doc["free_heap"] = ESP.getFreeHeap();
   if (batteryPercent >= 0) doc["battery_percent"] = batteryPercent;
   if (onMains) doc["on_mains"] = onMains;
-  
+
+  // Carrier-PCB v1 telemetrie
+  float t0 = readSensor(0);
+  float t1 = readSensor(1);
+  if (isnan(t0)) doc["sensor_1_temp"] = (const char*)nullptr; else doc["sensor_1_temp"] = t0;
+  if (isnan(t1)) doc["sensor_2_temp"] = (const char*)nullptr; else doc["sensor_2_temp"] = t1;
+  doc["sensor_1_fault"] = sensorFault(0);
+  doc["sensor_2_fault"] = sensorFault(1);
+  doc["door_open"]      = isDoorOpen();
+  doc["relay_state"]    = getRelayState();
+  doc["ext_power"]      = isExternalPowerPresent();
+
   String jsonData;
   serializeJson(doc, jsonData);
   
@@ -227,8 +244,10 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
               int attempts = 0;
               while (WiFi.status() != WL_CONNECTED && attempts < 30) {
                 delay(500);
+                if ((attempts % 4) == 0) kickWatchdog();  // ~2 s interval tijdens WiFi-connect
                 attempts++;
               }
+              kickWatchdog();
               if (WiFi.status() == WL_CONNECTED) {
                 reportRemoteCommandResultLocked(cmdId, "EXECUTED", "{\"connected\":true}");
               } else {
@@ -237,6 +256,12 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
             } else {
               reportRemoteCommandResultLocked(cmdId, "FAILED", "{\"error\":\"missing ssid\"}");
             }
+          } else if (strcmp(cmdType, "RELAY_ON") == 0) {
+            setRelay(true);
+            reportRemoteCommandResultLocked(cmdId, "EXECUTED", "{\"relay_state\":true}");
+          } else if (strcmp(cmdType, "RELAY_OFF") == 0) {
+            setRelay(false);
+            reportRemoteCommandResultLocked(cmdId, "EXECUTED", "{\"relay_state\":false}");
           } else if (strcmp(cmdType, "FIRMWARE_UPDATE") == 0 && !payload.isNull()) {
             const char* url = payload["url"];
             if (url) {
@@ -244,7 +269,10 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
               reportRemoteCommandResultLocked(cmdId, "EXECUTED", "{\"started\":true}");
               xSemaphoreGive(httpMutex);
               WiFiClient client;
+              kickWatchdog();  // voorkom reset tijdens OTA-download
+              httpUpdate.onProgress([](int cur, int total) { kickWatchdog(); });
               t_httpUpdate_return ret = httpUpdate.update(client, url);
+              kickWatchdog();
               xSemaphoreTake(httpMutex, portMAX_DELAY);
               if (ret != HTTP_UPDATE_OK) {
                 reportRemoteCommandResultLocked(cmdId, "FAILED", "{\"error\":\"update failed\"}");
@@ -465,7 +493,10 @@ bool APIClient::checkAndApplyFirmwareUpdate() {
   logger.info("Firmware update available: " + String(version) + " from " + String(otaUrl));
   xSemaphoreGive(httpMutex);
   WiFiClient client;
+  kickWatchdog();
+  httpUpdate.onProgress([](int cur, int total) { kickWatchdog(); });
   t_httpUpdate_return ret = httpUpdate.update(client, otaUrl);
+  kickWatchdog();
   xSemaphoreTake(httpMutex, portMAX_DELAY);
   return (ret == HTTP_UPDATE_OK);
 }
