@@ -4,11 +4,14 @@
 #include <Arduino.h>
 #include "board_pins.h"
 
-// Battery monitoring using ADC
-// Assumes voltage divider: Battery -> R1 -> ADC -> R2 -> GND
-// Formula: V_battery = ADC_value * (R1 + R2) / R2 * V_ref / 4095
-
+// Battery monitoring using ADC (voltage divider: Battery -> R1 -> ADC -> R2 -> GND).
+// Op de carrier-PCB v1.1 is GPIO 4 hertoegewezen aan WDT_DONE (TPL5010), dus
+// BOARD_BATTERY_MONITOR_DISABLED is gezet en deze klasse draait als no-op.
+#if defined(BOARD_BATTERY_MONITOR_DISABLED)
+#define BATTERY_ADC_PIN 255
+#else
 #define BATTERY_ADC_PIN BOARD_BATTERY_ADC_PIN
+#endif
 #define BATTERY_VOLTAGE_DIVIDER_RATIO 2.0  // (R1 + R2) / R2
 #define BATTERY_VREF 3.3
 #define BATTERY_FULL_VOLTAGE 4.65f   // Spanning bij 100% (opgeladen via USB: ~4.65–4.67V)

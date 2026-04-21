@@ -10,6 +10,47 @@ BatteryMonitor::BatteryMonitor()
 BatteryMonitor::~BatteryMonitor() {
 }
 
+#if defined(BOARD_BATTERY_MONITOR_DISABLED)
+
+bool BatteryMonitor::init() {
+  logger.info("Battery monitor: uit (carrier v1.1 heeft geen Li-Po ADC; GPIO4 = WDT_DONE)");
+  voltage = 0.0f;
+  percentage = -1;
+  voltageInitialized = false;
+  lastRawAdcMilliVolts = 0;
+  return true;
+}
+
+float BatteryMonitor::readVoltage() {
+  return 0.0f;
+}
+
+int BatteryMonitor::calculatePercentage(float /*voltage*/) {
+  return -1;
+}
+
+void BatteryMonitor::update() {
+  (void)lastUpdate;
+}
+
+float BatteryMonitor::getVoltage() {
+  return 0.0f;
+}
+
+int BatteryMonitor::getPercentage() {
+  return -1;
+}
+
+bool BatteryMonitor::isLow() {
+  return false;
+}
+
+bool BatteryMonitor::isCritical() {
+  return false;
+}
+
+#else  /* Battery-ADC actief (niet-carrier build) */
+
 bool BatteryMonitor::init() {
 #if defined(BOARD_BATTERY_ADC_HOLD_PIN)
   pinMode(BOARD_BATTERY_ADC_HOLD_PIN, OUTPUT);
@@ -17,10 +58,9 @@ bool BatteryMonitor::init() {
 #endif
   pinMode(BATTERY_ADC_PIN, INPUT);
   analogReadResolution(12);
-  analogSetPinAttenuation(BATTERY_ADC_PIN, ADC_11db);  // Per-pin 0-3.1V, werkt ook als global al gezet is
-  delay(10);  // ADC stabiel laten worden na herconfiguratie
+  analogSetPinAttenuation(BATTERY_ADC_PIN, ADC_11db);
+  delay(10);
 
-  // Diagnostiek: lees direct ruwe ADC-waarden om te verifiëren dat het circuit werkt
   uint32_t rawCounts  = analogRead(BATTERY_ADC_PIN);
   uint32_t rawMv      = analogReadMilliVolts(BATTERY_ADC_PIN);
   logger.info(String("Batterij ADC init – GPIO") + BATTERY_ADC_PIN +
@@ -47,8 +87,6 @@ float BatteryMonitor::readVoltage() {
   }
   lastRawAdcMilliVolts = sumMv / 8;
 
-  // Als analogReadMilliVolts 0 teruggeeft maar analogRead wél counts heeft →
-  // fallback: bereken mV zelf (3100 mV = full scale bij 11dB, 4095 counts)
   if (lastRawAdcMilliVolts == 0) {
     uint32_t counts = analogRead(BATTERY_ADC_PIN);
     if (counts > 0) {
@@ -56,7 +94,6 @@ float BatteryMonitor::readVoltage() {
     }
   }
 
-  // Kalibratiegeboekte ×divider, dan ×calibratie — eenmalig hier, NIET in update()
   float vBatt = (float)lastRawAdcMilliVolts
                 * BATTERY_VOLTAGE_DIVIDER_RATIO
                 * BATTERY_CALIBRATION_FACTOR
@@ -71,42 +108,34 @@ int BatteryMonitor::calculatePercentage(float voltage) {
   if (voltage <= BATTERY_EMPTY_VOLTAGE) {
     return 0;
   }
-  
-  // Linear interpolation
   float range = BATTERY_FULL_VOLTAGE - BATTERY_EMPTY_VOLTAGE;
   float level = voltage - BATTERY_EMPTY_VOLTAGE;
   int percent = (int)((level / range) * 100.0);
-  
   return constrain(percent, 0, 100);
 }
 
 void BatteryMonitor::update() {
   unsigned long now = millis();
-  
   if (now - lastUpdate >= updateInterval) {
     float rawVoltage = readVoltage();
-    
-    // Exponentieel gemiddelde voor spanning (smooth bij USB in/uit)
+
     if (!voltageInitialized) {
       voltage = rawVoltage;
       voltageInitialized = true;
     } else {
       voltage = voltage * (1.0f - BATTERY_SMOOTH_ALPHA) + rawVoltage * BATTERY_SMOOTH_ALPHA;
     }
-    // Kalibratiegeboekte zit al verwerkt in readVoltage() – niet opnieuw toepassen
-    
+
     int rawPercent = calculatePercentage(voltage);
-    // Bij 100% (opgeladen): direct tonen, geen rate limit
     if (rawPercent >= 100) {
       percentage = 100;
     } else {
-      // Rate limit: max BATTERY_MAX_PCT_CHANGE per seconde (voorkomt sprongen bij USB in/uit)
       int delta = rawPercent - percentage;
       if (delta > BATTERY_MAX_PCT_CHANGE) delta = BATTERY_MAX_PCT_CHANGE;
       if (delta < -BATTERY_MAX_PCT_CHANGE) delta = -BATTERY_MAX_PCT_CHANGE;
       percentage = constrain(percentage + delta, 0, 100);
     }
-    
+
     lastUpdate = now;
   }
 }
@@ -126,3 +155,5 @@ bool BatteryMonitor::isLow() {
 bool BatteryMonitor::isCritical() {
   return percentage < 10;
 }
+
+#endif /* BOARD_BATTERY_MONITOR_DISABLED */

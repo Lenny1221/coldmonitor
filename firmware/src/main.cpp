@@ -6,12 +6,11 @@
 
 #include "board_pins.h"
 
-#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+/* Carrier v1.1 heeft geen gebruiker-LED (GPIO12 = VBUS_DETECT).
+ * Laat LED_BUILTIN bestaan voor externe libs, maar alle driver-ops gaan via
+ * BOARD_LED_SET/TOGGLE die no-ops zijn bij BOARD_HAS_STATUS_LED=0. */
 #undef LED_BUILTIN
 #define LED_BUILTIN BOARD_STATUS_LED_PIN
-#elif !defined(LED_BUILTIN)
-#define LED_BUILTIN BOARD_STATUS_LED_PIN
-#endif
 #include <SPIFFS.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
@@ -121,38 +120,48 @@ static String getEffectiveDeviceSerial() {
 
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);  // Brownout detector uit (voorkomt reset bij WiFi/AP stroompiek)
-  
+
+  // CARRIER v1.1: TPL5010 hardware-watchdog ALS EERSTE. De TPL5010 telt vanaf
+  // power-on; als we pas na SPIFFS / factory-reset-venster kicken (~10 s),
+  // heeft de watchdog de ESP32 al gereset en zit hij in een boot-loop.
+  initWatchdog();
+
   Serial.begin(115200);
   delay(1000);
-  
+  kickWatchdog();
+
   // Boot banner
   logger.info("========================================");
   logger.info(String("=== ColdMonitor Firmware [") + COLDMONITOR_BOARD_NAME + "] ===");
   logger.info("Version: " + String(FIRMWARE_VERSION));
   logger.info("========================================");
-  
-  // Onboard status-LED (GPIO12 op LilyGO T-SIM7670G S3, active low)
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, BOARD_LED_LEVEL_ON);
+
+  // Onboard status-LED: carrier v1.1 heeft er geen (GPIO12 = VBUS_DETECT).
+  // BOARD_LED_*-macros zijn no-op wanneer BOARD_HAS_STATUS_LED=0.
+  BOARD_LED_PINMODE(LED_BUILTIN);
+  BOARD_LED_SET(LED_BUILTIN, BOARD_LED_LEVEL_ON);
   delay(100);
-  digitalWrite(LED_BUILTIN, BOARD_LED_LEVEL_OFF);
-  
-  // Initialize SPIFFS
+  BOARD_LED_SET(LED_BUILTIN, BOARD_LED_LEVEL_OFF);
+
+  // Initialize SPIFFS (kan bij eerste boot >1 s duren door auto-format)
+  kickWatchdog();
   if (!SPIFFS.begin(true)) {
     logger.error("SPIFFS initialization failed!");
     return;
   }
+  kickWatchdog();
   logger.info("SPIFFS initialized");
-  
-  // Initialize Provisioning Manager
+
+  // Initialize Provisioning Manager (NVS open)
   if (!provisioning.begin()) {
     logger.error("CRITICAL: Provisioning manager initialization failed!");
     return;
   }
-  
+  kickWatchdog();
+
   // Log boot reason
   provisioning.logBootReason();
-  
+
   // Check reset knop: BOOT (GPIO 0) 3 seconden vasthouden = factory reset
   logger.info("RESET: Houd BOOT knop 3 seconden vast voor factory reset");
   delay(300); // Stabilize button
@@ -161,20 +170,22 @@ void setup() {
   const unsigned long resetCheckTimeout = 8000;  // 8 seconden venster (3s vasthouden nodig)
 
   while (millis() - resetCheckStart < resetCheckTimeout) {
+      kickWatchdog();  // Venster duurt langer dan TPL5010-periode → blijf kicken.
       if (resetButton.check()) {
         logger.warn("RESET: Factory reset getriggerd via BOOT knop!");
-        
+
         // Complete factory reset - wipe everything
         logger.warn("RESET: Uitvoeren volledige factory reset...");
         provisioning.factoryReset();
         wifiManager.resetSettings();
-        
+
         // Additional WiFi stack reset
         logger.warn("RESET: WiFi stack volledig resetten...");
         WiFi.disconnect(true, true); // disconnect and erase credentials
         WiFi.mode(WIFI_OFF);
         delay(500);
-        
+        kickWatchdog();
+
         logger.warn("RESET: Herstarten in 2 seconden...");
         delay(2000);
         ESP.restart();
@@ -182,7 +193,8 @@ void setup() {
       }
     delay(50); // Small delay to prevent tight loop
   }
-  
+  kickWatchdog();
+
   // Load configuration
   if (!config.load()) {
     logger.warn("Config: Geen opgeslagen configuratie gevonden, gebruik defaults");
@@ -190,6 +202,7 @@ void setup() {
   } else {
     logger.info("Config: Configuratie geladen uit NVS");
   }
+  kickWatchdog();
   
   // Sync: als provisioning geen API credentials heeft maar config wel, overnemen (voorkomt portal)
   if (!provisioning.hasAPICredentials()) {
@@ -242,22 +255,29 @@ void setup() {
   batteryMonitor.init();
   powerMonitor.init();
 
-  // --- Carrier-PCB v1 hardware layer (vóór connectivity) --------------------
-  // Watchdog eerst: vanaf hier hebben we ~30 s marge tijdens lange init.
-  initWatchdog();
+  // --- Carrier-PCB v1.1 hardware layer (vóór connectivity) -----------------
+  // initWatchdog() is al aangeroepen aan het begin van setup(); de FreeRTOS
+  // kick-task loopt continu op core 0. Extra kick hier dekt enige piekdrukte
+  // in setup().
+  kickWatchdog();
+
+#ifndef DIAG_SKIP_PT1000
   // PT1000 × 2 op gedeelde SPI; moet uit de heap zijn vóór WiFi-geheugen claimt.
   max31865Initialized = initSensors();
+#else
+  logger.warn("[DIAG] initSensors() SKIPPED (DIAG_SKIP_PT1000)");
+  max31865Initialized = false;
+#endif
+  kickWatchdog();
   initRelay();
   initDoor();
-  // LET OP: initRS485() hier NIET aanroepen zolang BOARD_RS485_* = 33/34/35.
-  // Die pinnen zijn op de LilyGO T-SIM7670G-S3 (N16R8) in gebruik door de
-  // octal-PSRAM → pinMode/Serial1.begin erop veroorzaakt spinlock-panic.
-  // De bestaande RS485Modbus-klasse (verderop in setup) gebruikt dezelfde
-  // defaults en wordt alleen geactiveerd als Modbus in config AAN staat.
-  // Zet initRS485(9600) hier pas aan wanneer pins_carrier.h definitief
-  // juiste, beschikbare GPIOs voor TX_RS/RX_RS/DE_RS bevat.
+  // RS485 (MAX3485): carrier-pinnen zijn GPIO 43/44/2 (niet meer de PSRAM-
+  // pinnen van de vorige build), dus veilig om Serial1 nu al op te zetten.
+  // DE wordt LOW gezet (ontvanger actief). Een latere Modbus-init mag
+  // Serial1 opnieuw configureren.
+  initRS485(9600);
   initExternalPowerSense();
-  kickWatchdog();  // opnieuw kicken na alle hardware-init
+  kickWatchdog();
 
   // WiFi Setup (with provisioning flow)
   setupWiFi();
@@ -511,40 +531,39 @@ void loop() {
     }
   }
   
-  // Battery check
+  // Battery check — op carrier v1.1 is er geen battery-ADC (GPIO4 = WDT_DONE).
+  // BatteryMonitor is een no-op; we tonen enkel periodiek de VBUS-status.
   if (now - lastBatteryCheck > 60000) { // Every minute
     batteryMonitor.update();
+#if !defined(BOARD_BATTERY_MONITOR_DISABLED)
     float voltage = batteryMonitor.getVoltage();
     int percentage = batteryMonitor.getPercentage();
-    
+
     uint32_t adcMv = batteryMonitor.getLastRawAdcMilliVolts();
     if (voltage < 1.0f) {
       logger.warn(
-          String("Batterij <1V! ADC GPIO") + BOARD_BATTERY_ADC_PIN +
-          " = " + adcMv + " mV ruw → " + String(voltage, 2) + " V (na deler+kalibr.)"
-          " | Oorzaken: geen cel in houder, BMS tripped, of verkeerde build"
-          " (Standard-PCB → pio run -e lilygo-t-sim7670g-s3-standard)");
+          String("Batterij <1V! ADC GPIO") + BATTERY_ADC_PIN +
+          " = " + adcMv + " mV ruw → " + String(voltage, 2) + " V (na deler+kalibr.)");
     } else {
       logger.info(String("Batterij: ") + String(voltage, 2) + " V (" + percentage + "%)"
-                  + " | ADC GPIO" + BOARD_BATTERY_ADC_PIN + " ruw=" + adcMv + " mV");
+                  + " | ADC GPIO" + BATTERY_ADC_PIN + " ruw=" + adcMv + " mV");
     }
-    
-    // Geen deep sleep bij USB-voeding (batterij laadt, percentage kan onbetrouwbaar zijn)
-    // Geen deep sleep bij (vrijwel) geen spanning = geen batterij aangesloten
+
     if (powerMonitor.isUsbConnected()) {
-      // USB aangesloten: batterij laadt, skip deep sleep (ADC leest anders bij laden)
+      /* USB aangesloten: batterij laadt, skip deep sleep. */
     } else if (voltage < 1.0f) {
-      // Geen batterij: nooit deep sleep
+      /* Geen batterij: nooit deep sleep. */
     } else {
-      if (percentage < 20) {
-        logger.warn("Low battery warning!");
-      }
+      if (percentage < 20) logger.warn("Low battery warning!");
       if (percentage < 10) {
         logger.error("Critical battery! Entering deep sleep...");
         powerManager.enterDeepSleep(3600);
       }
     }
-    
+#else
+    logger.debug(String("Voeding: ") + (powerMonitor.isUsbConnected() ? "externe VBUS aanwezig" : "batterij/onbekend"));
+#endif
+
     lastBatteryCheck = now;
   }
   
@@ -694,26 +713,15 @@ void sensorTask(void *parameter) {
         bool usbConnected = powerMonitor.isUsbConnected();
         float vUsb = powerMonitor.getUsbVoltage();
         int batPct = batteryMonitor.getPercentage();
-#if defined(BOARD_LILYGO_T_SIM7670G_S3)
-        // VIN-ADC kan ~0 V zijn bij USB-C naar PC; power_monitor zet usbConnected ook bij USB-CDC mounted.
-        bool usbSenseOk = (vUsb >= BOARD_USB_SENSE_MIN_VALID_V);
-        bool charging = usbConnected && (batPct < 100);
-#else
-        bool charging = usbConnected && (batPct < 100);
-#endif
+        (void)vUsb;  /* Op carrier digitaal gemeten; analog-drempel niet van toepassing. */
+        bool charging = usbConnected && (batPct > 0) && (batPct < 100);
 
         DynamicJsonDocument doc(512);
         doc["deviceId"] = getEffectiveDeviceSerial();
         doc["temperature"] = round(data.temperature * 10) / 10.0;  // 1 decimaal
         doc["doorStatus"] = data.doorOpen;
-#if defined(BOARD_LILYGO_T_SIM7670G_S3)
-        /* Geen powerStatus bij ruis-ADC alleen op batterij; wél bij geldige ADC óf bij USB-CDC (voeding gemeld). */
-        if (usbSenseOk || usbConnected) {
-          doc["powerStatus"] = usbConnected;
-        }
-#else
+        /* Carrier: VBUS_DETECT is digitaal, dus powerStatus is altijd geldig. */
         doc["powerStatus"] = usbConnected;
-#endif
         doc["batteryLevel"] = batPct;
         doc["batteryVoltage"] = batteryMonitor.getVoltage();
         doc["batteryCharging"] = charging;

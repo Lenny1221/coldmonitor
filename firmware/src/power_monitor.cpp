@@ -14,6 +14,42 @@ PowerMonitor::PowerMonitor() : usbConnected(false), usbVoltage(0.0), lastUpdate(
 PowerMonitor::~PowerMonitor() {
 }
 
+#if defined(POWER_MONITOR_USES_VBUS_DIGITAL)
+
+bool PowerMonitor::init() {
+  pinMode(USB_ADC_PIN, INPUT);  // BAT54 + deler: voldoende stabiel zonder pull
+  update();
+  logger.info(String("Power monitor: ") + BOARD_POWER_MONITOR_LOG_NAME +
+              " (GPIO" + String(USB_ADC_PIN) + "=" + (usbConnected ? "HIGH" : "LOW") + ")");
+  return true;
+}
+
+float PowerMonitor::readUsbVoltage() {
+  return digitalRead(USB_ADC_PIN) ? USB_VREF : 0.0f;
+}
+
+void PowerMonitor::update() {
+  unsigned long now = millis();
+  if (now - lastUpdate < updateInterval) return;
+  lastUpdate = now;
+
+  bool level = digitalRead(USB_ADC_PIN) == HIGH;
+#if defined(POWER_MONITOR_USB_CDC_SUPPLEMENT)
+  level = level || tud_mounted();
+#endif
+  if (level != usbConnected) {
+    usbConnected = level;
+    logger.info(String(BOARD_POWER_MONITOR_LOG_NAME) +
+                (usbConnected ? ": aangesloten" : ": weg / niet gedetecteerd") +
+                " (GPIO" + String(USB_ADC_PIN) + ")");
+  } else {
+    usbConnected = level;
+  }
+  usbVoltage = usbConnected ? USB_VREF : 0.0f;
+}
+
+#else  /* Klassieke ADC-gebaseerde detectie */
+
 bool PowerMonitor::init() {
 #if USB_ADC_PIN == 255
   logger.info("Power monitor: uit (geen voedings-ADC pin op dit board)");
@@ -21,7 +57,7 @@ bool PowerMonitor::init() {
   return true;
 #else
   pinMode(USB_ADC_PIN, INPUT);
-  analogSetAttenuation(ADC_11db);  // 0-3.3V range
+  analogSetAttenuation(ADC_11db);
   analogReadResolution(12);
   update();
   logger.info(String("Power monitor initialized: ") + BOARD_POWER_MONITOR_LOG_NAME +
@@ -72,6 +108,8 @@ void PowerMonitor::update() {
   }
 #endif
 }
+
+#endif /* POWER_MONITOR_USES_VBUS_DIGITAL */
 
 bool PowerMonitor::isUsbConnected() {
   return usbConnected;

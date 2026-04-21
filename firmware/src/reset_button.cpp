@@ -3,7 +3,7 @@
 
 extern Logger logger;
 
-static const uint8_t kStatusLed = BOARD_STATUS_LED_PIN;
+static const int kStatusLed = BOARD_STATUS_LED_PIN;  /* -1 = geen LED op dit board */
 
 ResetButtonHandler::ResetButtonHandler(uint8_t bootPin, uint8_t resetPin, 
                                       unsigned long bootWindow, unsigned long resetHoldTime)
@@ -50,7 +50,7 @@ bool ResetButtonHandler::checkTwoStepReset() {
       // Check if boot window expired
       if (now - bootPressTime > bootWindowMs) {
         logger.info("RESET: Timeout - reset geannuleerd (geen RESET knop binnen " + String(bootWindowMs / 1000) + "s)");
-        digitalWrite(kStatusLed, BOARD_LED_LEVEL_OFF);
+        BOARD_LED_SET(kStatusLed, BOARD_LED_LEVEL_OFF);
         state = RESET_IDLE;
         bootPressTime = 0;
         break;
@@ -62,7 +62,7 @@ bool ResetButtonHandler::checkTwoStepReset() {
         resetPressStartTime = now;
         logger.info("RESET: RESET knop ingedrukt - houd 3 seconden vast...");
         logger.info("RESET: LED knippert nu sneller - laat los om te annuleren");
-        digitalWrite(kStatusLed, BOARD_LED_LEVEL_ON);
+        BOARD_LED_SET(kStatusLed, BOARD_LED_LEVEL_ON);
       }
       
       // Log remaining time every second
@@ -82,7 +82,7 @@ bool ResetButtonHandler::checkTwoStepReset() {
         unsigned long holdTime = now - resetPressStartTime;
         logger.info("RESET: RESET knop losgelaten na " + String(holdTime) + "ms (niet lang genoeg)");
         logger.info("RESET: Reset geannuleerd - probeer opnieuw");
-        digitalWrite(kStatusLed, BOARD_LED_LEVEL_OFF);
+        BOARD_LED_SET(kStatusLed, BOARD_LED_LEVEL_OFF);
         state = RESET_IDLE;
         resetPressStartTime = 0;
         bootPressTime = 0;
@@ -102,7 +102,7 @@ bool ResetButtonHandler::checkTwoStepReset() {
             lastLedToggle = now;
           }
         } else {
-          digitalWrite(kStatusLed, BOARD_LED_LEVEL_ON);
+          BOARD_LED_SET(kStatusLed, BOARD_LED_LEVEL_ON);
         }
         
         // Log progress every second
@@ -116,12 +116,12 @@ bool ResetButtonHandler::checkTwoStepReset() {
         // Check if hold time exceeded
         if (holdTime >= resetHoldTimeMs) {
           state = RESET_TRIGGERED;
-          digitalWrite(kStatusLed, BOARD_LED_LEVEL_ON);
+          BOARD_LED_SET(kStatusLed, BOARD_LED_LEVEL_ON);
           delay(200);
           for (int i = 0; i < 5; i++) {
-            digitalWrite(kStatusLed, BOARD_LED_LEVEL_OFF);
+            BOARD_LED_SET(kStatusLed, BOARD_LED_LEVEL_OFF);
             delay(100);
-            digitalWrite(kStatusLed, BOARD_LED_LEVEL_ON);
+            BOARD_LED_SET(kStatusLed, BOARD_LED_LEVEL_ON);
             delay(100);
           }
           logger.warn("========================================");
@@ -171,9 +171,9 @@ bool ResetButtonHandler::check() {
         // Check if hold time exceeded
     if (holdTime >= resetHoldTimeMs) {
       for (int i = 0; i < 5; i++) {
-        digitalWrite(kStatusLed, BOARD_LED_LEVEL_OFF);
+        BOARD_LED_SET(kStatusLed, BOARD_LED_LEVEL_OFF);
         delay(100);
-        digitalWrite(kStatusLed, BOARD_LED_LEVEL_ON);
+        BOARD_LED_SET(kStatusLed, BOARD_LED_LEVEL_ON);
         delay(100);
       }
       logger.warn("========================================");

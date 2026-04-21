@@ -3,9 +3,21 @@
 
 #include <Arduino.h>
 #include "board_pins.h"
+#include "pins_carrier.h"
 
-// Externe voeding via ADC (DevKit: GPIO 35 = USB-sense; LilyGO: GPIO 5 = VIN/solar, geen USB-kabelsensor).
-#if defined(BOARD_POWER_MONITOR_DISABLED)
+/*
+ * PowerMonitor op de carrier-PCB v1.1:
+ *   - Digitale VBUS_DETECT ingang (PIN_VBUS_DETECT = GPIO 12), actief-hoog
+ *     via BAT54 + weerstandsdeler. Geen ADC meer.
+ *   - Op niet-carrier builds (BOARD_POWER_MONITOR_DISABLED niet gezet, maar
+ *     BOARD_USB_ADC_PIN wél) valt PowerMonitor terug op de klassieke
+ *     ADC-meting.
+ */
+
+#if defined(BOARD_POWER_MONITOR_DISABLED) && defined(PIN_VBUS_DETECT)
+#define POWER_MONITOR_USES_VBUS_DIGITAL 1
+#define USB_ADC_PIN PIN_VBUS_DETECT
+#elif defined(BOARD_POWER_MONITOR_DISABLED)
 #define USB_ADC_PIN 255
 #elif defined(BOARD_USB_ADC_PIN)
 #define USB_ADC_PIN BOARD_USB_ADC_PIN
