@@ -1202,7 +1202,12 @@ void setupWiFi() {
   logger.info("========================================");
   logger.info("WIFI: Setup starten...");
   logger.info("========================================");
-  
+
+  // WiFiManager.autoConnect() en startConfigPortal() blokkeren de loop-task
+  // tot maximaal PORTAL_PHASE_SEC seconden. Dat is veel langer dan de
+  // 30 s software-WDT; suspenden dus, en hervatten na setupWiFi().
+  suspendSoftwareWatchdog();
+
   const unsigned long SEARCH_PHASE_MS = 3 * 60 * 1000;   // 3 min zoeken
   const unsigned long PORTAL_PHASE_SEC = 180;             // 3 min config portal
   const unsigned long CONNECT_ATTEMPT_MS = 30000;         // 30s per connect-poging
@@ -1267,7 +1272,8 @@ void setupWiFi() {
       logger.error("PORTAL: Config portal start mislukt!");
       logger.error("PORTAL: Probeer opnieuw of gebruik factory reset");
     }
-    
+
+    resumeSoftwareWatchdog();
     return; // Exit - portal is running
   } else {
     // Try to connect with saved credentials
@@ -1388,7 +1394,8 @@ void setupWiFi() {
       
       String statusJson = apiClient.publishStatusJson(true, apiOk, apiOk ? "" : "API handshake failed");
       logger.info("STATUS: " + statusJson);
-      
+
+      resumeSoftwareWatchdog();
       return; // Success - exit
     }
   }  // End else (credentials)
@@ -1413,6 +1420,8 @@ void setupWiFi() {
       logger.error("PORTAL: Config portal start mislukt");
     }
   }
+
+  resumeSoftwareWatchdog();
 }
 
 void setupOTA() {

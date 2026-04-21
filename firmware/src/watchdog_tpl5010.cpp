@@ -154,3 +154,27 @@ void kickWatchdog() {
     esp_task_wdt_reset();
   }
 }
+
+void suspendSoftwareWatchdog() {
+  if (!s_sw_initialized || s_loopTask == nullptr) return;
+  esp_err_t err = esp_task_wdt_delete(s_loopTask);
+  if (err == ESP_OK) {
+    s_sw_initialized = false;   // markeer als "tijdelijk af"
+    logger.info("[WATCHDOG] SW-WDT gepauzeerd (loop-task vrijgesteld)");
+  } else if (err != ESP_ERR_NOT_FOUND) {
+    logger.warn(String("[WATCHDOG] SW-WDT suspend error=") + err);
+  }
+}
+
+void resumeSoftwareWatchdog() {
+  if (s_sw_initialized) return;  // al actief
+  if (s_loopTask == nullptr) s_loopTask = xTaskGetCurrentTaskHandle();
+  esp_err_t err = esp_task_wdt_add(s_loopTask);
+  if (err == ESP_OK) {
+    s_sw_initialized = true;
+    esp_task_wdt_reset();        // eerste reset meteen zodat we niet per ongeluk met een oude "missed"-timer starten
+    logger.info("[WATCHDOG] SW-WDT hervat");
+  } else {
+    logger.warn(String("[WATCHDOG] SW-WDT resume error=") + err);
+  }
+}

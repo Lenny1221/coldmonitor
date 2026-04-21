@@ -30,6 +30,12 @@
 void initWatchdog();
 void kickWatchdog();
 
+// Pauzeer/hervat enkel de SOFTWARE-WDT (esp_task_wdt). De TPL5010-kick-task
+// op core 0 blijft hoe dan ook kicken. Gebruiken tijdens bewust blokkerende
+// calls zoals WiFiManager-configportal (kan tot 3 min duren) of OTA-download.
+void suspendSoftwareWatchdog();
+void resumeSoftwareWatchdog();
+
 // Diagnose-tellers (enkel voor logging).
 uint32_t watchdogIsrKickCount();         // TPL5010-puls-teller (FreeRTOS-task)
 uint32_t watchdogVerifiedKickCount();    // reserved, momenteel 0
