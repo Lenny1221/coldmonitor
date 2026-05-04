@@ -181,7 +181,9 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
   doc["wifi_ssid"] = WiFi.SSID();
   doc["free_heap"] = ESP.getFreeHeap();
   if (batteryPercent >= 0) doc["battery_percent"] = batteryPercent;
-  if (onMains) doc["on_mains"] = onMains;
+  // Altijd doorsturen (ook false), anders ziet de backend bij USB-uit nooit
+  // een update en blijft 'Netvoeding (USB)' op 'Geen data' staan.
+  doc["on_mains"] = onMains;
 
   // Carrier-PCB v1.1 telemetrie
   // PT1000 #1 = ruimte (koelcel-ambient), PT1000 #2 = verdamper (evaporator).

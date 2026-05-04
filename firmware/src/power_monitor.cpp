@@ -16,16 +16,30 @@ PowerMonitor::~PowerMonitor() {
 
 #if defined(POWER_MONITOR_USES_VBUS_DIGITAL)
 
+// Opmerking: ondanks de naam "DIGITAL" gebruiken we hier toch de ADC. De
+// hardware-deler op de carrier (R17=100k / R18=56k + BAT54-drop) levert
+// slechts ~1.69 V op GPIO 1 wanneer USB-C aangesloten is. Dat valt onder
+// V_IH (~2.475 V) van de ESP32-S3, dus digitalRead() leest het altijd als
+// LOW. analogReadMilliVolts() ziet de werkelijke spanning en kan met een
+// drempel rond 700 mV betrouwbaar onderscheid maken tussen 0 V (USB weg)
+// en 1.69 V (USB aanwezig).
+namespace {
+constexpr int VBUS_THRESHOLD_MV = 700;
+}
+
 bool PowerMonitor::init() {
-  pinMode(USB_ADC_PIN, INPUT);  // BAT54 + deler: voldoende stabiel zonder pull
+  pinMode(USB_ADC_PIN, INPUT);  // BAT54 + deler rijdt de pin
+  analogSetPinAttenuation(USB_ADC_PIN, ADC_11db);
   update();
+  int mv = (int)(usbVoltage * 1000.0f);
   logger.info(String("Power monitor: ") + BOARD_POWER_MONITOR_LOG_NAME +
-              " (GPIO" + String(USB_ADC_PIN) + "=" + (usbConnected ? "HIGH" : "LOW") + ")");
+              " (GPIO" + String(USB_ADC_PIN) + " adc=" + mv + "mV " +
+              (usbConnected ? "USB aanwezig" : "USB weg") + ")");
   return true;
 }
 
 float PowerMonitor::readUsbVoltage() {
-  return digitalRead(USB_ADC_PIN) ? USB_VREF : 0.0f;
+  return (float)analogReadMilliVolts(USB_ADC_PIN) / 1000.0f;
 }
 
 void PowerMonitor::update() {
@@ -33,19 +47,23 @@ void PowerMonitor::update() {
   if (now - lastUpdate < updateInterval) return;
   lastUpdate = now;
 
-  bool level = digitalRead(USB_ADC_PIN) == HIGH;
-#if defined(POWER_MONITOR_USB_CDC_SUPPLEMENT)
-  level = level || tud_mounted();
-#endif
+  int mv     = analogReadMilliVolts(USB_ADC_PIN);
+  bool level = (mv >= VBUS_THRESHOLD_MV);
+  // Bewust GEEN `level || tud_mounted()` meer:
+  //   - tud_mounted() is true zodra de LilyGO-USB-C in een host (jouw laptop)
+  //     zit, ongeacht of de carrier-USB-C 5 V krijgt.
+  //   - Voor de carrier v1.1 is "netvoeding" gedefinieerd als 5 V op de
+  //     carrier-USB-C-connector (GPIO 1 ADC). Dat is precies wat we hier
+  //     willen meten en doorgeven aan de backend.
   if (level != usbConnected) {
     usbConnected = level;
     logger.info(String(BOARD_POWER_MONITOR_LOG_NAME) +
                 (usbConnected ? ": aangesloten" : ": weg / niet gedetecteerd") +
-                " (GPIO" + String(USB_ADC_PIN) + ")");
+                " (GPIO" + String(USB_ADC_PIN) + " adc=" + mv + "mV)");
   } else {
     usbConnected = level;
   }
-  usbVoltage = usbConnected ? USB_VREF : 0.0f;
+  usbVoltage = (float)mv / 1000.0f;
 }
 
 #else  /* Klassieke ADC-gebaseerde detectie */

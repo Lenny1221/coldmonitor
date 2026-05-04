@@ -550,19 +550,26 @@ const ColdCellDetail: React.FC = () => {
                     {hasPowerData ? (
                       powerStatus ? (
                         <>
-                          <span className="text-green-600 dark:text-green-400 font-semibold">Actief</span>
+                          <span className="text-green-600 dark:text-green-400 font-semibold">Stroom actief</span>
                           <CheckCircleIcon className="h-5 w-5 text-green-500" />
                         </>
                       ) : (
                         <>
-                          <span className="text-amber-600 dark:text-amber-400 font-semibold">Niet actief</span>
-                          <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
+                          <span className="text-amber-600 dark:text-amber-400 font-semibold">Op batterij</span>
+                          <Battery100Icon className="h-5 w-5 text-amber-500" />
                         </>
                       )
                     ) : (
                       <span className="text-gray-500 dark:text-slate-400 font-medium">Geen data</span>
                     )}
                   </div>
+                  {hasPowerData && (
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                      {powerStatus
+                        ? 'USB-C aangesloten'
+                        : 'USB-C ontkoppeld — stroom uit batterij'}
+                    </p>
+                  )}
                   {lastSeen && (
                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                       Laatst gezien: {format(new Date(lastSeen), 'dd/MM/yyyy HH:mm')}
