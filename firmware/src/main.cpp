@@ -417,6 +417,30 @@ void loop() {
   
   // USB-detectie (indien USB_ADC geconfigureerd)
   powerMonitor.update();
+
+  // --- VBUS analoog-pin diag: ADC ipv digitalRead want de R-deler levert
+  // ~1.69 V (R17=100k / R18=56k + BAT54-drop), wat onder V_IH (2.475 V) van
+  // de ESP32-S3 ligt. analogReadMilliVolts() leest de werkelijke spanning
+  // en is daarmee robuust tegen die te lage divider-output.
+  // Hardware-fix voor lange termijn: R18 vervangen door 150k (zie schema).
+  {
+    static int  vbusBoolLast = -1;
+    static unsigned long vbusLastPeriodic = 0;
+    int vbusMv  = analogReadMilliVolts(PIN_VBUS_DETECT);
+    int vbusNow = (vbusMv >= 700) ? 1 : 0;
+    if (vbusNow != vbusBoolLast) {
+      logger.info(String("[VBUS] GPIO") + PIN_VBUS_DETECT + " -> " +
+                  (vbusNow ? "HIGH (USB-C aanwezig)" : "LOW (USB-C weg)") +
+                  " (" + vbusMv + " mV)");
+      vbusBoolLast = vbusNow;
+    }
+    if (now - vbusLastPeriodic >= 5000) {
+      vbusLastPeriodic = now;
+      logger.info(String("[VBUS] periodic GPIO") + PIN_VBUS_DETECT +
+                  " adc=" + vbusMv + "mV bool=" + vbusNow +
+                  " isUsbConnected()=" + (powerMonitor.isUsbConnected() ? "1" : "0"));
+    }
+  }
   
   // WiFi auto-reconnect: detecteer verlies en probeer automatisch opnieuw
   static bool wifiWasConnected = false;
@@ -661,16 +685,43 @@ void sensorTask(void *parameter) {
       doorEventManager.setInitialState(initDoor);
       logger.info("Deur init: " + String(initDoor ? "OPEN" : "DICHT") + " (GPIO" + String(PIN_DOOR) + ")");
     }
-    
-    // Deur elke 15ms checken met debounce (30ms); bij state change direct event in queue (<500ms naar frontend)
+
+    // --- Instant USB-C / VBUS edge-detect -----------------------------------
+    // Detecteer USB-C in/uit binnen ~500 ms (powerMonitor.update() interval) en
+    // forceer dan onmiddellijk een nieuwe full-reading zodat de backend/UI niet
+    // moet wachten op de gewone readingInterval (~30 s). De extra reading is
+    // klein en gebeurt enkel op een echte transitie.
+    {
+      static bool usbPrev      = false;
+      static bool usbPrevInit  = false;
+      powerMonitor.update();
+      bool usbNow = powerMonitor.isUsbConnected();
+      if (!usbPrevInit) {
+        usbPrev = usbNow;
+        usbPrevInit = true;
+      } else if (usbNow != usbPrev) {
+        logger.info(String("[POWER] USB-C ") +
+                    (usbNow ? "aangesloten — netvoeding actief"
+                            : "ontkoppeld — op batterij"));
+        usbPrev = usbNow;
+        // Trigger directe sensor-reading-cyclus (volgende iteratie pakt het op)
+        lastReading = 0;
+      }
+    }
+
+    // Deur elke 15 ms pollen. Debounced state-change (stabiel ≥30 ms) gaat
+    // meteen in de event-queue én wordt direct gelogd (zie 'Deur OPEN/DICHT').
+    // Extra: we loggen ook elke RAW pin-transitie onmiddellijk, zodat je in de
+    // seriële monitor real-time ziet dat de reed schakelt, ook tijdens bouncing.
     if (now - lastDoorCheck >= 15) {
       bool doorOpen = sensors.readDoorOnly();
-      // Debug: elke 5s raw pin loggen (GPIO32) – controleer of pin verandert bij schakelen
-      static unsigned long lastDoorDebug = 0;
-      if (now - lastDoorDebug >= 5000) {
-        lastDoorDebug = now;
-        bool pinHigh = (digitalRead(PIN_DOOR) == HIGH);
-        logger.info("Deur debug: pin=" + String(pinHigh ? 1 : 0) + " doorOpen=" + String(doorOpen ? 1 : 0) + " (GPIO" + String(PIN_DOOR) + ")");
+      static bool prevRaw = doorOpen;
+      static bool prevRawInit = false;
+      if (!prevRawInit) { prevRaw = doorOpen; prevRawInit = true; }
+      if (doorOpen != prevRaw) {
+        logger.info(String("Deur ") + (doorOpen ? "OPEN" : "DICHT") +
+                    " (raw, GPIO" + String(PIN_DOOR) + ")");
+        prevRaw = doorOpen;
       }
       if (doorEventManager.poll(doorOpen)) {
         DoorEvent ev;

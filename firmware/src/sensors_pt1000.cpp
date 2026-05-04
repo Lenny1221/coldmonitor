@@ -28,9 +28,23 @@ bool initSensors() {
     s_sensors[i].enable50Hz(true);
     delay(20);
 
+    // --- Diagnose: ruwe 15-bit RTD + berekende weerstand ---
+    // RTDraw = 0x0000 → SPI komt niet door / chip niet aangesloten of 'altijd 0'.
+    // RTDraw = 0x7FFF → open input / RREF verkeerd → fault ook set.
+    // Rrtd  ≈ 1000 Ω  → PT1000 rond 0 °C.
+    // Rrtd  ≈ 100 Ω   → PT100 (dan is RREF op PCB waarsch. 430 Ω i.p.v. 4020 Ω).
+    uint16_t rtdRaw = s_sensors[i].readRTD();
+    float    rrtd   = ((float)rtdRaw * PT1000_RREF_OHM) / 32768.0f;
+
     float t = s_sensors[i].temperature(PT1000_RNOMINAL_OHM, PT1000_RREF_OHM);
     uint8_t fault = s_sensors[i].readFault();
     if (fault) s_sensors[i].clearFault();
+
+    logger.info(String("[SENSOR] #") + (i + 1) +
+                " diag: CS=GPIO" + (i == 0 ? PIN_MAX31865_CS1 : PIN_MAX31865_CS2) +
+                " RTDraw=0x" + String(rtdRaw, HEX) +
+                " (" + rtdRaw + ") Rrtd≈" + String(rrtd, 1) + "Ω" +
+                " fault=0x" + String(fault, HEX));
 
     bool ok = (fault == 0) && !isnan(t) && t > -200.0f && t < 200.0f;
     s_initOk[i]    = ok;
@@ -51,21 +65,42 @@ bool initSensors() {
 }
 
 float readSensor(uint8_t idx) {
-  if (!validIdx(idx) || !s_initOk[idx]) return NAN;
+  if (!validIdx(idx)) return NAN;
+
+  // Diagnose ook op reguliere reads, zodat we kunnen zien of een sensor die
+  // tijdens init niet "OK" was, intussen wél plausibele data geeft (bv. na
+  // hot-plug van een probe). Niet te spammy: we loggen enkel als hij niet-OK
+  // is, of als het resultaat buiten de redelijke range valt.
+  uint16_t rtdRaw = s_sensors[idx].readRTD();
+  float    rrtd   = ((float)rtdRaw * PT1000_RREF_OHM) / 32768.0f;
+
   float t = s_sensors[idx].temperature(PT1000_RNOMINAL_OHM, PT1000_RREF_OHM);
   uint8_t fault = s_sensors[idx].readFault();
   if (fault) {
     s_sensors[idx].clearFault();
     s_lastFault[idx] = fault;
     s_lastTempC[idx] = NAN;
+    logger.warn(String("[SENSOR] #") + (idx + 1) +
+                " read fault=0x" + String(fault, HEX) +
+                " RTDraw=0x" + String(rtdRaw, HEX) +
+                " Rrtd≈" + String(rrtd, 1) + "Ω");
     return NAN;
   }
   if (isnan(t) || t <= -200.0f || t >= 200.0f) {
     s_lastTempC[idx] = NAN;
+    logger.warn(String("[SENSOR] #") + (idx + 1) +
+                " read out-of-range: RTDraw=0x" + String(rtdRaw, HEX) +
+                " Rrtd≈" + String(rrtd, 1) + "Ω t=" + String(t, 2) + "°C");
     return NAN;
   }
   s_lastFault[idx] = 0;
   s_lastTempC[idx] = t;
+  if (!s_initOk[idx]) {
+    logger.info(String("[SENSOR] #") + (idx + 1) +
+                " nu geldig: RTDraw=0x" + String(rtdRaw, HEX) +
+                " Rrtd≈" + String(rrtd, 1) + "Ω t=" + String(t, 2) + "°C");
+    s_initOk[idx] = true;
+  }
   return t;
 }
 
