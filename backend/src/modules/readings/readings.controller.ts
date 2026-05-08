@@ -90,7 +90,9 @@ router.post(
         req.deviceId!
       );
 
-      if (data.powerStatus !== undefined) {
+      // powerStatus mag nu null zijn (board zonder USB-detectie). Skip de
+      // alert-check in dat geval i.p.v. een non-null asserrtion.
+      if (data.powerStatus !== undefined && data.powerStatus !== null) {
         await alertService.checkPowerStatus(
           reading.device.coldCellId,
           data.powerStatus,
