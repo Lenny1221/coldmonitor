@@ -38,6 +38,7 @@
 #include "watchdog_tpl5010.h"
 #include "relay_control.h"
 #include "vbus_external.h"
+#include "sim7670_battery.h"
 
 // Global objects
 ConfigManager config;
@@ -277,6 +278,11 @@ void setup() {
   // Serial1 opnieuw configureren.
   initRS485(9600);
   initExternalPowerSense();
+  // SIM7670G modem opstarten zodat we via AT+CBC de batterijspanning kunnen
+  // uitlezen. Op carrier v1.1 hangt GPIO 4 (LilyGO BAT_ADC) ook aan WAKE_GPIO
+  // van de TPL5010 — daardoor is een directe ADC-uitlezing onbruikbaar. De
+  // modem heeft zijn eigen VBAT-sense en is via UART2 opvraagbaar (AT+CBC).
+  sim7670::init();
   kickWatchdog();
 
   // WiFi Setup (with provisioning flow)
@@ -506,7 +512,12 @@ void loop() {
     if (lastApiHeartbeat == 0 || (now - lastApiHeartbeat >= apiRetryBackoff)) {
       int batPct = -1;
       bool onMains = false;
-      if (batteryMonitor.getVoltage() >= 1.0f) batPct = batteryMonitor.getPercentage();
+      // Carrier v1.1: prefereer SIM7670G AT+CBC-meting; ADC-fallback is no-op.
+      if (sim7670::isReady() && sim7670::getPercentage() >= 0) {
+        batPct = sim7670::getPercentage();
+      } else if (batteryMonitor.getVoltage() >= 1.0f) {
+        batPct = batteryMonitor.getPercentage();
+      }
       if (powerMonitor.isUsbConnected()) onMains = true;
       bool apiOk = apiClient.apiHandshakeOrHeartbeat(true, WiFi.RSSI(), WiFi.localIP().toString(), batPct, onMains);
       deviceStatus.connectedToWifi = true;
@@ -797,9 +808,15 @@ void sensorTask(void *parameter) {
 
         batteryMonitor.update();
         powerMonitor.update();
+        sim7670::update();
         bool usbConnected = powerMonitor.isUsbConnected();
         float vUsb = powerMonitor.getUsbVoltage();
-        int batPct = batteryMonitor.getPercentage();
+        // Carrier v1.1: BatteryMonitor (ADC) is een no-op (GPIO 4 actief
+        // gedreven door TPL5010 WAKE). De SIM7670G geeft via AT+CBC een eigen
+        // VBAT-meting; we prefereren die als de modem klaar is.
+        int batPctModem = sim7670::isReady() ? sim7670::getPercentage() : -1;
+        int batMvModem  = sim7670::isReady() ? sim7670::getVoltageMv()  : -1;
+        int batPct      = (batPctModem >= 0) ? batPctModem : batteryMonitor.getPercentage();
         (void)vUsb;  /* Op carrier digitaal gemeten; analog-drempel niet van toepassing. */
         bool charging = usbConnected && (batPct > 0) && (batPct < 100);
 
@@ -816,12 +833,13 @@ void sensorTask(void *parameter) {
         doc["doorStatus"] = data.doorOpen;
         /* Carrier: VBUS_DETECT is digitaal, dus powerStatus is altijd geldig. */
         doc["powerStatus"] = usbConnected;
-        // batteryLevel: -1 = sentinel "geen Li-Po ADC op dit board" (carrier v1.1).
-        // Backend zod-schema vereist 0..100, dus stuur null i.p.v. -1, anders
-        // wordt iedere reading met HTTP 400 geweigerd. Heartbeat doet hetzelfde.
+        // batteryLevel: -1 = sentinel "nog geen geldige meting" (modem niet
+        // klaar of geen batterij). Backend zod-schema vereist 0..100, dus stuur
+        // null i.p.v. -1, anders wordt iedere reading met HTTP 400 geweigerd.
         if (batPct >= 0) {
           doc["batteryLevel"] = batPct;
-          doc["batteryVoltage"] = batteryMonitor.getVoltage();
+          float vBat = (batMvModem > 0) ? (batMvModem / 1000.0f) : batteryMonitor.getVoltage();
+          doc["batteryVoltage"] = vBat;
           doc["batteryCharging"] = charging;
         } else {
           doc["batteryLevel"] = (const char*)nullptr;
@@ -1479,7 +1497,11 @@ void setupWiFi() {
       // API handshake: meld device als ONLINE
       int batPct = -1;
       bool onMains = false;
-      if (batteryMonitor.getVoltage() >= 1.0f) batPct = batteryMonitor.getPercentage();
+      if (sim7670::isReady() && sim7670::getPercentage() >= 0) {
+        batPct = sim7670::getPercentage();
+      } else if (batteryMonitor.getVoltage() >= 1.0f) {
+        batPct = batteryMonitor.getPercentage();
+      }
       if (powerMonitor.isUsbConnected()) onMains = true;
       bool apiOk = apiClient.apiHandshakeOrHeartbeat(true, WiFi.RSSI(), WiFi.localIP().toString(), batPct, onMains);
       deviceStatus.connectedToWifi = true;
