@@ -68,6 +68,13 @@ TaskHandle_t modbusTaskHandle = NULL;
 TaskHandle_t uploadTaskHandle = NULL;
 TaskHandle_t commandTaskHandle = NULL;
 
+// Cross-task signal: zet sensorTask op true wanneer een gebeurtenis (bv.
+// USB-C in/uitgetrokken) een directe heartbeat + upload vereist. loop()
+// consumeert de flag en reset lastApiHeartbeat/lastUpload zodat de UI
+// binnen ~1 reading-cyclus reageert i.p.v. 30 s. unsigned long writes zijn
+// atomair op de ESP32-S3 (32-bit), dus geen mutex nodig.
+volatile bool g_forceImmediateSync = false;
+
 // WiFi status tracking
 String lastWiFiSSID = "";
 bool lastWiFiConnected = false;
@@ -420,7 +427,16 @@ void loop() {
   static int deviceDoorAlarmDelaySec = 300;
   
   unsigned long now = millis();
-  
+
+  // Force-sync flag van sensorTask: bv. USB-C in/uitgetrokken. Reset
+  // heartbeat- en upload-timers zodat loop() ze ditzelfde rondje aftrapt.
+  if (g_forceImmediateSync) {
+    g_forceImmediateSync = false;
+    lastApiHeartbeat = 0;
+    lastUpload       = 0;
+    logger.info("[POWER] force immediate sync (heartbeat + upload)");
+  }
+
   // USB-detectie (indien USB_ADC geconfigureerd)
   powerMonitor.update();
 
@@ -730,8 +746,13 @@ void sensorTask(void *parameter) {
                     (usbNow ? "aangesloten — netvoeding actief"
                             : "ontkoppeld — op batterij"));
         usbPrev = usbNow;
-        // Trigger directe sensor-reading-cyclus (volgende iteratie pakt het op)
+        // 1) Forceer een nieuwe full-reading op de eerstvolgende cyclus.
+        // 2) Zet de cross-task flag zodat loop() onmiddellijk een heartbeat
+        //    afvuurt + alle gebufferde readings uploadt. Doel: het alarm in
+        //    de webapp verschijnt binnen seconden in plaats van pas bij de
+        //    volgende reading/upload-interval (~30 s).
         lastReading = 0;
+        g_forceImmediateSync = true;
       }
     }
 

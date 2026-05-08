@@ -534,10 +534,23 @@ export class AlertService {
 
   /**
    * Resolve connection alerts when device comes back online (heartbeat received).
-   * - uptime < 90s (cold boot) = stroom was uitgevallen → update WIFI_LOSS naar POWER_LOSS, dan oplossen
-   * - uptime >= 90s = WiFi was uitgevallen → WIFI_LOSS oplossen
+   *
+   * Belangrijk: sinds carrier v1.1 blijft het device gewoon heartbeats sturen
+   * terwijl de carrier-USB-C ontkoppeld is (het draait verder op batterij).
+   * Een POWER_LOSS-alert mag dus NIET zomaar opgelost worden bij elke
+   * heartbeat — alleen wanneer de stroom echt is hersteld (`onMains === true`)
+   * of bij een cold boot (legacy: device kwam terug na een lange downtime).
+   *
+   * - uptime < 90s (cold boot) = device kwam terug na downtime → WIFI_LOSS
+   *   updaten naar POWER_LOSS, dan oplossen
+   * - onMains === true        = stroom hersteld → POWER_LOSS oplossen
+   * - heartbeat received      = WIFI_LOSS oplossen (ongeacht onMains)
    */
-  async resolveConnectionAlerts(coldCellId: string, uptimeSeconds?: number): Promise<void> {
+  async resolveConnectionAlerts(
+    coldCellId: string,
+    uptimeSeconds?: number,
+    onMains?: boolean | null,
+  ): Promise<void> {
     try {
       const coldBoot = uptimeSeconds != null && uptimeSeconds < 90;
 
@@ -558,24 +571,49 @@ export class AlertService {
         }
       }
 
-      // Los POWER_LOSS en WIFI_LOSS op
-      const resolved = await prisma.alert.updateMany({
+      // WIFI_LOSS lossen we altijd op bij heartbeat — heartbeat zelf bewijst
+      // dat WiFi werkt.
+      const wifiResolved = await prisma.alert.updateMany({
         where: {
           coldCellId,
-          type: { in: ['POWER_LOSS', 'WIFI_LOSS'] },
+          type: 'WIFI_LOSS',
           status: { in: ['ACTIVE', 'ESCALATING'] },
         },
         data: {
           status: 'RESOLVED',
           resolvedAt: new Date(),
-          resolutionNote: coldBoot ? 'Stroom hersteld – device weer online' : 'WiFi hersteld – verbinding hersteld',
+          resolutionNote: 'WiFi hersteld – verbinding hersteld',
         },
       });
-      if (resolved.count > 0) {
+
+      // POWER_LOSS lossen we enkel op bij echte stroomherstel of cold boot.
+      const powerRestored = onMains === true || coldBoot;
+      let powerResolved = { count: 0 };
+      if (powerRestored) {
+        powerResolved = await prisma.alert.updateMany({
+          where: {
+            coldCellId,
+            type: 'POWER_LOSS',
+            status: { in: ['ACTIVE', 'ESCALATING'] },
+          },
+          data: {
+            status: 'RESOLVED',
+            resolvedAt: new Date(),
+            resolutionNote: coldBoot
+              ? 'Stroom hersteld – device weer online'
+              : 'Stroom hersteld – netvoeding terug',
+          },
+        });
+      }
+
+      const total = wifiResolved.count + powerResolved.count;
+      if (total > 0) {
         logger.info('Connection alerts resolved (device back online)', {
           coldCellId,
-          count: resolved.count,
+          wifiResolved: wifiResolved.count,
+          powerResolved: powerResolved.count,
           coldBoot,
+          onMains,
         });
       }
     } catch (error) {

@@ -154,12 +154,35 @@ router.post(
         },
       });
 
-      // Device online (heartbeat ontvangen): los WIFI_LOSS/POWER_LOSS op
-      // Let op: requireDeviceAuth zet status al op ONLINE vóór deze handler, dus we checken
-      // niet op wasOffline – we lossen altijd op bij heartbeat (device is dan online).
+      // Heartbeat-driven alerting voor stroomstatus
+      // ----------------------------------------------------------------------
+      // Sinds carrier v1.1 stuurt het device heartbeats terwijl het op batterij
+      // draait (USB-C ontkoppeld). De heartbeat is dus DE plek om POWER_LOSS
+      // direct te detecteren — sneller dan wachten op de eerstvolgende reading
+      // (kan tot 30 s duren). Heartbeats zelf komen elke ~10 s.
+      //
+      // Logica:
+      //   on_mains === false → maak POWER_LOSS-alert direct aan (idempotent)
+      //   on_mains === true  → POWER_LOSS-alert oplossen (via resolveConnectionAlerts)
+      //   on_mains === null  → laat resolver beslissen (geen verandering POWER_LOSS)
+      // WIFI_LOSS lossen we altijd op zodra een heartbeat aankomt.
+      const onMainsValue: boolean | null =
+        typeof on_mains === 'boolean' ? on_mains : null;
+
       if (device?.coldCellId) {
         const { alertService } = await import('../../services/alertService');
-        await alertService.resolveConnectionAlerts(device.coldCellId, uptimeSeconds);
+        if (onMainsValue === false) {
+          await alertService.checkPowerStatus(
+            device.coldCellId,
+            false,
+            req.deviceId,
+          );
+        }
+        await alertService.resolveConnectionAlerts(
+          device.coldCellId,
+          uptimeSeconds,
+          onMainsValue,
+        );
       }
 
       // Fetch PENDING remote commands, mark as SENT, clear password from WIFI_CONNECT payload
