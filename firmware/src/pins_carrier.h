@@ -15,7 +15,7 @@
  *   6  GPIO46   spare (strap — laat open / pulldown)
  *   7  GPIO8    RELAY_GPIO  →  Q1 basis via R20
  *   8  GPIO16   spare
- *   9  GPIO15   CS_U4       →  U4 pin 13   (sensor 1 / ruimte)
+ *   9  GPIO15   spare       (was per oude tabel CS_U4, maar PCB v1.1 wired CS_U4 op GPIO48)
  *  10  GPIO7    spare
  *  11  GPIO6    spare
  *  12  GPIO5    WDT_DONE    →  TPL5010 pin 5
@@ -37,7 +37,7 @@
  *  10  GPIO39   RS485_RX    →  MAX3485 pin 1 (RO)
  *  11  GPIO38   RS485_TX    →  MAX3485 pin 4 (DI)
  *  12  GPIO0    ⛔ niet aansluiten (BOOT-strap)
- *  13  GPIO48   spare
+ *  13  GPIO48   CS_U4       →  U4 pin 13   (sensor 1 / ruimte)  [PCB v1.1, niet GPIO15]
  *  14  GPIO47   SPI_MISO    →  U3/U4 pin 14
  *  15  GND
  *  16  VIN (+5V rail van USB-C + boost)
@@ -49,7 +49,7 @@
 #define PIN_SPI_SCK       21   /* U6-2  SCLK     */
 #define PIN_SPI_MOSI      14   /* U6-3  MOSI/SDI */
 #define PIN_SPI_MISO      47   /* U7-14 MISO/SDO */
-#define PIN_MAX31865_CS1  15   /* U6-9  CS_U4    (sensor 1 / ruimte)     */
+#define PIN_MAX31865_CS1  48   /* U7-13 CS_U4    (sensor 1 / ruimte)     */
 #define PIN_MAX31865_CS2  13   /* U6-4  CS_U3    (sensor 2 / verdamper)  */
 
 /* ---- RS485 (MAX3485, half-duplex) -------------------------------------- */

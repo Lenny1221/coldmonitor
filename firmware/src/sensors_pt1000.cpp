@@ -12,11 +12,87 @@ Adafruit_MAX31865 s_sensors[PT1000_COUNT] = {
     Adafruit_MAX31865(PIN_MAX31865_CS2, PIN_SPI_MOSI, PIN_SPI_MISO, PIN_SPI_SCK),
 };
 
+const uint8_t s_csPins[PT1000_COUNT] = { PIN_MAX31865_CS1, PIN_MAX31865_CS2 };
+
 bool     s_initOk[PT1000_COUNT] = {false, false};
 uint8_t  s_lastFault[PT1000_COUNT] = {0, 0};
 float    s_lastTempC[PT1000_COUNT] = {NAN, NAN};
 
 inline bool validIdx(uint8_t idx) { return idx < PT1000_COUNT; }
+
+// -- Raw bit-bang software-SPI register read ---------------------------------
+// We bypassen Adafruit_MAX31865 hier bewust: we willen weten of de chip
+// uberhaupt iets terugstuurt (en wat) op alle 8 registers. Mode 1 (CPOL=0,
+// CPHA=1): clock idle low, data sampled on falling edge — dit is de SPI-mode
+// die de MAX31865 vereist.
+uint8_t maxReadReg(uint8_t cs, uint8_t reg) {
+  // Schrijf-bit (MSB) op 0 voor read, low-7 = adres.
+  uint8_t tx = reg & 0x7F;
+  digitalWrite(cs, LOW);
+  delayMicroseconds(2);
+
+  // Address byte uitsturen (MSB-first).
+  for (int b = 7; b >= 0; b--) {
+    digitalWrite(PIN_SPI_SCK, LOW);
+    digitalWrite(PIN_SPI_MOSI, ((tx >> b) & 1) ? HIGH : LOW);
+    delayMicroseconds(2);
+    digitalWrite(PIN_SPI_SCK, HIGH);
+    delayMicroseconds(2);
+  }
+  digitalWrite(PIN_SPI_SCK, LOW);
+
+  // Data-byte inlezen: bit gesampled op falling edge (mode 1).
+  uint8_t rx = 0;
+  for (int b = 7; b >= 0; b--) {
+    digitalWrite(PIN_SPI_SCK, HIGH);
+    delayMicroseconds(2);
+    digitalWrite(PIN_SPI_SCK, LOW);
+    delayMicroseconds(1);
+    if (digitalRead(PIN_SPI_MISO)) rx |= (1 << b);
+    delayMicroseconds(1);
+  }
+
+  digitalWrite(cs, HIGH);
+  delayMicroseconds(2);
+  return rx;
+}
+
+void dumpAllRegisters(uint8_t idx) {
+  uint8_t cs = s_csPins[idx];
+  // Bit-bang vereist dat de pinnen als output staan. Adafruit_MAX31865 heeft
+  // ze al geïnitialiseerd in begin(), maar we forceren ze hier voor de zekerheid.
+  pinMode(cs,            OUTPUT); digitalWrite(cs,            HIGH);
+  pinMode(PIN_SPI_SCK,   OUTPUT); digitalWrite(PIN_SPI_SCK,   LOW);
+  pinMode(PIN_SPI_MOSI,  OUTPUT); digitalWrite(PIN_SPI_MOSI,  LOW);
+  pinMode(PIN_SPI_MISO,  INPUT);
+
+  String line = String("[SENSOR] #") + (idx + 1) + " regs(raw): ";
+  uint8_t allZero = 0, allOne = 0;
+  for (uint8_t r = 0; r < 8; r++) {
+    uint8_t v = maxReadReg(cs, r);
+    if (v == 0x00) allZero++;
+    if (v == 0xFF) allOne++;
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%02X ", v);
+    line += buf;
+  }
+  logger.info(line);
+
+  if (allZero == 8) {
+    logger.warn(String("[SENSOR] #") + (idx + 1) +
+                " -> ALLE registers 0x00. Chip antwoordt niet. "
+                "Check 3V3 op MAX31865-VDD, CS-pin (GPIO" + cs +
+                ") en MISO (GPIO" + PIN_SPI_MISO + ").");
+  } else if (allOne == 8) {
+    logger.warn(String("[SENSOR] #") + (idx + 1) +
+                " -> ALLE registers 0xFF. MISO is high-floating; chip "
+                "trekt MISO niet laag. Check stroom + MISO-traceback.");
+  } else {
+    logger.info(String("[SENSOR] #") + (idx + 1) +
+                " -> Chip leeft (registers verschillen). "
+                "Config-reg (0x00) moet ~0xC1 zijn na begin(2WIRE,50Hz).");
+  }
+}
 
 } // namespace
 
@@ -27,6 +103,12 @@ bool initSensors() {
     // 50 Hz notch voor EU-net (onderdrukt mains-inductie op 2-wire leidingen).
     s_sensors[i].enable50Hz(true);
     delay(20);
+
+    // Raw register-dump (bit-bang). Hierna weten we 100% zeker:
+    //  - allemaal 0x00 -> chip totaal stil (geen VDD / dood IC / verkeerd CS)
+    //  - allemaal 0xFF -> MISO is hoog-zwevend (geen stroom of geen MISO-tracé)
+    //  - mengeling     -> chip leeft, kunnen we config + RTD-fouten lezen
+    dumpAllRegisters(i);
 
     // --- Diagnose: ruwe 15-bit RTD + berekende weerstand ---
     // RTDraw = 0x0000 → SPI komt niet door / chip niet aangesloten of 'altijd 0'.

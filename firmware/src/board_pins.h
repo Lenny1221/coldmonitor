@@ -48,7 +48,8 @@
 #define BOARD_MAX31865_SCK  21   /* U6-2  SCLK */
 #define BOARD_MAX31865_MOSI 14   /* U6-3  MOSI */
 #define BOARD_MAX31865_MISO 47   /* U7-14 MISO */
-#define BOARD_MAX31865_CS   15   /* U6-9  CS_U4 (sensor 1 / ruimte) */
+#define BOARD_MAX31865_CS   48   /* U7-13 CS_U4 (sensor 1 / ruimte). PCB v1.1 wired
+                                    op GPIO48; oude tabel zei GPIO15 maar dat klopt niet. */
 /* Sensor 2 CS leeft enkel in pins_carrier.h → PIN_MAX31865_CS2 (GPIO 13). */
 
 /* ---- Deur-contact (reed switch) ----------------------------------------- */
