@@ -568,6 +568,41 @@ void loop() {
           controllerTypeFromApi = ctrlType;
           controllerSlaveAddrFromApi = ctrlSlave;
           controllerBaudRateFromApi = ctrlBaud;
+
+          // Auto-enable RS485 zodra de webapp een regelaar configureert.
+          // Het Carel-supervisieprotocol is op carrier v1.1 niet meer actief
+          // (Serial2 is voorbehouden voor de SIM7670G-modem), dus elke
+          // controller_type uit de API behandelen we als Modbus RTU.
+          // Default-config (modbusEnabled=false) zou anders het hele
+          // command-task-poll-loop overslaan en commando's blijven hangen
+          // op PENDING.
+          bool wantCarel  = (controllerTypeFromApi.indexOf("CAREL_PJEZ") >= 0);
+          bool wantModbus = !wantCarel;
+          if (wantModbus) {
+            ModbusConfig mcfg = config.getModbusConfig();
+            int newBaud  = ctrlBaud  > 0 ? ctrlBaud  : (int)mcfg.baudRate;
+            int newSlave = ctrlSlave > 0 ? ctrlSlave : (int)mcfg.slaveId;
+            bool changed = ((uint32_t)newBaud != mcfg.baudRate) ||
+                           ((uint8_t)newSlave != mcfg.slaveId);
+            mcfg.baudRate = newBaud;
+            mcfg.slaveId  = newSlave;
+            if (changed) {
+              config.setModbusConfig(mcfg);
+              config.save();
+            }
+            if (!config.getModbusEnabled()) {
+              config.setModbusEnabled(true);
+              config.save();
+              logger.info(String("[CONTROLLER] auto-enable Modbus voor ") +
+                          controllerTypeFromApi + " (baud=" + newBaud +
+                          " slave=" + newSlave + ")");
+            }
+            // Initialiseer / her-initialiseer de Modbus-stack als de baud/
+            // slave veranderde of als hij nog nooit liep.
+            if (changed || !modbus.isInitialized()) {
+              modbus.init(mcfg);
+            }
+          }
         }
         lastSettingsFetch = now;
       }
@@ -989,10 +1024,13 @@ void commandTask(void *parameter) {
       lastWatchdogFeed = now;
     }
     
-    // Only check if WiFi connected and RS485 enabled (Modbus or Carel)
+    // Polling-gate: enkel polten als WiFi werkt én RS485 actief is (Modbus
+    // of Carel). De `writeAllowed`-check zit later per-commando: READ-
+    // commando's mogen ook draaien op een read-only Modbus-config; alleen
+    // SET / ACTION-commando's vereisen modbusWriteEnabled.
     bool rs485Active = config.getModbusEnabled() || config.getCarelProtocolEnabled();
     bool writeAllowed = config.getCarelProtocolEnabled() || config.getModbusWriteEnabled();
-    if (WiFi.isConnected() && rs485Active && writeAllowed) {
+    if (WiFi.isConnected() && rs485Active) {
       if (now - lastCheck >= checkInterval) {
         lastCheck = now;
         logger.info("Command task: polling for pending commands");

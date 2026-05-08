@@ -36,31 +36,50 @@ String RS485Modbus::bytesToHex(uint8_t* data, uint8_t len) {
 }
 
 RS485Modbus::~RS485Modbus() {
+#if !defined(BOARD_LILYGO_T_SIM7670G_S3)
+  // Op carrier v1.1 wijzen we naar de globale `Serial1`. Die mag NOOIT
+  // worden geheap-deleted (segfault). Op andere boards gebruiken we een
+  // dynamisch nieuwe HardwareSerial(2)-instantie.
   if (serial) {
     delete serial;
   }
+#endif
 }
 
 bool RS485Modbus::init(ModbusConfig cfg) {
   config = cfg;
   dePin = cfg.dePin;
   rePin = cfg.rePin;
-  
+
   // Initialize RS485 driver/receiver enable pins
   pinMode(dePin, OUTPUT);
   pinMode(rePin, OUTPUT);
   setTransmitMode(false);
-  
-  // Initialize Serial2 for RS485
-  serial = new HardwareSerial(2);
+
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  // Carrier v1.1: de MAX3485 hangt aan UART1 (Serial1). UART2 (Serial2) is
+  // gereserveerd voor de SIM7670G-modem (zie sim7670_battery.cpp). Als we
+  // hier `new HardwareSerial(2)` zouden doen, herclaimen we UART2 op de
+  // RS485-pinnen en valt de modem-link weg. Daarom op deze build steeds
+  // Serial1 gebruiken — die is via initRS485() al geopend, maar we draaien
+  // ook hier een begin() zodat de juiste baudrate / slave-config wint
+  // wanneer de webapp een ander baudrate doorduwt.
+  serial = &Serial1;
+  Serial1.begin(cfg.baudRate, SERIAL_8N1, cfg.rxPin, cfg.txPin);
+#else
+  // Klassieke ESP32-DevKit / SimShield-pad: dedicated UART2.
+  if (!serial) {
+    serial = new HardwareSerial(2);
+  }
   serial->begin(cfg.baudRate, SERIAL_8N1, cfg.rxPin, cfg.txPin);
-  
+#endif
+
   delay(100);
-  
+
   initialized = true;
   logger.info("RS485/Modbus initialized");
   logger.info("Baud: " + String(cfg.baudRate) + ", Slave ID: " + String(cfg.slaveId));
-  
+
   return true;
 }
 

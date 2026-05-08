@@ -44,6 +44,7 @@ public:
   ~RS485Modbus();
   
   bool init(ModbusConfig config);
+  bool isInitialized() const { return initialized; }
   void setDefrostDebug(bool enable) { defrostDebug = enable; }
   
   // Read functions
