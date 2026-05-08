@@ -623,20 +623,35 @@ void loop() {
     if (shouldUpload && count > 0) {
       logger.info("Uploading " + String(count) + " readings...");
       int uploaded = 0;
+      int dropped  = 0;
       for (int i = 0; i < count; i++) {
         String data = dataBuffer.get(i);
         if (apiClient.uploadReading(data)) {
           uploaded++;
           logger.debug("Uploaded: " + data);
         } else {
+          int code = apiClient.lastReadingHttpCode;
+          // 4xx = backend wijst de payload zelf permanent af (bv. validatie).
+          // Heeft geen zin om dit eindeloos te blijven retryen — anders blokkeert
+          // één bug-reading de hele buffer en stopt alle latere data ook. We
+          // droppen dan deze ene en gaan verder met de volgende.
+          if (code >= 400 && code < 500) {
+            logger.warn(String("Upload 4xx (") + code + ") — drop reading: " + data);
+            dropped++;
+            continue;
+          }
+          // Anders (transient: timeout, 5xx, -1 verbinding) → stoppen en later retry.
           logger.warn("Upload failed for: " + data);
           break;
         }
         delay(100);
       }
-      if (uploaded > 0) {
-        dataBuffer.remove(uploaded);
-        logger.info("Successfully uploaded " + String(uploaded) + " readings");
+      // Alle items die we ofwel succesvol uploadden ofwel droppen waren altijd
+      // de eerste opeenvolgende N — dataBuffer is FIFO. Verwijder ze in volgorde.
+      int toRemove = uploaded + dropped;
+      if (toRemove > 0) {
+        dataBuffer.remove(toRemove);
+        logger.info(String("Upload klaar: ") + uploaded + " ok, " + dropped + " gedropt (4xx)");
       }
       lastUpload = now;
     }
@@ -741,14 +756,19 @@ void sensorTask(void *parameter) {
       SensorData data = sensors.read();
 
       // PT1000 #1 = RUIMTE (koelcel-ambient, primaire temperatuur)
+      // We hangen niet langer aan `max31865Initialized` van bij boot:
+      // sensorOk() bekijkt elke read of de chip nu een geldige meting geeft.
+      // Hierdoor kan een sensor die ná boot wordt aangesloten (of een chip die
+      // eerder niet bereikbaar was) automatisch in de upload verschijnen
+      // zonder reboot.
       float   roomTemp  = readRoomTempC();
       uint8_t roomFlt   = roomSensorFault();
-      bool    roomOk    = max31865Initialized && roomSensorOk() && !isnan(roomTemp);
+      bool    roomOk    = roomSensorOk() && !isnan(roomTemp);
 
       // PT1000 #2 = VERDAMPER (evaporator-coil, diagnose/defrost)
       float   evapTemp  = readEvaporatorTempC();
       uint8_t evapFlt   = evaporatorFault();
-      bool    evapOk    = max31865Initialized && evaporatorSensorOk() && !isnan(evapTemp);
+      bool    evapOk    = evaporatorSensorOk() && !isnan(evapTemp);
 
       if (roomOk) {
         data.temperature = roomTemp;
@@ -796,9 +816,17 @@ void sensorTask(void *parameter) {
         doc["doorStatus"] = data.doorOpen;
         /* Carrier: VBUS_DETECT is digitaal, dus powerStatus is altijd geldig. */
         doc["powerStatus"] = usbConnected;
-        doc["batteryLevel"] = batPct;
-        doc["batteryVoltage"] = batteryMonitor.getVoltage();
-        doc["batteryCharging"] = charging;
+        // batteryLevel: -1 = sentinel "geen Li-Po ADC op dit board" (carrier v1.1).
+        // Backend zod-schema vereist 0..100, dus stuur null i.p.v. -1, anders
+        // wordt iedere reading met HTTP 400 geweigerd. Heartbeat doet hetzelfde.
+        if (batPct >= 0) {
+          doc["batteryLevel"] = batPct;
+          doc["batteryVoltage"] = batteryMonitor.getVoltage();
+          doc["batteryCharging"] = charging;
+        } else {
+          doc["batteryLevel"] = (const char*)nullptr;
+          doc["batteryCharging"] = false;
+        }
         doc["timestamp"] = now;
 
         String jsonData;

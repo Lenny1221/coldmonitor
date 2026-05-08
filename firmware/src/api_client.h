@@ -27,6 +27,11 @@ public:
   bool uploadReadings(String jsonArray);
   bool checkConnection();
   String getDeviceInfo();
+
+  // HTTP-code van de laatste uploadReading()-call. ≥0 = HTTP-status (200, 400…),
+  // <0 = lokale fout (zie esp32-HTTPClient codes). Caller kan dit gebruiken om
+  // een 4xx (validatie) te onderscheiden van een 5xx/-x (transient netwerk).
+  int lastReadingHttpCode = 0;
   
   // POST /devices/heartbeat - meldt device als ONLINE, telemetrie + remote commands
   bool apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const String& ip,

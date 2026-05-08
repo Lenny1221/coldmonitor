@@ -94,7 +94,8 @@ bool APIClient::uploadReading(String jsonData) {
   http.setTimeout(10000);        // 10 s antwoord
   
   int httpCode = http.POST(jsonData);
-  
+  lastReadingHttpCode = httpCode;
+
   bool success = (httpCode == 200 || httpCode == 201);
   
   if (success) {

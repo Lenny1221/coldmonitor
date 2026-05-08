@@ -149,6 +149,20 @@ bool initSensors() {
 float readSensor(uint8_t idx) {
   if (!validIdx(idx)) return NAN;
 
+  // Lazy re-init: als de sensor op dit moment niet als OK staat, proberen we
+  // begin()+enable50Hz opnieuw. Bij boot kan een chip onbereikbaar zijn (bv.
+  // verdamper-voeler nog niet aangesloten, of CS-trace nog niet doorverbonden);
+  // zodra dat hardware-issue opgelost is willen we dat de chip automatisch
+  // mee gaat draaien zonder dat de gebruiker moet rebooten. We doen dit enkel
+  // wanneer s_initOk[idx] false is, dus een gezonde sensor heeft hier geen
+  // overhead. Op een nog steeds dode chip kosten begin()+enable50Hz ~5 ms,
+  // wat binnen de readingInterval ruim past.
+  if (!s_initOk[idx]) {
+    s_sensors[idx].begin(MAX31865_2WIRE);
+    s_sensors[idx].enable50Hz(true);
+    delay(5);
+  }
+
   // Diagnose ook op reguliere reads, zodat we kunnen zien of een sensor die
   // tijdens init niet "OK" was, intussen wél plausibele data geeft (bv. na
   // hot-plug van een probe). Niet te spammy: we loggen enkel als hij niet-OK

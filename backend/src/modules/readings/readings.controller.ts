@@ -22,11 +22,14 @@ const readingSchema = z.object({
   // aangesloten is, zodat we ondubbelzinnig "geen voeler" kunnen onderscheiden
   // van een waarde van 0 °C. Zod ziet null + .nullable().optional() als geldig.
   evaporatorTemp: z.number().min(-50).max(50).nullable().optional(),
-  humidity: z.number().min(0).max(100).optional(),
-  powerStatus: z.boolean().optional(),
-  doorStatus: z.boolean().optional(),
-  batteryLevel: z.number().min(0).max(100).optional(),
-  batteryCharging: z.boolean().optional(),
+  humidity: z.number().min(0).max(100).nullable().optional(),
+  powerStatus: z.boolean().nullable().optional(),
+  doorStatus: z.boolean().nullable().optional(),
+  // batteryLevel: nullable zodat boards zonder Li-Po ADC (bv. carrier v1.1)
+  // null kunnen sturen i.p.v. een sentinel als -1, en backend hen niet
+  // weigert met 400.
+  batteryLevel: z.number().min(0).max(100).nullable().optional(),
+  batteryCharging: z.boolean().nullable().optional(),
 });
 
 /**
