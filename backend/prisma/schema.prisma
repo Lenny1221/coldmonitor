@@ -346,7 +346,8 @@ model DeviceCommand {
 // Sensor Reading model (temperature, humidity, etc.)
 model SensorReading {
   id          String   @id @default(cuid())
-  temperature Float
+  temperature Float    // Hoofdtemperatuur (= ruimte/koelcel-ambient PT1000 op carrier v1.1)
+  evaporatorTemp Float? // Optioneel 2e PT1000 op carrier v1.1 (verdamper-coil)
   humidity    Float?
   powerStatus Boolean  @default(true)
   doorStatus  Boolean? // true = open, false = closed

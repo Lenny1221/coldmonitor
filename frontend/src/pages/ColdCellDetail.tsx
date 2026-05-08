@@ -409,17 +409,56 @@ const ColdCellDetail: React.FC = () => {
       <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-4">Huidige status</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {latestReading?.temperature != null && (
-            <div className="border border-gray-200 dark:border-[rgba(100,200,255,0.12)] rounded-lg p-4">
-              <div className="flex items-center text-gray-600 dark:text-slate-300 mb-1">
-                <FireIcon className="h-5 w-5 mr-2" />
-                <span className="text-sm font-medium">Temperatuur</span>
+          {(() => {
+            // Carrier v1.1 levert tot 2 PT1000-voelers:
+            //   - latestReading.temperature   = ruimte (koelcel-ambient)
+            //   - latestReading.evaporatorTemp = verdamper (evaporator-coil)
+            // Toon enkel de regel(s) waarvoor effectief data binnenkomt; als geen
+            // van beide aangesloten is verbergen we de hele kaart.
+            const roomTemp = latestReading?.temperature;
+            const evapTemp = (latestReading as { evaporatorTemp?: number | null } | null | undefined)?.evaporatorTemp;
+            const hasRoom = roomTemp != null;
+            const hasEvap = evapTemp != null;
+            if (!hasRoom && !hasEvap) return null;
+            const onlyOne = hasRoom !== hasEvap; // exclusief één van de twee
+            return (
+              <div className="border border-gray-200 dark:border-[rgba(100,200,255,0.12)] rounded-lg p-4">
+                <div className="flex items-center text-gray-600 dark:text-slate-300 mb-2">
+                  <FireIcon className="h-5 w-5 mr-2" />
+                  <span className="text-sm font-medium">Temperatuur</span>
+                </div>
+                {onlyOne ? (
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                      {hasRoom ? 'Ruimte' : 'Verdamper'}
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-frost-100">
+                      {Number(hasRoom ? roomTemp : evapTemp).toFixed(1)} °C
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                        Ruimte
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-frost-100 leading-tight">
+                        {Number(roomTemp).toFixed(1)} °C
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                        Verdamper
+                      </div>
+                      <div className="text-xl font-semibold text-gray-700 dark:text-frost-200 leading-tight">
+                        {Number(evapTemp).toFixed(1)} °C
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-frost-100">
-                {Number(latestReading.temperature).toFixed(1)} °C
-              </div>
-            </div>
-          )}
+            );
+          })()}
           {latestReading?.humidity != null && (
             <div className="border border-gray-200 dark:border-[rgba(100,200,255,0.12)] rounded-lg p-4">
               <div className="flex items-center text-gray-600 dark:text-slate-300 mb-1">

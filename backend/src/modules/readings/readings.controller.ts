@@ -17,6 +17,11 @@ const router = Router();
 
 const readingSchema = z.object({
   temperature: z.number().min(-50).max(50),
+  // Optionele 2e PT1000 (verdamper) — carrier v1.1 met dubbele MAX31865.
+  // Wordt door firmware als JSON null gestuurd zolang de verdamper-voeler niet
+  // aangesloten is, zodat we ondubbelzinnig "geen voeler" kunnen onderscheiden
+  // van een waarde van 0 °C. Zod ziet null + .nullable().optional() als geldig.
+  evaporatorTemp: z.number().min(-50).max(50).nullable().optional(),
   humidity: z.number().min(0).max(100).optional(),
   powerStatus: z.boolean().optional(),
   doorStatus: z.boolean().optional(),
@@ -51,6 +56,7 @@ router.post(
         data: {
           deviceId: req.deviceId!,
           temperature: data.temperature,
+          evaporatorTemp: data.evaporatorTemp ?? null,
           humidity: data.humidity ?? null,
           powerStatus: data.powerStatus ?? true,
           doorStatus: data.doorStatus ?? null,
