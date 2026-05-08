@@ -64,7 +64,7 @@ Overzicht van de bekabeling tussen de MAX485 module en de verschillende onderste
 
 ---
 
-## Dixell XR60C / XR70C
+## Dixell XR60C / XR70C / XR110C
 
 | Parameter | Waarde |
 |-----------|--------|
@@ -77,15 +77,18 @@ Overzicht van de bekabeling tussen de MAX485 module en de verschillende onderste
 - Regelaar **B-** → MAX485 **B-**
 
 **Regelaar-instellingen:**
-- RS485/Modbus inschakelen in menu
+- Optionele XJ485 RS485-module is vereist op de XR-serie als die niet ingebouwd is.
+- RS485/Modbus inschakelen in menu (parameter `Adr` = slave-adres, `Pty` = even, `bAU` = 9600 indien beschikbaar)
 - Baudrate: 9600
 - Adres: 1
 
-**Registers/coils:**
-- Temperatuur: 0x0000 (input)
-- Setpoint: 0x0001 (holding)
+**Registers/coils** (gedeeld voor XR60C, XR70C en XR110C — Dixell XR-protocol):
+- Temperatuur (NTC1): 0x0000 (input register, ÷10 voor °C)
+- Setpoint (Set): 0x0001 (holding register, ÷10 voor °C)
 - Defrost start: coil 0x0001
 - Alarm reset: coil 0x0003
+
+> XR110C heeft extra IO en parameters voor hot-gas defrost en dynamic setpoint, maar gebruikt dezelfde basis register-adressen als de XR60/XR70.
 
 ---
 
