@@ -33,8 +33,7 @@ export class DataAggregationService {
       switch (range) {
         case '24h':
           startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
-          // 5 min ≈ zelfde puntendichtheid als 7d (30 min) — vloeiende boog i.p.v. traplijn
-          groupInterval = '5 minutes';
+          groupInterval = '1 minute';
           break;
         case '7d':
           startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);

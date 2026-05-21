@@ -203,6 +203,9 @@ const ColdCellDetail: React.FC = () => {
   const showEvaporatorOnChart =
     isTechnician && chartData.some((d: { evaporatorTemperature?: number | null }) => d.evaporatorTemperature != null);
 
+  // Vloeiende spline op tijdas (geen traplijn); monotoneX = zachte boog zonder overshoot bij 1-min data
+  const tempCurveType = 'monotoneX' as const;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -850,7 +853,7 @@ const ColdCellDetail: React.FC = () => {
                   <ReferenceLine y={maxTh} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.2} />
                 )}
                 <Area
-                  type="basis"
+                  type={tempCurveType}
                   dataKey="temperature"
                   fill="url(#tempFill)"
                   stroke="none"
@@ -861,10 +864,12 @@ const ColdCellDetail: React.FC = () => {
                   isAnimationActive={false}
                 />
                 <Line
-                  type="basis"
+                  type={tempCurveType}
                   dataKey="temperature"
                   stroke="#3b82f6"
                   strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   dot={false}
                   connectNulls
                   isAnimationActive={false}
@@ -880,10 +885,12 @@ const ColdCellDetail: React.FC = () => {
                 />
                 {showEvaporatorOnChart && (
                   <Line
-                    type="basis"
+                    type={tempCurveType}
                     dataKey="evaporatorTemperature"
                     stroke="#f59e0b"
                     strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                     dot={false}
                     connectNulls
                     isAnimationActive={false}
