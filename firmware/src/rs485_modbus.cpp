@@ -1,20 +1,95 @@
 #include "rs485_modbus.h"
 #include "pins_carrier.h"
 #include "logger.h"
+#include "watchdog_tpl5010.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 extern Logger logger;
 
-/* -------------------------- Carrier-API (free) ------------------------- */
+// Max wachttijd op Modbus-antwoord (regelaar niet aangesloten = snel fail).
+static constexpr unsigned long MODBUS_RX_DEADLINE_MS   = 350;
+static constexpr unsigned long MODBUS_RX_INTERBYTE_MS  = 40;
+
+static SemaphoreHandle_t s_busMutex = nullptr;
+
 namespace {
-bool s_carrierInitialized = false;
+int s_failStreak = 0;
+unsigned long s_pausedUntil = 0;
+bool s_lastOk = false;
+constexpr int FAIL_LIMIT = 3;
+constexpr unsigned long PAUSE_MS = 5UL * 60UL * 1000UL;
+
+void onModbusResult(bool ok) {
+  s_lastOk = ok;
+  if (ok) {
+    s_failStreak = 0;
+    s_pausedUntil = 0;
+    return;
+  }
+  if (++s_failStreak >= FAIL_LIMIT) {
+    s_failStreak = 0;
+    s_pausedUntil = millis() + PAUSE_MS;
+    logger.info("[Modbus] geen regelaar — achtergrond-polling 5 min gepauzeerd");
+  }
+}
+
+struct BusLock {
+  bool held = false;
+  BusLock() {
+    if (s_busMutex) {
+      held = (xSemaphoreTake(s_busMutex, pdMS_TO_TICKS(3000)) == pdTRUE);
+    } else {
+      held = true;
+    }
+  }
+  ~BusLock() {
+    if (held && s_busMutex) {
+      xSemaphoreGive(s_busMutex);
+    }
+  }
+  explicit operator bool() const { return held; }
+};
+
+void drainRx(HardwareSerial* serial) {
+  if (!serial) return;
+  while (serial->available()) {
+    (void)serial->read();
+  }
+}
 } // namespace
 
+bool modbusBackgroundPollAllowed() {
+  return millis() >= s_pausedUntil;
+}
+
+void modbusForceProbe() {
+  s_pausedUntil = 0;
+  s_failStreak = 0;
+}
+
+bool modbusControllerLikelyPresent() {
+  return s_lastOk;
+}
+
+/* -------------------------- Carrier-API (free) ------------------------- */
+namespace {
+bool     s_carrierInitialized = false;
+uint32_t s_carrierBaud        = 0;
+} // namespace
+
+uint32_t carrierRS485ActiveBaud() { return s_carrierBaud; }
+
 void initRS485(uint32_t baud) {
+  if (!s_busMutex) {
+    s_busMutex = xSemaphoreCreateMutex();
+  }
   if (s_carrierInitialized) return;
   pinMode(PIN_RS485_DE, OUTPUT);
   digitalWrite(PIN_RS485_DE, LOW);  // default: RX-mode
   Serial1.begin(baud, SERIAL_8N1, PIN_RS485_RX, PIN_RS485_TX);
   s_carrierInitialized = true;
+  s_carrierBaud        = baud;
   logger.info("[RS485] ready @ " + String(baud) + " 8N1");
 }
 
@@ -60,12 +135,21 @@ bool RS485Modbus::init(ModbusConfig cfg) {
   // Carrier v1.1: de MAX3485 hangt aan UART1 (Serial1). UART2 (Serial2) is
   // gereserveerd voor de SIM7670G-modem (zie sim7670_battery.cpp). Als we
   // hier `new HardwareSerial(2)` zouden doen, herclaimen we UART2 op de
-  // RS485-pinnen en valt de modem-link weg. Daarom op deze build steeds
-  // Serial1 gebruiken — die is via initRS485() al geopend, maar we draaien
-  // ook hier een begin() zodat de juiste baudrate / slave-config wint
-  // wanneer de webapp een ander baudrate doorduwt.
+  // RS485-pinnen en valt de modem-link weg.
+  //
+  // Belangrijk: initRS485() heeft Serial1 al opgestart op de juiste pinnen
+  // tijdens setup(). Een tweede `Serial1.begin()` met dezelfde baud triggert
+  // hier een driver-uninstall/install in arduino-esp32, en in combinatie met
+  // de modem die op UART2 al RX-bytes binnen pompt, blijken interrupts lang
+  // genoeg geblokkeerd om de TG1-interrupt-watchdog te laten panieken
+  // (resetreden TG1WDT_SYS_RST). We re-initialiseren Serial1 dus enkel als
+  // de baud écht moet veranderen; in alle andere gevallen adopteren we de
+  // bestaande UART-driver gewoon.
   serial = &Serial1;
-  Serial1.begin(cfg.baudRate, SERIAL_8N1, cfg.rxPin, cfg.txPin);
+  if (s_carrierBaud != cfg.baudRate) {
+    Serial1.begin(cfg.baudRate, SERIAL_8N1, cfg.rxPin, cfg.txPin);
+    s_carrierBaud = cfg.baudRate;
+  }
 #else
   // Klassieke ESP32-DevKit / SimShield-pad: dedicated UART2.
   if (!serial) {
@@ -125,6 +209,7 @@ bool RS485Modbus::sendRequest(uint8_t functionCode, uint16_t startAddress, uint1
   if (defrostDebug) {
     logger.info("[Modbus TX] " + String(functionCode, HEX) + " @ " + String(startAddress) + " | " + bytesToHex(request, 8));
   }
+  drainRx(serial);
   setTransmitMode(true);
   delay(1);
   
@@ -140,23 +225,31 @@ bool RS485Modbus::sendRequest(uint8_t functionCode, uint16_t startAddress, uint1
 }
 
 bool RS485Modbus::receiveResponse(uint8_t expectedFunctionCode, uint16_t expectedBytes) {
+  (void)expectedBytes;
   if (!initialized || !serial) {
     return false;
   }
   
-  unsigned long timeout = millis() + 1000; // 1 second timeout
+  const unsigned long deadline = millis() + MODBUS_RX_DEADLINE_MS;
   uint8_t buffer[256];
   uint8_t index = 0;
+  unsigned long lastByteMs = 0;
   
   if (defrostDebug) {
-    logger.info("[Modbus] Wachten op antwoord (max 1s)...");
+    logger.info("[Modbus] Wachten op antwoord (max " + String(MODBUS_RX_DEADLINE_MS) + " ms)...");
   }
   
-  while (millis() < timeout && index < 256) {
+  // Harde deadline: nooit eindeloos wachten bij ruis of geen regelaar. Oude code
+  // verlengde timeout bij elke byte → kon CPU 0 minutenlang blokkeren.
+  while (millis() < deadline && index < 256) {
     if (serial->available()) {
       buffer[index++] = serial->read();
-      timeout = millis() + 100; // Reset timeout on data received
+      lastByteMs = millis();
+    } else if (index > 0 && (millis() - lastByteMs) >= MODBUS_RX_INTERBYTE_MS) {
+      break;
     }
+    vTaskDelay(1);
+    kickWatchdog();
   }
   
   if (defrostDebug) {
@@ -222,23 +315,27 @@ bool RS485Modbus::receiveResponse(uint8_t expectedFunctionCode, uint16_t expecte
 }
 
 bool RS485Modbus::readHoldingRegisters(uint16_t startAddress, uint16_t quantity) {
-  if (!sendRequest(MODBUS_READ_HOLDING_REGISTERS, startAddress, quantity)) {
-    return false;
+  BusLock lock;
+  if (!lock) return false;
+  bool ok = false;
+  if (sendRequest(MODBUS_READ_HOLDING_REGISTERS, startAddress, quantity)) {
+    vTaskDelay(pdMS_TO_TICKS(5));
+    ok = receiveResponse(MODBUS_READ_HOLDING_REGISTERS, quantity * 2);
   }
-  
-  delay(50); // Wait for response
-  
-  return receiveResponse(MODBUS_READ_HOLDING_REGISTERS, quantity * 2);
+  onModbusResult(ok);
+  return ok;
 }
 
 bool RS485Modbus::readInputRegisters(uint16_t startAddress, uint16_t quantity) {
-  if (!sendRequest(MODBUS_READ_INPUT_REGISTERS, startAddress, quantity)) {
-    return false;
+  BusLock lock;
+  if (!lock) return false;
+  bool ok = false;
+  if (sendRequest(MODBUS_READ_INPUT_REGISTERS, startAddress, quantity)) {
+    vTaskDelay(pdMS_TO_TICKS(5));
+    ok = receiveResponse(MODBUS_READ_INPUT_REGISTERS, quantity * 2);
   }
-  
-  delay(50);
-  
-  return receiveResponse(MODBUS_READ_INPUT_REGISTERS, quantity * 2);
+  onModbusResult(ok);
+  return ok;
 }
 
 bool RS485Modbus::readCoils(uint16_t startAddress, uint16_t quantity) {
@@ -252,7 +349,8 @@ bool RS485Modbus::readDiscreteInputs(uint16_t startAddress, uint16_t quantity) {
 }
 
 bool RS485Modbus::writeSingleRegister(uint16_t address, uint16_t value) {
-  if (!initialized || !serial) {
+  BusLock lock;
+  if (!lock || !initialized || !serial) {
     return false;
   }
   
@@ -271,6 +369,7 @@ bool RS485Modbus::writeSingleRegister(uint16_t address, uint16_t value) {
   if (defrostDebug) {
     logger.info("[Modbus TX] FC06 WriteRegister addr=" + String(address) + " val=" + String(value) + " | " + bytesToHex(request, 8));
   }
+  drainRx(serial);
   setTransmitMode(true);
   delay(1);
   
@@ -282,10 +381,11 @@ bool RS485Modbus::writeSingleRegister(uint16_t address, uint16_t value) {
   delay(1);
   setTransmitMode(false);
   
-  delay(50);
+  vTaskDelay(pdMS_TO_TICKS(5));
   
-  // Read echo/response
-  return receiveResponse(MODBUS_WRITE_SINGLE_REGISTER, 4);
+  bool ok = receiveResponse(MODBUS_WRITE_SINGLE_REGISTER, 4);
+  onModbusResult(ok);
+  return ok;
 }
 
 bool RS485Modbus::writeMultipleRegisters(uint16_t startAddress, uint16_t* values, uint16_t quantity) {
@@ -294,7 +394,8 @@ bool RS485Modbus::writeMultipleRegisters(uint16_t startAddress, uint16_t* values
 }
 
 bool RS485Modbus::writeSingleCoil(uint16_t address, bool value) {
-  if (!initialized || !serial) {
+  BusLock lock;
+  if (!lock || !initialized || !serial) {
     return false;
   }
   // Modbus FC 0x05: value 0xFF00 = ON, 0x0000 = OFF
@@ -312,14 +413,17 @@ bool RS485Modbus::writeSingleCoil(uint16_t address, bool value) {
   if (defrostDebug) {
     logger.info("[Modbus TX] FC05 WriteCoil addr=" + String(address) + " val=" + String(value ? "ON" : "OFF") + " | " + bytesToHex(request, 8));
   }
+  drainRx(serial);
   setTransmitMode(true);
   delay(1);
   for (uint8_t i = 0; i < 8; i++) serial->write(request[i]);
   serial->flush();
   delay(1);
   setTransmitMode(false);
-  delay(50);
-  return receiveResponse(MODBUS_WRITE_SINGLE_COIL, 4);
+  vTaskDelay(pdMS_TO_TICKS(5));
+  bool ok = receiveResponse(MODBUS_WRITE_SINGLE_COIL, 4);
+  onModbusResult(ok);
+  return ok;
 }
 
 bool RS485Modbus::writeMultipleCoils(uint16_t startAddress, bool* values, uint16_t quantity) {

@@ -12,22 +12,33 @@ DataBuffer::~DataBuffer() {
 
 bool DataBuffer::init() {
   preferences.begin(BUFFER_NAMESPACE, false);
-  
-  // Load count from preferences
+
   count = preferences.getInt("count", 0);
-  head = preferences.getInt("head", 0);
-  tail = preferences.getInt("tail", 0);
-  
-  // Validate count
+  head  = preferences.getInt("head", 0);
+  tail  = preferences.getInt("tail", 0);
+
   if (count < 0 || count > BUFFER_MAX_SIZE) {
     count = 0;
-    head = 0;
-    tail = 0;
+    head  = 0;
+    tail  = 0;
     preferences.putInt("count", 0);
-    preferences.putInt("head", 0);
-    preferences.putInt("tail", 0);
+    preferences.putInt("head",  0);
+    preferences.putInt("tail",  0);
   }
-  
+
+  // Recovery-poort: als de queue zwaar vol staat én de NVS-partitie weinig
+  // ruimte over heeft, kappen we hem volledig af. Reden: een stack van
+  // tientallen oude readings ‒ vaak het gevolg van een reset-loop ‒ leidt
+  // bij elke boot opnieuw tot HTTPS-burst-uploads die de Arduino-WiFi-stack
+  // (esf_buf_alloc / wifi:ebuf_free) doen panieken vóór de queue ooit
+  // leegloopt. Liever 1× metingen verliezen dan een dood toestel.
+  size_t freeEntries = preferences.freeEntries();
+  if (count > BUFFER_RECOVERY_THRESHOLD || freeEntries < BUFFER_NVS_FREE_MIN) {
+    logger.warn(String("Data buffer: recovery-clear (count=") + count +
+                ", nvs_free_entries=" + freeEntries + ")");
+    clear();
+  }
+
   logger.info("Data buffer initialized: " + String(count) + " items");
   return true;
 }

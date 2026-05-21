@@ -74,5 +74,12 @@ public:
  * ----------------------------------------------------------------------- */
 void initRS485(uint32_t baud = 9600);
 void rs485TxEnable(bool en);
+uint32_t carrierRS485ActiveBaud();
+
+// Regelaar (Dixell e.d.) is optioneel: achtergrond-polls stoppen na herhaalde
+// timeouts; app-commando's forceren één nieuwe poging.
+bool modbusBackgroundPollAllowed();
+void modbusForceProbe();
+bool modbusControllerLikelyPresent();
 
 #endif

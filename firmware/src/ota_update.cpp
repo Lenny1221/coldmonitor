@@ -11,25 +11,16 @@ OTAUpdate::~OTAUpdate() {
   ArduinoOTA.end();
 }
 
-bool OTAUpdate::init(String password) {
+void OTAUpdate::configure(String password) {
   this->password = password;
-  
   ArduinoOTA.setHostname("ColdMonitor-ESP32");
   ArduinoOTA.setPassword(password.c_str());
-  
-  ArduinoOTA.onStart([]() {
-    logger.info("OTA update started");
-  });
-  
-  ArduinoOTA.onEnd([]() {
-    logger.info("OTA update finished");
-  });
-  
+  ArduinoOTA.onStart([]() { logger.info("OTA update started"); });
+  ArduinoOTA.onEnd([]() { logger.info("OTA update finished"); });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     int percent = (progress / (total / 100));
     logger.debug("OTA progress: " + String(percent) + "%");
   });
-  
   ArduinoOTA.onError([](ota_error_t error) {
     String errorMsg = "OTA error: ";
     switch (error) {
@@ -41,25 +32,34 @@ bool OTAUpdate::init(String password) {
     }
     logger.error(errorMsg);
   });
-  
-  // Voorkom "Invalid mbox" crash: lwIP stack moet stabiliseren vóór mDNS/OTA
+}
+
+bool OTAUpdate::beginWhenReady() {
+  if (initialized) return true;
+  if (password.length() == 0) return false;
+  if (WiFi.status() != WL_CONNECTED) {
+    return false;
+  }
+  delay(500);
+  ArduinoOTA.begin();
+  initialized = true;
+  logger.info("OTA update initialized");
+  return true;
+}
+
+bool OTAUpdate::init(String password) {
+  configure(password);
   if (WiFi.status() != WL_CONNECTED) {
     logger.warn("OTA: WiFi niet verbonden, OTA uitgesteld");
     return false;
   }
-  delay(2000);  // Laat TCP/IP stack volledig initialiseren
-  
-  ArduinoOTA.begin();
-  initialized = true;
-  logger.info("OTA update initialized");
-  
-  return true;
+  return beginWhenReady();
 }
 
 bool OTAUpdate::tryDeferredInit() {
   if (initialized) return true;
   if (password.length() == 0) return false;
-  return init(password);
+  return beginWhenReady();
 }
 
 void OTAUpdate::handle() {

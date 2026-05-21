@@ -13,8 +13,10 @@ public:
   OTAUpdate();
   ~OTAUpdate();
   
-  bool init(String password);
-  bool tryDeferredInit();  // Retry init when WiFi connects (gebruikt opgeslagen password)
+  void configure(String password);   // callbacks + wachtwoord, zonder ArduinoOTA.begin()
+  bool beginWhenReady();             // begin() pas als WiFi connected (kan false)
+  bool init(String password);        // configure + beginWhenReady
+  bool tryDeferredInit();            // Retry begin when WiFi connects
   void handle();
   void setHostname(String hostname);
 };

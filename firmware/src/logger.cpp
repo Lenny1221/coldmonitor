@@ -1,6 +1,15 @@
 #include "logger.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+
+namespace {
+SemaphoreHandle_t s_logMutex = nullptr;
+}
 
 Logger::Logger() : level(LOG_INFO), serialEnabled(true) {
+  if (!s_logMutex) {
+    s_logMutex = xSemaphoreCreateMutex();
+  }
 }
 
 void Logger::setLevel(LogLevel level) {
@@ -25,18 +34,23 @@ void Logger::printLog(LogLevel logLevel, String message) {
   if (logLevel < level) {
     return;
   }
-  
-  if (serialEnabled) {
-    unsigned long timestamp = millis();
-    String levelStr = getLevelString(logLevel);
-    // [00010] format: 8 cijfers met leading zeros (tot 99999999 ms)
-    char tsBuf[14];
-    snprintf(tsBuf, sizeof(tsBuf), "[%08lu]", timestamp);
-    Serial.print(tsBuf);
-    Serial.print(" [");
-    Serial.print(levelStr);
-    Serial.print("] ");
-    Serial.println(message);
+  if (!serialEnabled) {
+    return;
+  }
+  if (s_logMutex && xSemaphoreTake(s_logMutex, pdMS_TO_TICKS(200)) != pdTRUE) {
+    return;
+  }
+  unsigned long timestamp = millis();
+  String levelStr = getLevelString(logLevel);
+  char tsBuf[14];
+  snprintf(tsBuf, sizeof(tsBuf), "[%08lu]", timestamp);
+  Serial.print(tsBuf);
+  Serial.print(" [");
+  Serial.print(levelStr);
+  Serial.print("] ");
+  Serial.println(message);
+  if (s_logMutex) {
+    xSemaphoreGive(s_logMutex);
   }
 }
 

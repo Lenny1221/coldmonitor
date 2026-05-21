@@ -45,4 +45,7 @@ public:
   void resetSettings();
 };
 
+// Na succesvolle STA-verbinding: geen modem-sleep, auto-reconnect aan.
+void applyWifiLinkStability();
+
 #endif

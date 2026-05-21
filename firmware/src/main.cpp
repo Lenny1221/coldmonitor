@@ -75,6 +75,12 @@ TaskHandle_t commandTaskHandle = NULL;
 // atomair op de ESP32-S3 (32-bit), dus geen mutex nodig.
 volatile bool g_forceImmediateSync = false;
 
+// Carrier: loop() is enige plek voor zware HTTPS-bursts; commandTask slaat poll
+// over zolang dit true is (voorkomt ieee80211_scan/timeout door parallel HTTP).
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+volatile bool g_carrierHttpBusy = false;
+#endif
+
 // WiFi status tracking
 String lastWiFiSSID = "";
 bool lastWiFiConnected = false;
@@ -108,6 +114,7 @@ struct ModbusData {
 
 // Controller type from API (override config when set)
 static String controllerTypeFromApi = "";
+static unsigned long g_systemReadyMs = 0;
 static int controllerSlaveAddrFromApi = 0;
 static int controllerBaudRateFromApi = 0;
 
@@ -126,6 +133,24 @@ static String getEffectiveDeviceSerial() {
   if (s.length() > 0) return s;
   return config.getDeviceSerial();
 }
+
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+static bool s_carrierHttpSession = false;
+
+static void carrierHttpSessionBegin() {
+  if (s_carrierHttpSession) return;
+  s_carrierHttpSession = true;
+  g_carrierHttpBusy = true;
+  suspendSoftwareWatchdog();
+}
+
+static void carrierHttpSessionEnd() {
+  if (!s_carrierHttpSession) return;
+  s_carrierHttpSession = false;
+  g_carrierHttpBusy = false;
+  resumeSoftwareWatchdog();
+}
+#endif
 
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);  // Brownout detector uit (voorkomt reset bij WiFi/AP stroompiek)
@@ -289,7 +314,13 @@ void setup() {
   // uitlezen. Op carrier v1.1 hangt GPIO 4 (LilyGO BAT_ADC) ook aan WAKE_GPIO
   // van de TPL5010 — daardoor is een directe ADC-uitlezing onbruikbaar. De
   // modem heeft zijn eigen VBAT-sense en is via UART2 opvraagbaar (AT+CBC).
-  sim7670::init();
+  // TIJDELIJK GESKIPT: aanhoudende crashes in `wDev_IndicateFrame` /
+  // `esf_buf_alloc` van de WiFi-stack lijken samen te hangen met de
+  // bytes-burst die de modem op UART2 dumpt tijdens zijn boot, wat onder
+  // RX-load de heap fragmenteert. Eerst verifiëren dat zonder modem-init
+  // het systeem stabiel doorloopt; zodra dat zo is, modem inschakelen via
+  // een latere AT-only update na de WiFi-handshake.
+  // sim7670::init();
   kickWatchdog();
 
   // WiFi Setup (with provisioning flow)
@@ -352,6 +383,10 @@ void setup() {
     1
   );
   
+#if !defined(BOARD_LILYGO_T_SIM7670G_S3)
+  // Op carrier: geen achtergrond-Modbus-poll. Dixell is optioneel; periodieke
+  // reads veroorzaakten TASK_WDT-resets (IDLE0) en reboot-loops. RS485 werkt
+  // enkel on-demand via commandTask (app-commando's).
   if (config.getModbusEnabled() && !carelMode) {
     xTaskCreatePinnedToCore(
       modbusTask,
@@ -360,10 +395,16 @@ void setup() {
       NULL,
       1,
       &modbusTaskHandle,
-      0
+      1
     );
   }
+#else
+  if (config.getModbusEnabled() && !carelMode) {
+    logger.info("Modbus: achtergrond-poll uit (carrier) — alleen via app-commando");
+  }
+#endif
   
+#if !defined(BOARD_LILYGO_T_SIM7670G_S3)
   xTaskCreatePinnedToCore(
     uploadTask,
     "UploadTask",
@@ -371,11 +412,23 @@ void setup() {
     NULL,
     1,
     &uploadTaskHandle,
-    0
+    1
   );
+#else
+  logger.info("Upload/WiFi-monitor task uit (carrier) — reconnect in loop()");
+#endif
   
-  // Command task for RS485 commands (Modbus of Carel PJEZ)
-  if (config.getModbusEnabled() || carelMode) {
+  // Command task: op carrier altijd starten als device provisioned is.
+  // NVS kan modbusEnabled=false hebben terwijl de webapp wél een Dixell
+  // configureert — auto-enable gebeurt later in loop(), maar zonder deze
+  // taak komen app-commando's nooit binnen.
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  const bool createCommandTask =
+      provisioning.hasAPICredentials() || config.getModbusEnabled() || carelMode;
+#else
+  const bool createCommandTask = config.getModbusEnabled() || carelMode;
+#endif
+  if (createCommandTask) {
     xTaskCreatePinnedToCore(
       commandTask,
       "CommandTask",
@@ -385,22 +438,33 @@ void setup() {
       &commandTaskHandle,
       1  // Core 1 = zelfde als loop, voorkomt Invalid mbox bij HTTP
     );
-    logger.info("Command task created (Modbus enabled)");
+    logger.info("Command task created (app-commando's)");
   } else {
-    logger.info("Command task not created (Modbus disabled)");
+    logger.info("Command task not created (geen API/Modbus)");
   }
   
   // Set serial number for API client (moet overeenkomen met ColdMonitor-setup/database)
   apiClient.setSerialNumber(getEffectiveDeviceSerial());
   
   logger.info("All tasks started");
+  g_systemReadyMs = millis();
   logger.info("=== System Ready ===");
 }
 
 void loop() {
-  // Carrier-PCB: hardware-watchdog eerst kicken en deur pollen (debounce + duur).
   kickWatchdog();
   updateDoor();
+
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  // Eerste 8 s na System Ready: geen HTTP/WiFi-API in loop (uploads,
+  // heartbeat, deur-POST). Voorkomt spinlock-panics wanneer sensorTask
+  // tegelijk SPI/ADC doet en de TCP-stack nog niet stabiel is.
+  if (g_systemReadyMs > 0 && (millis() - g_systemReadyMs) < 8000) {
+    kickWatchdog();
+    delay(50);
+    return;
+  }
+#endif
 
   // Check reset knop (BOOT 3s = factory reset)
   if (resetButton.check()) {
@@ -418,7 +482,11 @@ void loop() {
   // Main loop handles system-level tasks (alle HTTP hier: zelfde core als WiFi → voorkomt Invalid mbox)
   static unsigned long lastHeartbeat = 0;
   static unsigned long lastApiHeartbeat = 0;
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  static unsigned long apiRetryBackoff = 30000;  // minder WiFi-druk op carrier
+#else
   static unsigned long apiRetryBackoff = 10000;  // 10s heartbeat interval (3x = 30s offline threshold)
+#endif
   static unsigned long lastBatteryCheck = 0;
   static unsigned long lastSettingsFetch = 0;
   static unsigned long lastUpload = 0;
@@ -477,7 +545,28 @@ void loop() {
   if (!wifiNowConnected && wifiLostAt > 0 && (now - lastReconnectAttempt >= 15000)) {
     lastReconnectAttempt = now;
     logger.info("WiFi reconnect poging (" + String((now - wifiLostAt) / 1000) + "s geleden verloren)...");
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+    suspendSoftwareWatchdog();
+#endif
     WiFi.reconnect();
+    delay(500);
+    if (!WiFi.isConnected()) {
+      String ssid = provisioning.getWiFiSSID();
+      String pass = provisioning.getWiFiPassword();
+      if (ssid.length() > 0 && pass.length() > 0 && pass != "saved_by_wifimanager") {
+        logger.info("WIFI: Fallback — opnieuw verbinden met provisioning-credentials");
+        wifiManager.connect(ssid, pass);
+      } else if (ssid.length() > 0) {
+        logger.info("WIFI: Fallback — WiFiManager autoConnect");
+        wifiManager.autoConnect(WIFI_SETUP_AP_SSID);
+      }
+    }
+    if (WiFi.isConnected()) {
+      applyWifiLinkStability();
+    }
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+    resumeSoftwareWatchdog();
+#endif
   }
   if (wifiNowConnected && wifiLostAt > 0) {
     logger.info("WiFi herverbonden na " + String((now - wifiLostAt) / 1000) + "s");
@@ -522,10 +611,17 @@ void loop() {
     logger.info("=== EINDE CONNECTIETEST ===");
   }
 #endif
-  
+
   // Periodieke API heartbeat (exponentiële backoff bij failure)
   if (WiFi.isConnected() && provisioning.hasAPICredentials()) {
-    if (lastApiHeartbeat == 0 || (now - lastApiHeartbeat >= apiRetryBackoff)) {
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+    const bool bootSettleOk =
+        (g_systemReadyMs == 0) || ((now - g_systemReadyMs) >= 8000);
+#else
+    const bool bootSettleOk = true;
+#endif
+    if (bootSettleOk &&
+        (lastApiHeartbeat == 0 || (now - lastApiHeartbeat >= apiRetryBackoff))) {
       int batPct = -1;
       bool onMains = false;
       // Carrier v1.1: prefereer SIM7670G AT+CBC-meting; ADC-fallback is no-op.
@@ -535,6 +631,9 @@ void loop() {
         batPct = batteryMonitor.getPercentage();
       }
       if (powerMonitor.isUsbConnected()) onMains = true;
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+      carrierHttpSessionBegin();
+#endif
       bool apiOk = apiClient.apiHandshakeOrHeartbeat(true, WiFi.RSSI(), WiFi.localIP().toString(), batPct, onMains);
       deviceStatus.connectedToWifi = true;
       deviceStatus.connectedToApi = apiOk;
@@ -543,23 +642,33 @@ void loop() {
       deviceStatus.uptimeMs = now;
       lastApiHeartbeat = now;
       if (apiOk) {
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+        apiRetryBackoff = 30000;
+#else
         apiRetryBackoff = 10000;  // 10s heartbeat interval
+#endif
       } else {
         apiRetryBackoff = (apiRetryBackoff < 600000) ? apiRetryBackoff * 2 : 600000;  // Max 10 min
       }
     }
     // OTA check: once per boot, 30s after first successful heartbeat
+    // Carrier: uit — HTTP-OTA + mDNS veroorzaakt WiFi-stack panics; flash via USB.
+#if !defined(BOARD_LILYGO_T_SIM7670G_S3)
     static bool otaChecked = false;
     if (deviceStatus.connectedToApi && !otaChecked && (now - lastApiHeartbeat >= 30000)) {
       otaChecked = true;
       apiClient.checkAndApplyFirmwareUpdate();
     }
+#endif
     // Settings sync elke 60s (min/max temp, deur-alarm vertraging, controller config)
     if (deviceStatus.connectedToApi && (lastSettingsFetch == 0 || (now - lastSettingsFetch >= 60000))) {
       float mt, Mx;
       int dd;
       String ctrlType;
       int ctrlSlave = 0, ctrlBaud = 0;
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+      carrierHttpSessionBegin();
+#endif
       if (apiClient.fetchDeviceSettings(mt, Mx, dd, &ctrlType, &ctrlSlave, &ctrlBaud)) {
         deviceMinTemp = mt;
         deviceMaxTemp = Mx;
@@ -661,6 +770,9 @@ void loop() {
     static bool hasRetry = false;
     if (hasRetry) {
       const char* st = retryEv.isOpen ? "OPEN" : "CLOSED";
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+      carrierHttpSessionBegin();
+#endif
       if (apiClient.uploadDoorEvent(st, retryEv.seq, retryEv.timestamp, retryEv.rssi, retryEv.uptimeMs)) {
         hasRetry = false;
         logger.info("Deur-event retry OK");
@@ -670,6 +782,9 @@ void loop() {
       DoorEvent ev;
       if (doorEventManager.dequeue(ev)) {
         const char* st = ev.isOpen ? "OPEN" : "CLOSED";
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+        carrierHttpSessionBegin();
+#endif
         if (apiClient.uploadDoorEvent(st, ev.seq, ev.timestamp, ev.rssi, ev.uptimeMs)) {
           logger.info("Deur-event verstuurd");
         } else {
@@ -682,11 +797,30 @@ void loop() {
     int count = dataBuffer.getCount();
     unsigned long uploadInterval = config.getUploadInterval() * 1000;
     bool shouldUpload = (lastUpload == 0 && count > 0) || (lastUpload != 0 && (now - lastUpload >= uploadInterval));
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+    if (g_systemReadyMs > 0 && (now - g_systemReadyMs) < 8000) {
+      shouldUpload = false;
+    }
+#endif
     if (shouldUpload && count > 0) {
-      logger.info("Uploading " + String(count) + " readings...");
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+      carrierHttpSessionBegin();
+#endif
+      // Cap per cyclus: te veel achter elkaar HTTPSen pompen (zoals na een
+      // reset met 30+ items in de NVS-queue) heeft op de Arduino-ESP32 WiFi-
+      // stack al `wifi:ebuf_free invalid type` panics getriggerd in
+      // `esf_buf_alloc`. We doseren dus maximaal UPLOAD_BATCH per ronde en
+      // laten de upload-task de queue rustig over meerdere intervals legen.
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+      const int UPLOAD_BATCH = 2;
+#else
+      const int UPLOAD_BATCH = 8;
+#endif
+      int batch = (count > UPLOAD_BATCH) ? UPLOAD_BATCH : count;
+      logger.info("Uploading " + String(batch) + "/" + String(count) + " readings...");
       int uploaded = 0;
       int dropped  = 0;
-      for (int i = 0; i < count; i++) {
+      for (int i = 0; i < batch; i++) {
         String data = dataBuffer.get(i);
         if (apiClient.uploadReading(data)) {
           uploaded++;
@@ -706,7 +840,8 @@ void loop() {
           logger.warn("Upload failed for: " + data);
           break;
         }
-        delay(100);
+        kickWatchdog();
+        delay(500);
       }
       // Alle items die we ofwel succesvol uploadden ofwel droppen waren altijd
       // de eerste opeenvolgende N — dataBuffer is FIFO. Verwijder ze in volgorde.
@@ -718,15 +853,20 @@ void loop() {
       lastUpload = now;
     }
   }
+
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  carrierHttpSessionEnd();
+#endif
   
-  // Uitgestelde OTA-init als eerste poging mislukte (WiFi nog niet klaar)
+#if !defined(BOARD_LILYGO_T_SIM7670G_S3)
   static unsigned long lastOTADeferredAttempt = 0;
-  if (WiFi.isConnected() && (now - lastOTADeferredAttempt >= 30000)) {
+  if (WiFi.isConnected() &&
+      (lastOTADeferredAttempt == 0 || (now - lastOTADeferredAttempt >= 30000))) {
     lastOTADeferredAttempt = now;
     otaUpdate.tryDeferredInit();
   }
-  // Check for OTA updates
   otaUpdate.handle();
+#endif
   
   // Deep sleep alleen als WiFi weg is ÉN USB niet aangesloten ÉN niet in reconnect-window
   // Bij USB-voeding nooit slapen: toestel is bereikbaar en batterij laadt
@@ -737,7 +877,7 @@ void loop() {
     deepSleepIfNeeded();
   }
   
-    // Snellere loop bij deur-events (10ms) voor directe live-update in app (<500ms)
+    kickWatchdog();
     delay(doorEventManager.hasPending() ? 10 : 100);
 }
 
@@ -920,38 +1060,39 @@ void sensorTask(void *parameter) {
 }
 
 void modbusTask(void *parameter) {
-  logger.info("Modbus task started");
+  logger.info("Modbus task started (regelaar optioneel — geen hang bij afwezigheid)");
   
   ModbusData modbusData;
   unsigned long lastRead = 0;
   unsigned long interval = config.getModbusInterval() * 1000;
+  unsigned long lastPauseLog = 0;
   
   while (true) {
     unsigned long now = millis();
+    kickWatchdog();
     
     if (now - lastRead >= interval && config.getModbusEnabled()) {
-      // Read from Modbus device
-      if (modbus.readHoldingRegisters(0, 10)) {
-        modbusData.setpoint = modbus.getFloat(0);
-        modbusData.currentTemp = modbus.getFloat(2);
-        modbusData.compressorStatus = modbus.getBool(4);
-        modbusData.alarmStatus = modbus.getBool(5);
-        modbusData.timestamp = now;
-        modbusData.valid = true;
-        
-        logger.debug("Modbus data read: Setpoint=" + String(modbusData.setpoint) + 
-                    ", Temp=" + String(modbusData.currentTemp));
-        
-        // Optionally write setpoint
-        if (config.getModbusWriteEnabled()) {
-          // modbus.writeHoldingRegister(0, newSetpoint);
+      lastRead = now;
+      if (!modbusBackgroundPollAllowed()) {
+        if (lastPauseLog == 0 || (now - lastPauseLog) > 60000) {
+          logger.debug("[Modbus] achtergrond-poll overgeslagen (geen regelaar gedetecteerd)");
+          lastPauseLog = now;
         }
       } else {
-        logger.warn("Modbus read failed!");
-        modbusData.valid = false;
+        lastPauseLog = 0;
+        if (modbus.readHoldingRegisters(0, 10)) {
+          modbusData.setpoint = modbus.getFloat(0);
+          modbusData.currentTemp = modbus.getFloat(2);
+          modbusData.compressorStatus = modbus.getBool(4);
+          modbusData.alarmStatus = modbus.getBool(5);
+          modbusData.timestamp = now;
+          modbusData.valid = true;
+          logger.debug("Modbus data read: Setpoint=" + String(modbusData.setpoint) +
+                      ", Temp=" + String(modbusData.currentTemp));
+        } else {
+          modbusData.valid = false;
+        }
       }
-      
-      lastRead = now;
     }
     
     vTaskDelay(pdMS_TO_TICKS(500));
@@ -1009,7 +1150,11 @@ void commandTask(void *parameter) {
   logger.info("Command task started");
   
   unsigned long lastCheck = 0;
-  const unsigned long checkInterval = 10000; // Check every 10 seconds (snellere feedback bij ontdooiing)
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  const unsigned long checkInterval = 20000; // carrier: niet overlappen met loop-HTTPS
+#else
+  const unsigned long checkInterval = 10000;
+#endif
   unsigned long lastWatchdogFeed = 0;
   String lastExecutedCommandId = ""; // Track last executed command to prevent duplicates
   unsigned long lastCommandTime = 0;
@@ -1018,20 +1163,34 @@ void commandTask(void *parameter) {
   while (true) {
     unsigned long now = millis();
     
-    // Feed watchdog every 2 seconds to prevent resets
     if (now - lastWatchdogFeed >= 2000) {
-      // ESP32 doesn't have explicit watchdog feed, but vTaskDelay helps
+      kickWatchdog();
       lastWatchdogFeed = now;
     }
     
-    // Polling-gate: enkel polten als WiFi werkt én RS485 actief is (Modbus
-    // of Carel). De `writeAllowed`-check zit later per-commando: READ-
-    // commando's mogen ook draaien op een read-only Modbus-config; alleen
-    // SET / ACTION-commando's vereisen modbusWriteEnabled.
-    bool rs485Active = config.getModbusEnabled() || config.getCarelProtocolEnabled();
+    // Polling-gate: WiFi + (op dev-board: Modbus/Carel aan). Carrier: altijd
+    // pollen zodra online — regelaar is optioneel; READ faalt snel zonder Dixell.
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+    const bool mayPollCommands = WiFi.isConnected();
+#else
+    const bool mayPollCommands =
+        WiFi.isConnected() &&
+        (config.getModbusEnabled() || config.getCarelProtocolEnabled());
+#endif
     bool writeAllowed = config.getCarelProtocolEnabled() || config.getModbusWriteEnabled();
-    if (WiFi.isConnected() && rs485Active) {
-      if (now - lastCheck >= checkInterval) {
+    if (mayPollCommands) {
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+      const bool cmdBootOk =
+          (g_systemReadyMs == 0) || ((now - g_systemReadyMs) >= 8000);
+#else
+      const bool cmdBootOk = true;
+#endif
+      if (cmdBootOk && (now - lastCheck >= checkInterval)) {
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+        if (g_carrierHttpBusy) {
+          // loop() upload/heartbeat bezig — geen tweede HTTPS-sessie
+        } else {
+#endif
         lastCheck = now;
         logger.info("Command task: polling for pending commands");
         
@@ -1054,6 +1213,10 @@ void commandTask(void *parameter) {
             // Track this command
             lastExecutedCommandId = commandId;
             lastCommandTime = now;
+
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+            suspendSoftwareWatchdog();
+#endif
             
             bool success = false;
             DynamicJsonDocument result(512);
@@ -1064,12 +1227,18 @@ void commandTask(void *parameter) {
               success = true;
               result["relay_state"] = true;
               apiClient.completeCommand(commandId, success, result);
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+              resumeSoftwareWatchdog();
+#endif
               continue;
             } else if (commandType == "RELAY_OFF") {
               setRelay(false);
               success = true;
               result["relay_state"] = false;
               apiClient.completeCommand(commandId, success, result);
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+              resumeSoftwareWatchdog();
+#endif
               continue;
             }
 
@@ -1135,6 +1304,18 @@ void commandTask(void *parameter) {
                 result["error"] = "Unknown command type";
               }
             } else {
+              // Regelaar kan ontbreken: forceer één RS485-poging voor dit commando.
+              modbusForceProbe();
+              if (!modbus.isInitialized()) {
+                ModbusConfig mcfg = config.getModbusConfig();
+                if (controllerBaudRateFromApi > 0) {
+                  mcfg.baudRate = (uint32_t)controllerBaudRateFromApi;
+                }
+                if (controllerSlaveAddrFromApi > 0) {
+                  mcfg.slaveId = (uint8_t)controllerSlaveAddrFromApi;
+                }
+                modbus.init(mcfg);
+              }
               // Modbus RTU – adressen per controller type (Dixell 0x0000, Eliwell 0x0100, Carel IR33 reg 1/2)
               uint16_t tempAddr = 0x0000, setpointAddr = 0x0001, defrostCoil = 0x0001, alarmCoil = 0x0003;
               if (controllerTypeFromApi.indexOf("ELIWELL") >= 0) {
@@ -1166,24 +1347,32 @@ void commandTask(void *parameter) {
                   result["error"] = "RS485 write failed";
                 }
               } else if (commandType == "READ_TEMPERATURE") {
+                logger.info("Modbus: READ_TEMPERATURE (Dixell/regelaar optioneel)");
+                modbus.setDefrostDebug(true);
                 if (modbus.readInputRegisters(tempAddr, 2)) {
                   float temp = modbus.getFloat(0);
                   success = true;
                   result["temperature"] = temp;
+                  logger.info("Modbus temp: " + String(temp) + " °C");
                 } else if (modbus.readHoldingRegisters(tempAddr, 2)) {
                   float temp = modbus.getFloat(0);
                   success = true;
                   result["temperature"] = temp;
+                  logger.info("Modbus temp: " + String(temp) + " °C");
                 } else {
-                  result["error"] = "RS485 read failed";
+                  const char* err =
+                      "Geen regelaar bereikbaar op RS485 (niet aangesloten of verkeerd adres/baud)";
+                  result["error"] = err;
+                  logger.warn(err);
                 }
+                modbus.setDefrostDebug(false);
               } else if (commandType == "READ_SETPOINT") {
                 if (modbus.readHoldingRegisters(setpointAddr, 2)) {
                   float sp = modbus.getFloat(0);
                   success = true;
                   result["setpoint"] = sp;
                 } else {
-                  result["error"] = "RS485 read failed";
+                  result["error"] = "Geen regelaar bereikbaar op RS485 (niet aangesloten of verkeerd adres/baud)";
                 }
               } else if (commandType == "READ_ALARM_STATUS") {
                 if (modbus.readHoldingRegisters(6, 2)) {
@@ -1194,7 +1383,7 @@ void commandTask(void *parameter) {
                   success = true;
                   result["alarm"] = (modbus.getRegister(0) != 0);
                 } else {
-                  result["error"] = "RS485 read failed";
+                  result["error"] = "Geen regelaar bereikbaar op RS485 (niet aangesloten of verkeerd adres/baud)";
                 }
               } else if (commandType == "SET_SETPOINT") {
                 int val = parametersDoc["value"] | parametersDoc["temperature"] | -999;
@@ -1267,10 +1456,17 @@ void commandTask(void *parameter) {
             } else {
               logger.error("Not enough memory to report command completion");
             }
+
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+            resumeSoftwareWatchdog();
+#endif
           } else if (isDuplicate) {
             logger.debug("Skipping duplicate command: " + commandId + " (executed " + String((now - lastCommandTime) / 1000) + "s ago)");
           }
         }
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+        }  // !g_carrierHttpBusy
+#endif
       }
     } else {
       // If conditions not met, reset lastCheck to avoid immediate check when conditions become true
@@ -1463,18 +1659,9 @@ void setupWiFi() {
     logger.info("WIFI: Opgeslagen credentials gevonden");
     logger.info("WIFI: Verbinden met SSID: " + ssid);
     if (passwordFromWiFiManager) {
-      logger.info("WIFI: Wachtwoord beheerd door WiFiManager (niet wissen!)");
-    }
-    
-    // NIET WiFi.disconnect(true,true) als WiFiManager het wachtwoord heeft opgeslagen!
-    // Dat wist de credentials die WiFiManager in de ESP32 WiFi-stack heeft gezet.
-    if (!passwordFromWiFiManager) {
-      logger.info("WIFI: Wissen oude WiFi stack credentials...");
-      WiFi.disconnect(true, true);
-      delay(500);
+      logger.info("WIFI: Wachtwoord via WiFiManager-NVS (autoConnect)");
     } else {
-      WiFi.disconnect();  // Alleen disconnect, credentials NIET wissen
-      delay(200);
+      logger.info("WIFI: Wachtwoord uit provisioning (directe connect)");
     }
     
     if (ssid.length() == 0) {
@@ -1496,7 +1683,16 @@ void setupWiFi() {
         unsigned long searchStart = millis();
         while (!connected && (millis() - searchStart < SEARCH_PHASE_MS)) {
           logger.info("WIFI: Connect-poging...");
-          connected = wifiManager.autoConnect(WIFI_SETUP_AP_SSID);
+          kickWatchdog();
+          if (!passwordFromWiFiManager && pass.length() > 0) {
+            // Expliciet wachtwoord in provisioning: NOOIT NVS wissen (dat breekt
+            // WiFi.reconnect() later). WiFiManager.autoConnect negeert provisioning.
+            connected = wifiManager.connect(ssid, pass);
+          } else {
+            WiFi.disconnect(false);
+            delay(200);
+            connected = wifiManager.autoConnect(WIFI_SETUP_AP_SSID);
+          }
           if (!connected) {
             WiFi.disconnect(false);  // Niet wissen – credentials behouden
             delay(500);
@@ -1608,8 +1804,13 @@ void setupWiFi() {
 }
 
 void setupOTA() {
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  // Geen ArduinoOTA op carrier — flash via esptool; mDNS/OTA veroorzaakt WiFi-panics.
+  logger.info("OTA uit op carrier-build (USB-flash)");
+#else
   otaUpdate.init(config.getOTAPassword());
   logger.info("OTA update initialized");
+#endif
 }
 
 void deepSleepIfNeeded() {

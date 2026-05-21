@@ -44,7 +44,11 @@ extern Logger logger;
 namespace {
 constexpr uint16_t   WDT_PULSE_US             = 100;
 constexpr TickType_t WDT_KICK_PERIOD_TICKS    = pdMS_TO_TICKS(10);  // 10 ms
-constexpr uint32_t   WDT_SW_TIMEOUT_SEC       = 30;                 // MWDT timeout
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+constexpr uint32_t   WDT_SW_TIMEOUT_SEC       = 90;   // HTTPS + NVS op carrier
+#else
+constexpr uint32_t   WDT_SW_TIMEOUT_SEC       = 30;
+#endif
 
 bool             s_hw_initialized   = false;
 bool             s_sw_initialized   = false;
@@ -100,6 +104,13 @@ uint32_t watchdogIsrKickCount() { return s_kicks; }
 uint32_t watchdogVerifiedKickCount() { return 0; }
 
 void initWatchdog() {
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  // Arduino-ESP32 bewaakt standaard ook IDLE0. De WiFi-stack op core 0 kan
+  // die taak lang genoeg weghouden dat een valse TASK_WDT-reset volgt (~67 s),
+  // terwijl onze eigen loop-SW-WDT (30 s) nog steeds actief blijft.
+  disableCore0WDT();
+#endif
+
   // --- 1) Hardware-WDT (TPL5010) ----------------------------------------
   pinMode(PIN_WDT_DONE, OUTPUT);
   GPIO.out_w1tc = WDT_GPIO_MASK;   // start LOW
@@ -151,7 +162,7 @@ void suspendSoftwareWatchdog() {
   esp_err_t err = esp_task_wdt_delete(s_loopTask);
   if (err == ESP_OK) {
     s_sw_initialized = false;   // markeer als "tijdelijk af"
-    logger.info("[WATCHDOG] SW-WDT gepauzeerd (loop-task vrijgesteld)");
+    logger.debug("[WATCHDOG] SW-WDT gepauzeerd (loop-task vrijgesteld)");
   } else if (err != ESP_ERR_NOT_FOUND) {
     logger.warn(String("[WATCHDOG] SW-WDT suspend error=") + err);
   }
@@ -164,7 +175,7 @@ void resumeSoftwareWatchdog() {
   if (err == ESP_OK) {
     s_sw_initialized = true;
     esp_task_wdt_reset();        // eerste reset meteen zodat we niet per ongeluk met een oude "missed"-timer starten
-    logger.info("[WATCHDOG] SW-WDT hervat");
+    logger.debug("[WATCHDOG] SW-WDT hervat");
   } else {
     logger.warn(String("[WATCHDOG] SW-WDT resume error=") + err);
   }

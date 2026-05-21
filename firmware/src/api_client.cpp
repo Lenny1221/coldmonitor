@@ -1,4 +1,5 @@
 #include "api_client.h"
+#include "board_pins.h"
 #include "door_events.h"
 #include "logger.h"
 #include "config.h"
@@ -12,6 +13,23 @@
 
 extern Logger logger;
 extern ConfigManager config;
+
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+extern volatile bool g_carrierHttpBusy;
+#endif
+
+namespace {
+void configureHttpTimeouts(HTTPClient& client) {
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  client.setConnectTimeout(15000);
+  client.setTimeout(15000);
+#else
+  client.setConnectTimeout(10000);
+  client.setTimeout(10000);
+#endif
+}
+
+}  // namespace
 
 APIClient::APIClient() : serialNumber("") {
   httpMutex = xSemaphoreCreateMutex();
@@ -40,10 +58,15 @@ bool APIClient::uploadReading(String jsonData) {
     logger.warn("HTTP mutex timeout");
     return false;
   }
-  // Cooldown: min 400ms tussen HTTP-calls (LwIP stack moet herstellen)
+  // Cooldown tussen HTTP-calls (LwIP stack moet herstellen)
   unsigned long now = millis();
-  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) {
-    delay(400 - (now - lastHttpEndMs));
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  const unsigned long gapMs = 1500;
+#else
+  const unsigned long gapMs = 400;
+#endif
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < gapMs) {
+    delay(gapMs - (now - lastHttpEndMs));
   }
   
   if (apiUrl.length() == 0) {
@@ -90,8 +113,7 @@ bool APIClient::uploadReading(String jsonData) {
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("x-device-key", apiKey);
-  http.setConnectTimeout(15000);  // 15 s verbinding
-  http.setTimeout(10000);        // 10 s antwoord
+  configureHttpTimeouts(http);
   
   int httpCode = http.POST(jsonData);
   lastReadingHttpCode = httpCode;
@@ -139,7 +161,14 @@ bool APIClient::checkConnection() {
   if (!WiFi.isConnected()) return false;
   if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(5000)) != pdTRUE) return false;
   unsigned long now = millis();
-  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  const unsigned long httpGapMs = 1500;
+#else
+  const unsigned long httpGapMs = 400;
+#endif
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < httpGapMs) {
+    delay(httpGapMs - (now - lastHttpEndMs));
+  }
   
   String url = apiUrl + "/health";
   http.begin(url);
@@ -163,14 +192,20 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
   }
   if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(15000)) != pdTRUE) return false;
   unsigned long now = millis();
-  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  const unsigned long httpGapMs = 1500;
+#else
+  const unsigned long httpGapMs = 400;
+#endif
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < httpGapMs) {
+    delay(httpGapMs - (now - lastHttpEndMs));
+  }
   
   String url = apiUrl + "/devices/heartbeat";
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("x-device-key", apiKey);
-  http.setConnectTimeout(15000);
-  http.setTimeout(10000);
+  configureHttpTimeouts(http);
   
   DynamicJsonDocument doc(1024);  // ruimte voor legacy + semantische sensor-velden
   doc["deviceId"] = WiFi.macAddress();
@@ -190,8 +225,10 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
   // PT1000 #1 = ruimte (koelcel-ambient), PT1000 #2 = verdamper (evaporator).
   // Zowel index-velden (legacy) als semantische aliassen meegestuurd zodat
   // de backend geen migratie nodig heeft om beide te tonen.
-  float tRoom = readRoomTempC();
-  float tEvap = readEvaporatorTempC();
+  // Geen SPI tijdens HTTP: sensorTask buffert s_lastTempC; parallel SPI +
+  // WiFi veroorzaakte spinlock-panics op de carrier.
+  float tRoom = getCachedTempC(PT1000_IDX_ROOM);
+  float tEvap = getCachedTempC(PT1000_IDX_EVAPORATOR);
   if (isnan(tRoom)) {
     doc["sensor_1_temp"] = (const char*)nullptr;
     doc["room_temp"]     = (const char*)nullptr;
@@ -206,8 +243,8 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
     doc["sensor_2_temp"]    = tEvap;
     doc["evaporator_temp"]  = tEvap;
   }
-  doc["sensor_1_fault"]    = roomSensorFault();
-  doc["sensor_2_fault"]    = evaporatorFault();
+  doc["sensor_1_fault"]    = getCachedFault(PT1000_IDX_ROOM);
+  doc["sensor_2_fault"]    = getCachedFault(PT1000_IDX_EVAPORATOR);
   doc["room_fault"]        = doc["sensor_1_fault"];
   doc["evaporator_fault"]  = doc["sensor_2_fault"];
   doc["door_open"]         = isDoorOpen();
@@ -241,6 +278,11 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
             delay(500);
             ESP.restart();
           } else if (strcmp(cmdType, "WIFI_SCAN") == 0) {
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+            // WiFi.scanNetworks() onderbreekt de STA-link → ieee80211_scan + timeouts.
+            reportRemoteCommandResultLocked(cmdId, "FAILED",
+                                            "{\"error\":\"wifi_scan disabled on carrier\"}");
+#else
             int n = WiFi.scanNetworks();
             DynamicJsonDocument resultDoc(2048);
             JsonArray networks = resultDoc.to<JsonArray>();
@@ -254,6 +296,7 @@ bool APIClient::apiHandshakeOrHeartbeat(bool connectedToWifi, int rssi, const St
             String resultStr;
             serializeJson(resultDoc, resultStr);
             reportRemoteCommandResultLocked(cmdId, "EXECUTED", resultStr.c_str());
+#endif
           } else if (strcmp(cmdType, "WIFI_CONNECT") == 0 && !payload.isNull()) {
             const char* ssid = payload["ssid"];
             const char* password = payload["password"];
@@ -337,13 +380,19 @@ bool APIClient::fetchDeviceSettings(float& minTemp, float& maxTemp, int& doorAla
   }
   if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
   unsigned long now = millis();
-  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  const unsigned long httpGapMs = 1500;
+#else
+  const unsigned long httpGapMs = 400;
+#endif
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < httpGapMs) {
+    delay(httpGapMs - (now - lastHttpEndMs));
+  }
   
   String url = apiUrl + "/devices/settings";
   http.begin(url);
   http.addHeader("x-device-key", apiKey);
-  http.setConnectTimeout(10000);
-  http.setTimeout(5000);
+  configureHttpTimeouts(http);
   
   int httpCode = http.GET();
   bool ok = false;
@@ -393,15 +442,27 @@ String APIClient::publishStatusJson(bool connectedToWifi, bool connectedToApi, c
 bool APIClient::getPendingCommand(String& commandType, String& commandId, DynamicJsonDocument& parameters) {
   if (!WiFi.isConnected()) return false;
   if (apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) return false;
-  if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  if (g_carrierHttpBusy) return false;
+  const TickType_t mutexWait = pdMS_TO_TICKS(2000);
+#else
+  const TickType_t mutexWait = pdMS_TO_TICKS(10000);
+#endif
+  if (!httpMutex || xSemaphoreTake(httpMutex, mutexWait) != pdTRUE) return false;
   unsigned long now = millis();
-  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  const unsigned long httpGapMs = 1500;
+#else
+  const unsigned long httpGapMs = 400;
+#endif
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < httpGapMs) {
+    delay(httpGapMs - (now - lastHttpEndMs));
+  }
   
   String url = apiUrl + "/devices/commands/pending";
   http.begin(url);
   http.addHeader("x-device-key", apiKey);
-  http.setConnectTimeout(10000);
-  http.setTimeout(5000);
+  configureHttpTimeouts(http);
   
   int httpCode = http.GET();
   
@@ -455,7 +516,14 @@ bool APIClient::completeCommand(const String& commandId, bool success, const Dyn
   if (apiUrl.length() == 0 || apiKey.length() == 0 || serialNumber.length() == 0) return false;
   if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(10000)) != pdTRUE) return false;
   unsigned long now = millis();
-  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  const unsigned long httpGapMs = 1500;
+#else
+  const unsigned long httpGapMs = 400;
+#endif
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < httpGapMs) {
+    delay(httpGapMs - (now - lastHttpEndMs));
+  }
   
   String url = apiUrl + "/devices/commands/" + commandId + "/complete";
   
@@ -471,8 +539,7 @@ bool APIClient::completeCommand(const String& commandId, bool success, const Dyn
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   http.addHeader("x-device-key", apiKey);
-  http.setConnectTimeout(10000);
-  http.setTimeout(5000);
+  configureHttpTimeouts(http);
   
   int httpCode = http.PATCH(jsonData);
   bool ok = (httpCode == 200);
@@ -487,7 +554,14 @@ bool APIClient::checkAndApplyFirmwareUpdate() {
   if (!WiFi.isConnected() || apiUrl.length() == 0) return false;
   if (!httpMutex || xSemaphoreTake(httpMutex, pdMS_TO_TICKS(15000)) != pdTRUE) return false;
   unsigned long now = millis();
-  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  const unsigned long httpGapMs = 1500;
+#else
+  const unsigned long httpGapMs = 400;
+#endif
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < httpGapMs) {
+    delay(httpGapMs - (now - lastHttpEndMs));
+  }
   
   String url = apiUrl + "/firmware/latest";
   http.begin(url);
@@ -525,7 +599,14 @@ bool APIClient::reportRemoteCommandResultLocked(const char* commandId, const cha
                                                 const char* payloadJson) {
   if (!WiFi.isConnected() || apiUrl.length() == 0 || apiKey.length() == 0) return false;
   unsigned long now = millis();
-  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < 400) delay(400 - (now - lastHttpEndMs));
+#if defined(BOARD_LILYGO_T_SIM7670G_S3)
+  const unsigned long httpGapMs = 1500;
+#else
+  const unsigned long httpGapMs = 400;
+#endif
+  if (lastHttpEndMs > 0 && (now - lastHttpEndMs) < httpGapMs) {
+    delay(httpGapMs - (now - lastHttpEndMs));
+  }
 
   String url = apiUrl + "/devices/commands/remote/" + String(commandId);
   String jsonData;

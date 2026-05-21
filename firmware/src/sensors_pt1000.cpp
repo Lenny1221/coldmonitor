@@ -1,6 +1,8 @@
 #include "sensors_pt1000.h"
 #include "pins_carrier.h"
 #include "logger.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include <Adafruit_MAX31865.h>
 
 extern Logger logger;
@@ -17,8 +19,25 @@ const uint8_t s_csPins[PT1000_COUNT] = { PIN_MAX31865_CS1, PIN_MAX31865_CS2 };
 bool     s_initOk[PT1000_COUNT] = {false, false};
 uint8_t  s_lastFault[PT1000_COUNT] = {0, 0};
 float    s_lastTempC[PT1000_COUNT] = {NAN, NAN};
+SemaphoreHandle_t s_spiMutex = nullptr;
 
 inline bool validIdx(uint8_t idx) { return idx < PT1000_COUNT; }
+
+struct SpiLock {
+  bool held = false;
+  SpiLock() {
+    if (!s_spiMutex) {
+      s_spiMutex = xSemaphoreCreateMutex();
+    }
+    held = (xSemaphoreTake(s_spiMutex, pdMS_TO_TICKS(500)) == pdTRUE);
+  }
+  ~SpiLock() {
+    if (held) {
+      xSemaphoreGive(s_spiMutex);
+    }
+  }
+  explicit operator bool() const { return held; }
+};
 
 // -- Raw bit-bang software-SPI register read ---------------------------------
 // We bypassen Adafruit_MAX31865 hier bewust: we willen weten of de chip
@@ -146,8 +165,20 @@ bool initSensors() {
   return okCount > 0;
 }
 
+float getCachedTempC(uint8_t idx) {
+  if (!validIdx(idx)) return NAN;
+  return s_lastTempC[idx];
+}
+
+uint8_t getCachedFault(uint8_t idx) {
+  if (!validIdx(idx)) return 0xFF;
+  return s_lastFault[idx];
+}
+
 float readSensor(uint8_t idx) {
   if (!validIdx(idx)) return NAN;
+  SpiLock lock;
+  if (!lock) return s_lastTempC[idx];
 
   // Lazy re-init: als de sensor op dit moment niet als OK staat, proberen we
   // begin()+enable50Hz opnieuw. Bij boot kan een chip onbereikbaar zijn (bv.
@@ -202,6 +233,8 @@ float readSensor(uint8_t idx) {
 
 uint8_t sensorFault(uint8_t idx) {
   if (!validIdx(idx)) return 0xFF;
+  SpiLock lock;
+  if (!lock) return s_lastFault[idx];
   uint8_t f = s_sensors[idx].readFault();
   if (f) s_sensors[idx].clearFault();
   s_lastFault[idx] = f;

@@ -42,4 +42,8 @@ inline uint8_t evaporatorFault()     { return sensorFault(PT1000_IDX_EVAPORATOR)
 inline bool    roomSensorOk()        { return sensorOk(PT1000_IDX_ROOM); }
 inline bool    evaporatorSensorOk()  { return sensorOk(PT1000_IDX_EVAPORATOR); }
 
+/** Laatste geldige meting (geen SPI) — veilig tijdens HTTP/WiFi op andere taken. */
+float   getCachedTempC(uint8_t idx);
+uint8_t getCachedFault(uint8_t idx);
+
 #endif /* SENSORS_PT1000_H */

@@ -57,6 +57,13 @@ static inline void clampWifiTxPowerLow() {
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
 }
 
+void applyWifiLinkStability() {
+  // Modem sleep laat de STA-verbinding wegvallen tijdens HTTPS-bursts.
+  WiFi.setSleep(WIFI_PS_NONE);
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(true);
+}
+
 WiFiManagerWrapper::WiFiManagerWrapper() : connected(false), paramApiKey(nullptr), paramDeviceSerial(nullptr), onSaveParamsCb(nullptr) {
   s_wifiWrapper = this;
 }
@@ -75,7 +82,7 @@ bool WiFiManagerWrapper::connect(String ssid, String password) {
   clampWifiTxPowerLow();  // WiFi.begin kan power resetten
 
   int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+  while (WiFi.status() != WL_CONNECTED && attempts < 40) {  // max ~20 s
     delay(500);
     if ((attempts % 4) == 0) kickWatchdog();  // ~elke 2 s kicken
     attempts++;
@@ -85,6 +92,7 @@ bool WiFiManagerWrapper::connect(String ssid, String password) {
   connected = (WiFi.status() == WL_CONNECTED);
   
   if (connected) {
+    applyWifiLinkStability();
     logger.info("WiFi connected: " + WiFi.SSID());
     logger.info("IP: " + WiFi.localIP().toString());
   } else {
