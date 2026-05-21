@@ -183,10 +183,12 @@ const ColdCellDetail: React.FC = () => {
       const t = typeof time === 'string' ? time : new Date(time).toISOString();
       const isExceedance =
         temp != null && (temp > maxTh || temp < minTh);
+      const evap = r.evaporatorTemp ?? r.evaporatorTemperature;
       return {
         time: t,
         timeLabel: format(parseISO(t), timeRange === '24h' ? 'HH:mm' : timeRange === '7d' ? 'EEE HH:mm' : 'dd/MM HH:mm'),
         temperature: temp,
+        evaporatorTemperature: evap != null && !Number.isNaN(evap) ? evap : null,
         humidity: humidity,
         minThreshold: minTh,
         maxThreshold: maxTh,
@@ -195,6 +197,9 @@ const ColdCellDetail: React.FC = () => {
       };
     })
     .sort((a: any, b: any) => new Date(a.time).getTime() - new Date(b.time).getTime());
+
+  const showEvaporatorOnChart =
+    isTechnician && chartData.some((d: { evaporatorTemperature?: number | null }) => d.evaporatorTemperature != null);
 
   if (loading) {
     return (
@@ -757,6 +762,19 @@ const ColdCellDetail: React.FC = () => {
           </div>
         </div>
 
+        {showEvaporatorOnChart && (
+          <div className="flex flex-wrap gap-4 mb-3 text-sm">
+            <span className="inline-flex items-center gap-2 text-gray-700 dark:text-slate-300">
+              <span className="w-3 h-0.5 rounded bg-blue-500" aria-hidden />
+              Ruimte
+            </span>
+            <span className="inline-flex items-center gap-2 text-gray-700 dark:text-slate-300">
+              <span className="w-3 h-0.5 rounded bg-amber-500" aria-hidden />
+              Verdamper
+            </span>
+          </div>
+        )}
+
         {chartData.length > 0 ? (
           <div className="relative -mx-6 px-2">
             <span className="absolute top-1 left-4 text-xs font-semibold text-gray-400 dark:text-slate-500 z-10 select-none">°C</span>
@@ -787,16 +805,24 @@ const ColdCellDetail: React.FC = () => {
                   width={36}
                 />
                 <Tooltip
-                  cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' }}
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
-                    const val = payload[0]?.value as number | undefined;
+                    const room = payload.find((p) => p.dataKey === 'temperature')?.value as number | undefined;
+                    const evap = payload.find((p) => p.dataKey === 'evaporatorTemperature')?.value as
+                      | number
+                      | undefined;
                     return (
-                      <div className="bg-white dark:bg-frost-800 rounded-xl shadow-lg px-3 py-2 border border-gray-100 dark:border-frost-700">
-                        <p className="text-[11px] text-gray-400 dark:text-slate-400 mb-0.5">{label}</p>
-                        <p className="text-base font-bold text-blue-600 dark:text-blue-400">
-                          {val != null ? `${val.toFixed(1)} °C` : '—'}
+                      <div className="bg-white dark:bg-frost-800 rounded-xl shadow-lg px-3 py-2 border border-gray-100 dark:border-frost-700 min-w-[140px]">
+                        <p className="text-[11px] text-gray-400 dark:text-slate-400 mb-1">{label}</p>
+                        <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                          Ruimte: {room != null ? `${room.toFixed(1)} °C` : '—'}
                         </p>
+                        {showEvaporatorOnChart && (
+                          <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                            Verdamper: {evap != null ? `${evap.toFixed(1)} °C` : '—'}
+                          </p>
+                        )}
                       </div>
                     );
                   }}
@@ -808,20 +834,22 @@ const ColdCellDetail: React.FC = () => {
                   <ReferenceLine y={maxTh} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.2} />
                 )}
                 <Area
-                  type="natural"
+                  type="monotone"
                   dataKey="temperature"
                   fill="url(#tempFill)"
                   stroke="none"
                   dot={false}
                   activeDot={false}
                   legendType="none"
+                  connectNulls
                 />
                 <Line
-                  type="natural"
+                  type="monotone"
                   dataKey="temperature"
                   stroke="#3b82f6"
                   strokeWidth={2.5}
                   dot={false}
+                  connectNulls
                   activeDot={(props: { payload?: { isExceedance?: boolean }; cx?: number; cy?: number }) => {
                     const { payload, cx, cy } = props;
                     return payload?.isExceedance ? (
@@ -830,8 +858,20 @@ const ColdCellDetail: React.FC = () => {
                       <circle cx={cx} cy={cy} r={5} fill="#3b82f6" stroke="#fff" strokeWidth={1.5} />
                     );
                   }}
-                  name="Temperatuur"
+                  name="Ruimte"
                 />
+                {showEvaporatorOnChart && (
+                  <Line
+                    type="monotone"
+                    dataKey="evaporatorTemperature"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                    activeDot={{ r: 4, fill: '#f59e0b', stroke: '#fff', strokeWidth: 1.5 }}
+                    name="Verdamper"
+                  />
+                )}
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -909,7 +949,7 @@ const ColdCellDetail: React.FC = () => {
                     }}
                   />
                   <Area
-                    type="natural"
+                    type="monotone"
                     dataKey="humidity"
                     fill="url(#humidFill)"
                     stroke="none"
@@ -918,11 +958,12 @@ const ColdCellDetail: React.FC = () => {
                     legendType="none"
                   />
                   <Line
-                    type="natural"
+                    type="monotone"
                     dataKey="humidity"
                     stroke="#10b981"
                     strokeWidth={2.5}
                     dot={false}
+                    connectNulls
                     activeDot={(props: { cx?: number; cy?: number }) => (
                       <circle cx={props.cx} cy={props.cy} r={5} fill="#10b981" stroke="#fff" strokeWidth={1.5} />
                     )}

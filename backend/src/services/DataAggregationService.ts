@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 export interface AggregatedReading {
   timestamp: string;
   temperature: number;
+  evaporatorTemp?: number;
   humidity?: number;
   count: number;
 }
@@ -103,11 +104,19 @@ export class DataAggregationService {
    * Aggregate readings by time interval
    */
   private aggregateByInterval(
-    readings: Array<{ temperature: number; humidity?: number | null; recordedAt: Date }>,
+    readings: Array<{
+      temperature: number;
+      evaporatorTemp?: number | null;
+      humidity?: number | null;
+      recordedAt: Date;
+    }>,
     interval: string
   ): AggregatedReading[] {
     const intervalMs = this.parseInterval(interval);
-    const grouped = new Map<string, { temps: number[]; humidities: number[] }>();
+    const grouped = new Map<
+      string,
+      { temps: number[]; evapTemps: number[]; humidities: number[] }
+    >();
 
     // Group readings by time bucket
     for (const reading of readings) {
@@ -115,10 +124,13 @@ export class DataAggregationService {
       const bucketKey = new Date(bucketTime).toISOString();
 
       if (!grouped.has(bucketKey)) {
-        grouped.set(bucketKey, { temps: [], humidities: [] });
+        grouped.set(bucketKey, { temps: [], evapTemps: [], humidities: [] });
       }
       const bucket = grouped.get(bucketKey)!;
       bucket.temps.push(reading.temperature);
+      if (reading.evaporatorTemp != null && !Number.isNaN(reading.evaporatorTemp)) {
+        bucket.evapTemps.push(reading.evaporatorTemp);
+      }
       if (reading.humidity != null) {
         bucket.humidities.push(reading.humidity);
       }
@@ -128,6 +140,10 @@ export class DataAggregationService {
     const aggregated: AggregatedReading[] = [];
     for (const [timestamp, bucket] of grouped.entries()) {
       const avgTemp = bucket.temps.reduce((a, b) => a + b, 0) / bucket.temps.length;
+      const avgEvap =
+        bucket.evapTemps.length > 0
+          ? bucket.evapTemps.reduce((a, b) => a + b, 0) / bucket.evapTemps.length
+          : undefined;
       const avgHumidity = bucket.humidities.length > 0
         ? bucket.humidities.reduce((a, b) => a + b, 0) / bucket.humidities.length
         : undefined;
@@ -135,6 +151,8 @@ export class DataAggregationService {
       aggregated.push({
         timestamp,
         temperature: Math.round(avgTemp * 10) / 10, // Round to 1 decimal
+        evaporatorTemp:
+          avgEvap != null ? Math.round(avgEvap * 10) / 10 : undefined,
         humidity: avgHumidity != null ? Math.round(avgHumidity * 10) / 10 : undefined,
         count: bucket.temps.length,
       });
