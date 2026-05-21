@@ -732,6 +732,19 @@ export const readingsApi = {
   },
 };
 
+/** Zelflerende anomaliedetectie — bevindingen per cel (technieker) */
+export const anomalyFindingsApi = {
+  getByColdCell: async (
+    coldCellId: string,
+    params?: { range?: '24h' | '7d' | '30d' }
+  ) => {
+    const response = await api.get(`/readings/coldcells/${coldCellId}/anomaly-findings`, {
+      params,
+    });
+    return response.data;
+  },
+};
+
 // Cold cell state API (door realtime + polling fallback)
 export const coldCellStateApi = {
   getState: async (coldCellId: string) => {

@@ -90,6 +90,19 @@ enum RemoteCommandStatus {
   FAILED
 }
 
+// Zelflerende anomaliedetectie (FASE 1)
+enum AnomalyBaselineMode {
+  LEARNING
+  ACTIVE
+}
+
+enum MeasurementContextType {
+  COMPRESSOR_ON
+  COMPRESSOR_OFF
+  POST_DEFROST
+  DOOR_OPEN
+}
+
 // User accounts for authentication
 model User {
   id                         String    @id @default(cuid())
@@ -205,6 +218,8 @@ model ColdCell {
   
   devices Device[]
   alerts  Alert[]
+  anomalyState      ColdCellAnomalyState?
+  contextBaselines  ColdCellContextBaseline[]
 
   @@index([locationId])
 }
@@ -362,6 +377,46 @@ model SensorReading {
 
   @@index([deviceId, recordedAt])
   @@index([recordedAt])
+}
+
+// Per-cel status voor anomaliedetectie (cycli, leerperiode, actieve bevindingen)
+model ColdCellAnomalyState {
+  coldCellId           String              @id
+  coldCell             ColdCell            @relation(fields: [coldCellId], references: [id], onDelete: Cascade)
+  baselineMode         AnomalyBaselineMode @default(LEARNING)
+  firstReadingAt       DateTime?
+  readingCount         Int                 @default(0)
+  lastProcessedAt      DateTime?
+  compressorInferredOn Boolean             @default(false)
+  compressorOnSince    DateTime?
+  defrostActive        Boolean             @default(false)
+  defrostStartedAt     DateTime?
+  postDefrostUntil     DateTime?
+  doorOpenSince        DateTime?
+  pullDownStartedAt    DateTime?
+  lastEvaporatorTemp   Float?
+  lastEvaporatorAt     DateTime?
+  lastRoomTemp         Float?
+  activeFindings       Json?               // AnomalyFindingDto[] — UI + latere escalatie
+  updatedAt            DateTime            @updatedAt
+}
+
+// EWMA-baseline per context (compressor aan/uit, post-ontdooiing)
+model ColdCellContextBaseline {
+  id               String                 @id @default(cuid())
+  coldCellId       String
+  coldCell         ColdCell               @relation(fields: [coldCellId], references: [id], onDelete: Cascade)
+  context          MeasurementContextType
+  ewmaDeltaT       Float?
+  ewmaDeltaTSq     Float?                 // E[X²] voor std via Var = E[X²]-E[X]²
+  ewmaPullDownMin  Float?
+  ewmaEvapFloor    Float?
+  longTermDeltaT   Float?                 // Trage EWMA voor trend-drift (≈ maandprofiel)
+  sampleCount      Int                    @default(0)
+  updatedAt        DateTime               @updatedAt
+
+  @@unique([coldCellId, context])
+  @@index([coldCellId])
 }
 
 // Alert model

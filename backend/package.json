@@ -16,7 +16,7 @@
     "simulate:device": "tsx src/scripts/device-simulator.ts",
     "seed": "tsx src/scripts/seed.ts",
     "generate-keys": "tsx src/scripts/generate-device-keys.ts",
-    "test": "tsx src/services/__tests__/doorEventService.test.ts"
+    "test": "tsx src/services/__tests__/doorEventService.test.ts && tsx src/anomaly/__tests__/anomalyDetection.test.ts"
   },
   "dependencies": {
     "@elevenlabs/elevenlabs-js": "^2.37.0",

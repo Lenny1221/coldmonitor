@@ -12,6 +12,7 @@ import {
 } from '../../services/doorEventService';
 import { CustomError } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
+import { anomalyService } from '../../anomaly/anomalyService';
 
 const router = Router();
 
@@ -107,6 +108,38 @@ router.post(
           req.deviceId!
         );
         await syncDoorStateFromReading(req.deviceId!, data.doorStatus);
+      }
+
+      // Zelflerende anomaliedetectie (FASE 1) — alleen met 2e voeler (verdamper)
+      if (data.evaporatorTemp != null) {
+        const cell = await prisma.coldCell.findUnique({
+          where: { id: reading.device.coldCellId },
+          select: {
+            temperatureMinThreshold: true,
+            temperatureMaxThreshold: true,
+          },
+        });
+        if (cell) {
+          const setpoint =
+            (cell.temperatureMinThreshold + cell.temperatureMaxThreshold) / 2;
+          try {
+            await anomalyService.processReading({
+              coldCellId: reading.device.coldCellId,
+              deviceId: req.deviceId!,
+              roomTemp: data.temperature,
+              evaporatorTemp: data.evaporatorTemp,
+              doorOpen: data.doorStatus === true,
+              recordedAt: reading.recordedAt,
+              setpointTemp: setpoint,
+              tempMaxThreshold: cell.temperatureMaxThreshold,
+            });
+          } catch (anomalyErr) {
+            logger.warn('Anomaliedetectie mislukt (meting wel opgeslagen)', {
+              coldCellId: reading.device.coldCellId,
+              error: anomalyErr instanceof Error ? anomalyErr.message : String(anomalyErr),
+            });
+          }
+        }
       }
 
       logger.debug('Sensor reading received', {
@@ -340,6 +373,47 @@ router.get(
         eventsPerDay: eventsArray.sort((a, b) => a.date.localeCompare(b.date)),
         totalEvents,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /coldcells/:id/anomaly-findings
+ * Bevindingen voor technieker-dashboard (zelflerende detectie FASE 1).
+ */
+router.get(
+  '/coldcells/:id/anomaly-findings',
+  requireAuth,
+  requireRole('TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const range = req.query.range as string | undefined;
+      const validRange =
+        range && ['24h', '7d', '30d'].includes(range) ? (range as '24h' | '7d' | '30d') : undefined;
+
+      const coldCell = await prisma.coldCell.findUnique({
+        where: { id },
+        include: { location: true },
+      });
+
+      if (!coldCell) {
+        throw new CustomError('Cold cell not found', 404, 'COLD_CELL_NOT_FOUND');
+      }
+
+      if (req.userRole === 'TECHNICIAN' && req.technicianId) {
+        const customer = await prisma.customer.findUnique({
+          where: { id: coldCell.location.customerId },
+        });
+        if (customer?.linkedTechnicianId !== req.technicianId) {
+          throw new CustomError('Access denied', 403, 'ACCESS_DENIED');
+        }
+      }
+
+      const result = await anomalyService.getFindings(id, validRange);
+      res.json(result);
     } catch (error) {
       next(error);
     }

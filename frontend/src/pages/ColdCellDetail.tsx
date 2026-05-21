@@ -32,6 +32,7 @@ import {
 import { ColdCellSettingsModal } from '../components/ColdCellSettingsModal';
 import { ResolveAlertModal } from '../components/ResolveAlertModal';
 import RegelaarCommandoPaneel from '../components/RegelaarCommandoPaneel';
+import CellFindingsPanel from '../components/CellFindingsPanel';
 
 type TimeRange = '24h' | '7d' | '30d';
 
@@ -907,6 +908,10 @@ const ColdCellDetail: React.FC = () => {
           </div>
         )}
       </div>
+
+      {isTechnician && id && (
+        <CellFindingsPanel coldCellId={id} timeRange={timeRange} />
+      )}
 
       {/* Luchtvochtigheidsgrafiek */}
       {chartData.some((d: any) => d.humidity != null) && (
