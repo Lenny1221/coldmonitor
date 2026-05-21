@@ -184,8 +184,10 @@ const ColdCellDetail: React.FC = () => {
       const isExceedance =
         temp != null && (temp > maxTh || temp < minTh);
       const evap = r.evaporatorTemp ?? r.evaporatorTemperature;
+      const timeMs = new Date(t).getTime();
       return {
         time: t,
+        timeMs,
         timeLabel: format(parseISO(t), timeRange === '24h' ? 'HH:mm' : timeRange === '7d' ? 'EEE HH:mm' : 'dd/MM HH:mm'),
         temperature: temp,
         evaporatorTemperature: evap != null && !Number.isNaN(evap) ? evap : null,
@@ -787,14 +789,20 @@ const ColdCellDetail: React.FC = () => {
                   </linearGradient>
                 </defs>
                 <XAxis
-                  dataKey="timeLabel"
+                  dataKey="timeMs"
+                  type="number"
+                  scale="time"
+                  domain={['dataMin', 'dataMax']}
                   tick={{ fontSize: 10, fill: theme === 'dark' ? '#94a3b8' : '#9ca3af' }}
+                  tickFormatter={(ms: number) =>
+                    format(new Date(ms), timeRange === '24h' ? 'HH:mm' : timeRange === '7d' ? 'EEE HH:mm' : 'dd/MM HH:mm')
+                  }
                   axisLine={false}
                   tickLine={false}
                   angle={timeRange === '30d' ? -35 : 0}
                   textAnchor={timeRange === '30d' ? 'end' : 'middle'}
                   height={36}
-                  interval="preserveStartEnd"
+                  minTickGap={timeRange === '24h' ? 56 : 32}
                 />
                 <YAxis
                   domain={['auto', 'auto']}
@@ -806,8 +814,16 @@ const ColdCellDetail: React.FC = () => {
                 />
                 <Tooltip
                   cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' }}
-                  content={({ active, payload, label }) => {
+                  content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
+                    const row = payload[0]?.payload as { timeLabel?: string; timeMs?: number } | undefined;
+                    const label =
+                      row?.timeMs != null
+                        ? format(
+                            new Date(row.timeMs),
+                            timeRange === '24h' ? 'HH:mm' : timeRange === '7d' ? 'EEE HH:mm' : 'dd/MM HH:mm'
+                          )
+                        : row?.timeLabel ?? '';
                     const room = payload.find((p) => p.dataKey === 'temperature')?.value as number | undefined;
                     const evap = payload.find((p) => p.dataKey === 'evaporatorTemperature')?.value as
                       | number
@@ -834,7 +850,7 @@ const ColdCellDetail: React.FC = () => {
                   <ReferenceLine y={maxTh} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.2} />
                 )}
                 <Area
-                  type="monotone"
+                  type="basis"
                   dataKey="temperature"
                   fill="url(#tempFill)"
                   stroke="none"
@@ -842,14 +858,16 @@ const ColdCellDetail: React.FC = () => {
                   activeDot={false}
                   legendType="none"
                   connectNulls
+                  isAnimationActive={false}
                 />
                 <Line
-                  type="monotone"
+                  type="basis"
                   dataKey="temperature"
                   stroke="#3b82f6"
                   strokeWidth={2.5}
                   dot={false}
                   connectNulls
+                  isAnimationActive={false}
                   activeDot={(props: { payload?: { isExceedance?: boolean }; cx?: number; cy?: number }) => {
                     const { payload, cx, cy } = props;
                     return payload?.isExceedance ? (
@@ -862,12 +880,13 @@ const ColdCellDetail: React.FC = () => {
                 />
                 {showEvaporatorOnChart && (
                   <Line
-                    type="monotone"
+                    type="basis"
                     dataKey="evaporatorTemperature"
                     stroke="#f59e0b"
                     strokeWidth={2}
                     dot={false}
                     connectNulls
+                    isAnimationActive={false}
                     activeDot={{ r: 4, fill: '#f59e0b', stroke: '#fff', strokeWidth: 1.5 }}
                     name="Verdamper"
                   />
