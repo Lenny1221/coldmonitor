@@ -172,11 +172,11 @@ router.post(
       if (device?.coldCellId) {
         const { alertService } = await import('../../services/alertService');
         if (onMainsValue === false) {
-          await alertService.checkPowerStatus(
-            device.coldCellId,
-            false,
-            req.deviceId,
-          );
+          await alertService.checkPowerStatus(device.coldCellId, false, req.deviceId);
+        } else if (onMainsValue === true) {
+          await alertService.checkPowerStatus(device.coldCellId, true, req.deviceId, {
+            resolveOnRestore: true,
+          });
         }
         await alertService.resolveConnectionAlerts(
           device.coldCellId,

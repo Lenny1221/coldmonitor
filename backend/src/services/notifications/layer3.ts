@@ -5,6 +5,7 @@ import { EscalationChannel, EscalationRecipient } from '@prisma/client';
 import type { AlertWithRelations } from '../escalationService';
 import { config } from '../../config/env';
 import { logger } from '../../utils/logger';
+import { shouldSendAlertNotification } from './notificationCooldown';
 
 /**
  * Layer 3: AI-telefoonbot (Twilio + ElevenLabs TTS)
@@ -14,6 +15,11 @@ import { logger } from '../../utils/logger';
  */
 export async function sendLayer3Notifications(alert: AlertWithRelations): Promise<void> {
   if (!alert) return;
+
+  if (!(await shouldSendAlertNotification(alert.id, 'LAYER_3'))) {
+    logger.debug('Layer 3 overgeslagen: cooldown actief', { alertId: alert.id });
+    return;
+  }
 
   const customer = alert.coldCell?.location?.customer;
   const technician = customer?.linkedTechnician;

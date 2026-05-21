@@ -93,10 +93,12 @@ router.post(
 
       // powerStatus mag nu null zijn (board zonder USB-detectie). Skip de
       // alert-check in dat geval i.p.v. een non-null asserrtion.
-      if (data.powerStatus !== undefined && data.powerStatus !== null) {
+      // Stroomuitval via readings: alleen detectie bij uitval. Oplossen gebeurt via
+      // heartbeat (on_mains) — readings met powerStatus:true mogen geen vals herstel geven.
+      if (data.powerStatus === false) {
         await alertService.checkPowerStatus(
           reading.device.coldCellId,
-          data.powerStatus,
+          false,
           req.deviceId!
         );
       }

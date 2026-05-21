@@ -16,11 +16,13 @@ import { getTimeSlot, getInitialLayerForTimeSlot, isLayerEnabled, type Escalatio
 import { sendLayer1Notifications } from './notifications/layer1';
 import { sendLayer2Notifications } from './notifications/layer2';
 import { sendLayer3Notifications } from './notifications/layer3';
+import { ALERT_NOTIFICATION_COOLDOWN_MS } from './notifications/notificationCooldown';
 
 const ESCALATION_WAIT_MS = {
   LAYER_1_TO_2: 20 * 60 * 1000, // 20 min (OPEN_HOURS)
   LAYER_2_TO_3: 15 * 60 * 1000, // 15 min
-  LAYER_3_REPEAT: 15 * 60 * 1000, // 15 min – herhaal bellen bij layer 3 (alle alarmtypes)
+  /** Herhaal layer 3 — minimaal 5 min (zelfde cooldown als e-mail/push) */
+  LAYER_3_REPEAT: ALERT_NOTIFICATION_COOLDOWN_MS,
 };
 
 export type AlertWithRelations = Awaited<

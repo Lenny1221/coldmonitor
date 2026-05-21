@@ -10,6 +10,9 @@ import {
 } from './escalationService';
 import type { EscalationConfig } from '../utils/timeSlotUtil';
 
+/** Voorkomt grens-flikkeren: temperatuur moet duidelijk binnen band liggen voor auto-oplossen */
+const TEMP_RESOLVE_HYSTERESIS_C = 0.5;
+
 export class AlertService {
   private notificationService: NotificationService;
 
@@ -82,7 +85,7 @@ export class AlertService {
         });
 
         if (existingAlert) {
-          // Update last triggered time (don't spam duplicate alerts)
+          // Alleen meting bijwerken — geen nieuwe notificatie (cooldown via escalationLog)
           await prisma.alert.update({
             where: { id: existingAlert.id },
             data: {
@@ -90,7 +93,7 @@ export class AlertService {
               value: temperature,
             },
           });
-          logger.debug('Updated existing alert', { alertId: existingAlert.id, alertType });
+          logger.debug('Updated existing temperature alert', { alertId: existingAlert.id, alertType });
         } else {
           const customer = coldCell.location.customer;
           const { timeSlot, layer } = getInitialEscalationState({
@@ -306,7 +309,8 @@ export class AlertService {
   async checkPowerStatus(
     coldCellId: string,
     powerStatus: boolean,
-    deviceId: string
+    deviceId: string,
+    options?: { resolveOnRestore?: boolean }
   ): Promise<void> {
     try {
       if (!powerStatus) {
@@ -319,7 +323,12 @@ export class AlertService {
           },
         });
 
-        if (!existingAlert) {
+        if (existingAlert) {
+          await prisma.alert.update({
+            where: { id: existingAlert.id },
+            data: { lastTriggeredAt: new Date() },
+          });
+        } else {
           const coldCell = await prisma.coldCell.findUnique({
             where: { id: coldCellId },
             include: {
@@ -372,8 +381,8 @@ export class AlertService {
             await this.triggerEscalationForNewAlert(alert);
           }
         }
-      } else {
-        // Power restored - resolve power loss alerts
+      } else if (options?.resolveOnRestore) {
+        // Alleen heartbeat/on_mains mag POWER_LOSS oplossen — niet elke reading met powerStatus:true
         await prisma.alert.updateMany({
           where: {
             coldCellId,
@@ -426,6 +435,9 @@ export class AlertService {
       const { config } = await import('../config/env');
       const thresholdSeconds = config.deviceOfflineThresholdSeconds;
       const thresholdTime = new Date(Date.now() - thresholdSeconds * 1000);
+      // Alarm pas na bevestigde offline-duur (≈2× check-interval @15s) — voorkomt WIFI-flikker
+      const confirmSeconds = Math.max(thresholdSeconds * 2, thresholdSeconds + 30);
+      const confirmTime = new Date(Date.now() - confirmSeconds * 1000);
 
       // Find devices that are marked ONLINE but haven't sent heartbeat recently
       const offlineDevices = await prisma.device.findMany({
@@ -433,7 +445,7 @@ export class AlertService {
           status: 'ONLINE',
           OR: [
             { lastSeenAt: null },
-            { lastSeenAt: { lt: thresholdTime } },
+            { lastSeenAt: { lt: confirmTime } },
           ],
         },
         include: {
@@ -477,7 +489,12 @@ export class AlertService {
           },
         });
 
-        if (!existingAlert) {
+        if (existingAlert) {
+          await prisma.alert.update({
+            where: { id: existingAlert.id },
+            data: { lastTriggeredAt: new Date() },
+          });
+        } else {
           const coldCell = device.coldCell as any;
           const customer = coldCell?.location?.customer;
           const { timeSlot, layer } = customer
@@ -552,6 +569,10 @@ export class AlertService {
     onMains?: boolean | null,
   ): Promise<void> {
     try {
+      const { config } = await import('../config/env');
+      const thresholdTime = new Date(
+        Date.now() - config.deviceOfflineThresholdSeconds * 1000
+      );
       const coldBoot = uptimeSeconds != null && uptimeSeconds < 90;
 
       if (coldBoot) {
@@ -571,22 +592,32 @@ export class AlertService {
         }
       }
 
-      // WIFI_LOSS lossen we altijd op bij heartbeat — heartbeat zelf bewijst
-      // dat WiFi werkt.
-      const wifiResolved = await prisma.alert.updateMany({
+      // WIFI_LOSS alleen oplossen als device echt recent online was (verse lastSeenAt)
+      const onlineDevice = await prisma.device.findFirst({
         where: {
           coldCellId,
-          type: 'WIFI_LOSS',
-          status: { in: ['ACTIVE', 'ESCALATING'] },
+          lastSeenAt: { gte: thresholdTime },
         },
-        data: {
-          status: 'RESOLVED',
-          resolvedAt: new Date(),
-          resolutionNote: 'WiFi hersteld – verbinding hersteld',
-        },
+        select: { id: true },
       });
 
-      // POWER_LOSS lossen we enkel op bij echte stroomherstel of cold boot.
+      let wifiResolved = { count: 0 };
+      if (onlineDevice) {
+        wifiResolved = await prisma.alert.updateMany({
+          where: {
+            coldCellId,
+            type: 'WIFI_LOSS',
+            status: { in: ['ACTIVE', 'ESCALATING'] },
+          },
+          data: {
+            status: 'RESOLVED',
+            resolvedAt: new Date(),
+            resolutionNote: 'WiFi hersteld – verbinding hersteld',
+          },
+        });
+      }
+
+      // POWER_LOSS alleen bij bevestigd netvoeding (on_mains) of cold boot — niet via readings
       const powerRestored = onMains === true || coldBoot;
       let powerResolved = { count: 0 };
       if (powerRestored) {

@@ -6,6 +6,7 @@ import { config } from '../../config/env';
 import { logger } from '../../utils/logger';
 import { prisma } from '../../config/database';
 import { sendPushNotification } from '../pushService';
+import { shouldSendAlertNotification } from './notificationCooldown';
 
 /**
  * Layer 2: Client SMS + push repeat + backup contact
@@ -13,6 +14,11 @@ import { sendPushNotification } from '../pushService';
  */
 export async function sendLayer2Notifications(alert: AlertWithRelations): Promise<void> {
   if (!alert) return;
+
+  if (!(await shouldSendAlertNotification(alert.id, 'LAYER_2'))) {
+    logger.debug('Layer 2 overgeslagen: cooldown actief', { alertId: alert.id });
+    return;
+  }
 
   const customer = alert.coldCell?.location?.customer;
   const technician = customer?.linkedTechnician;

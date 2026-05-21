@@ -5,6 +5,7 @@ import { config } from '../../config/env';
 import { logger } from '../../utils/logger';
 import { prisma } from '../../config/database';
 import { sendPushNotification } from '../pushService';
+import { shouldSendAlertNotification } from './notificationCooldown';
 
 /**
  * Layer 1: Client push + email met temperatuurgrafiek
@@ -12,6 +13,11 @@ import { sendPushNotification } from '../pushService';
  */
 export async function sendLayer1Notifications(alert: AlertWithRelations): Promise<void> {
   if (!alert) return;
+
+  if (!(await shouldSendAlertNotification(alert.id, 'LAYER_1'))) {
+    logger.debug('Layer 1 overgeslagen: cooldown actief', { alertId: alert.id });
+    return;
+  }
 
   const customer = alert.coldCell?.location?.customer;
   const technician = customer?.linkedTechnician;
