@@ -4,8 +4,8 @@ import type { CellAnomalyConfig } from './types';
 export const DEFAULT_ANOMALY_CONFIG: CellAnomalyConfig = {
   zScoreThreshold: 3,
   zScoreAlarm: 4,
-  learningMinDays: 21,
-  learningMinReadings: 400,
+  learningMinDays: 7,
+  learningMinReadings: 150,
   ewmaAlpha: 0.08,
   longTermAlpha: 0.02,
   fallbackDeltaTHigh: 14,

@@ -5,6 +5,7 @@ import {
   ExclamationTriangleIcon,
   ShieldExclamationIcon,
   AcademicCapIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
 type TimeRange = '24h' | '7d' | '30d';
@@ -67,6 +68,8 @@ export const CellFindingsPanel: React.FC<Props> = ({ coldCellId, timeRange, refr
   const [data, setData] = useState<FindingsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   const fetchFindings = useCallback(async () => {
     if (!coldCellId) return;
@@ -87,6 +90,28 @@ export const CellFindingsPanel: React.FC<Props> = ({ coldCellId, timeRange, refr
   useEffect(() => {
     fetchFindings();
   }, [fetchFindings, refreshKey]);
+
+  const handleResetBaseline = async () => {
+    const ok = window.confirm(
+      'Baseline opnieuw starten? Alle geleerde normaalprofielen (ΔT, pull-down) worden gewist. ' +
+        'De cel gaat ~7 dagen opnieuw in de leerperiode met alleen basisdrempels.'
+    );
+    if (!ok) return;
+
+    setResetting(true);
+    setResetMessage(null);
+    setError(null);
+    try {
+      const result = await anomalyFindingsApi.resetBaseline(coldCellId);
+      setData(result);
+      setResetMessage('Baseline is gereset — leerperiode opnieuw gestart.');
+    } catch (e) {
+      console.error('Baseline reset failed', e);
+      setError('Baseline kon niet worden gereset.');
+    } finally {
+      setResetting(false);
+    }
+  };
 
   if (loading && !data) {
     return (
@@ -110,10 +135,28 @@ export const CellFindingsPanel: React.FC<Props> = ({ coldCellId, timeRange, refr
 
   return (
     <div className="bg-white dark:bg-frost-800 rounded-lg shadow dark:shadow-[0_0_24px_rgba(0,0,0,0.2)] p-6 border border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-1">Bevindingen</h2>
-      <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
-        Zelflerend profiel per cel — geen vaste temperatuurgrenzen als kern.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-frost-100 mb-1">Bevindingen</h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            Zelflerend profiel per cel — leerperiode ~7 dagen.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleResetBaseline}
+          disabled={resetting}
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-frost-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-frost-900 disabled:opacity-50"
+          title="Wis geleerde baseline en start opnieuw"
+        >
+          <ArrowPathIcon className={`h-4 w-4 ${resetting ? 'animate-spin' : ''}`} />
+          {resetting ? 'Bezig…' : 'Baseline reset'}
+        </button>
+      </div>
+
+      {resetMessage && (
+        <p className="text-sm text-emerald-700 dark:text-emerald-400 mb-4">{resetMessage}</p>
+      )}
 
       {learningActive && (
         <div className="flex gap-3 rounded-lg border border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-950/30 p-4 mb-4">

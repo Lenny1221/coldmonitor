@@ -115,11 +115,11 @@ function evaluateDeltaT(
     if (deltaT > config.fallbackDeltaTHigh) {
       status = 'ATTENTION';
       reden = `ΔT (${deltaT.toFixed(1)} °C) boven vaste drempel (${config.fallbackDeltaTHigh} °C) — baseline nog in opbouw.`;
-      actie = 'Controleer verdamper op ijsopbouw; baseline wordt nog opgebouwd (~2–3 weken).';
+      actie = 'Controleer verdamper op ijsopbouw; baseline wordt nog opgebouwd (~7 dagen).';
     } else if (deltaT < config.fallbackDeltaTLow) {
       status = 'ATTENTION';
       reden = `ΔT (${deltaT.toFixed(1)} °C) onder vaste drempel (${config.fallbackDeltaTLow} °C) — baseline nog in opbouw.`;
-      actie = 'Controleer koelmiddelvulling en lekdetectie; baseline wordt nog opgebouwd.';
+      actie = 'Controleer koelmiddelvulling en lekdetectie; baseline wordt nog opgebouwd (~7 dagen).';
     }
     onderbouwing += ' | modus: leerperiode (vaste drempels)';
   } else {

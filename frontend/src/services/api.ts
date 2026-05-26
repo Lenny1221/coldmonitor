@@ -743,6 +743,10 @@ export const anomalyFindingsApi = {
     });
     return response.data;
   },
+  resetBaseline: async (coldCellId: string) => {
+    const response = await api.post(`/readings/coldcells/${coldCellId}/anomaly-baseline/reset`);
+    return response.data;
+  },
 };
 
 // Cold cell state API (door realtime + polling fallback)

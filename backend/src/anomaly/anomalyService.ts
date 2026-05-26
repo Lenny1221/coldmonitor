@@ -174,6 +174,43 @@ export class AnomalyService {
       findings,
     };
   }
+
+  /**
+   * Wis EWMA-baselines en start leerperiode opnieuw (technieker-reset).
+   */
+  async resetBaseline(coldCellId: string): Promise<AnomalyFindingsResponse> {
+    await prisma.$transaction([
+      prisma.coldCellContextBaseline.deleteMany({ where: { coldCellId } }),
+      prisma.coldCellAnomalyState.upsert({
+        where: { coldCellId },
+        create: {
+          coldCellId,
+          baselineMode: 'LEARNING',
+          readingCount: 0,
+          activeFindings: [],
+        },
+        update: {
+          baselineMode: 'LEARNING',
+          firstReadingAt: null,
+          readingCount: 0,
+          lastProcessedAt: null,
+          compressorInferredOn: false,
+          compressorOnSince: null,
+          defrostActive: false,
+          defrostStartedAt: null,
+          postDefrostUntil: null,
+          doorOpenSince: null,
+          pullDownStartedAt: null,
+          lastEvaporatorTemp: null,
+          lastEvaporatorAt: null,
+          lastRoomTemp: null,
+          activeFindings: [],
+        },
+      }),
+    ]);
+
+    return this.getFindings(coldCellId);
+  }
 }
 
 export const anomalyService = new AnomalyService();

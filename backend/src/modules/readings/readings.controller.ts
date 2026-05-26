@@ -422,4 +422,43 @@ router.get(
   }
 );
 
+/**
+ * POST /coldcells/:id/anomaly-baseline/reset
+ * Start zelflerende baseline opnieuw (EWMA + leerperiode).
+ */
+router.post(
+  '/coldcells/:id/anomaly-baseline/reset',
+  requireAuth,
+  requireRole('TECHNICIAN', 'ADMIN'),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+
+      const coldCell = await prisma.coldCell.findUnique({
+        where: { id },
+        include: { location: true },
+      });
+
+      if (!coldCell) {
+        throw new CustomError('Cold cell not found', 404, 'COLD_CELL_NOT_FOUND');
+      }
+
+      if (req.userRole === 'TECHNICIAN' && req.technicianId) {
+        const customer = await prisma.customer.findUnique({
+          where: { id: coldCell.location.customerId },
+        });
+        if (customer?.linkedTechnicianId !== req.technicianId) {
+          throw new CustomError('Access denied', 403, 'ACCESS_DENIED');
+        }
+      }
+
+      const result = await anomalyService.resetBaseline(id);
+      logger.info('Anomalie-baseline gereset', { coldCellId: id, userId: req.userId });
+      res.json({ success: true, ...result });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;
