@@ -54,30 +54,35 @@ const sectors = [
     icon: BuildingStorefrontIcon,
     title: 'Slagers, ijsbereiders & horeca',
     desc: 'Bewaking van koel- en vriescellen voor slagers, ijssalons en restaurants. HACCP-compliant met automatische rapportage voor inspecties.',
+    localImg: '/images/sector-horeca.jpg',
     img: 'https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=600&q=80',
   },
   {
     icon: BuildingStorefrontIcon,
     title: 'Retail & supermarkten',
     desc: 'Monitor alle koel- en vriestoonkasten vanuit één dashboard. Ontvang direct een alarm bij deuren die te lang openstaan of temperatuurproblemen.',
+    localImg: '/images/sector-retail.jpg',
     img: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80',
   },
   {
     icon: BeakerIcon,
     title: 'Farmaceutisch',
     desc: 'Voldoe aan strenge regelgeving (GDP, GMP) met gecertificeerde temperatuurregistratie en automatische compliance-rapporten.',
+    localImg: '/images/sector-pharma.jpg',
     img: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=600&q=80',
   },
   {
     icon: TruckIcon,
     title: 'Logistiek & transport',
     desc: 'Bewijs de integriteit van uw koelketen van depot tot levering. Tijdstempel-logboek voor elke schakel.',
+    localImg: '/images/sector-logistics.jpg',
     img: 'https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=600&q=80',
   },
   {
     icon: WrenchScrewdriverIcon,
     title: 'Technici & servicebedrijven',
     desc: 'Beheer meerdere klanten vanuit één portal. Ontvang alarmen van uw klanten en intervenieer proactief.',
+    localImg: '/images/sector-technician.jpg',
     img: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&w=600&q=80',
   },
 ];
@@ -125,16 +130,16 @@ const Home: React.FC = () => {
           {/* Left: text */}
           <div>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00c8ff]/10 border border-[#00c8ff]/30 text-[#00c8ff] text-sm font-medium mb-6">
-              <span className="w-2 h-2 rounded-full bg-[#00c8ff] animate-pulse" />
-              Realtime koelcelmonitoring voor België & Nederland
+              ⚡ Nieuw — AI-telefoonalarm inbegrepen
             </div>
             <h1 className="font-['Exo_2'] font-bold text-4xl sm:text-5xl lg:text-5xl text-gray-900 mb-6 leading-tight">
-              Nooit meer een kapotte{' '}
-              <span className="text-[#00c8ff]">koelcel missen</span>
+              Uw koelcel defect?
+              <br />
+              <span className="text-[#00c8ff]">U weet het als eerste.</span>
             </h1>
             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-              IntelliFrost bewaakt uw koel- en vriescellen 24/7. Bij een alarm escaleert het systeem
-              automatisch van e-mail naar SMS naar een AI-telefoonoproep – totdat iemand reageert.
+              IntelliFrost bewaakt uw koel- en vriescellen 24/7 met automatische escalatie via e-mail, SMS én
+              AI-telefoonoproep. HACCP-rapporten worden automatisch gegenereerd — klaar voor elke inspectie.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mb-10">
               <Link
@@ -198,10 +203,14 @@ const Home: React.FC = () => {
           {/* Foto links */}
           <div className="relative rounded-3xl overflow-hidden h-80 lg:h-auto lg:min-h-[400px] shadow-xl order-2 lg:order-1">
             <img
-              src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80"
-              alt="IoT sensor technologie voor temperatuurmonitoring"
+              src="/images/product-device.jpg"
+              alt="IntelliFrost IoT-sensor voor temperatuurmonitoring"
               className="w-full h-full object-cover"
               loading="lazy"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src =
+                  'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80';
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-tr from-[#00c8ff]/30 to-transparent mix-blend-multiply" />
           </div>
@@ -289,6 +298,64 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* Social proof */}
+      <section className="max-w-6xl mx-auto px-6 mb-24">
+        <div className="text-center mb-10">
+          <p className="text-sm font-semibold text-[#00c8ff] uppercase tracking-widest mb-2">Wat onze klanten zeggen</p>
+          <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold text-gray-900">
+            Vertrouwd door Belgische ondernemers
+          </h2>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {[
+            {
+              quote: "Dankzij IntelliFrost wisten we binnen de minuut dat onze koelcel 's nachts uitviel. We hebben onze volledige stock gered.",
+              author: 'Slagerij klant',
+              sector: 'Slagerij · Antwerpen',
+            },
+            {
+              quote: 'De HACCP-rapporten saven ons elke maand uren aan papierwerk. Eén klik en alles staat klaar voor de inspecteur.',
+              author: 'Restauranthouder',
+              sector: 'Horeca · Gent',
+            },
+            {
+              quote: 'Als koeltechnicus kan ik nu al mijn klanten vanuit één dashboard opvolgen. Ik reageer proactief voor ze bellen.',
+              author: 'Koeltechnicus',
+              sector: 'Servicebedrijf · Brussel',
+            },
+          ].map((t, i) => (
+            <div key={i} className="p-6 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col gap-4">
+              <div className="flex gap-1">
+                {[...Array(5)].map((_, s) => (
+                  <span key={s} className="text-[#00c8ff] text-lg">★</span>
+                ))}
+              </div>
+              <p className="text-gray-700 italic leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
+              <div className="mt-auto">
+                <div className="font-semibold text-gray-900 text-sm">{t.author}</div>
+                <div className="text-gray-500 text-xs">{t.sector}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-8 py-6 border-t border-b border-gray-100">
+          {[
+            { icon: '🇧🇪', label: 'Made in Belgium' },
+            { icon: '🔒', label: 'HACCP-compliant' },
+            { icon: '📡', label: '99.9% uptime' },
+            { icon: '⚡', label: 'Alarm < 30 seconden' },
+            { icon: '📋', label: 'GDPR-conform' },
+          ].map((badge) => (
+            <div key={badge.label} className="flex items-center gap-2 text-gray-600 text-sm font-medium">
+              <span className="text-xl">{badge.icon}</span>
+              {badge.label}
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Sectoren – met foto's */}
       <section className="max-w-6xl mx-auto px-6 mb-24">
         <div className="text-center mb-14">
@@ -305,10 +372,13 @@ const Home: React.FC = () => {
               {/* Foto */}
               <div className="relative h-44 overflow-hidden">
                 <img
-                  src={s.img}
-                  alt={`${s.title} – koelcelmonitoring`}
+                  src={s.localImg}
+                  alt={`IntelliFrost koelcelmonitoring – ${s.title}`}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = s.img;
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent" />
                 <div className="absolute bottom-3 left-4 flex items-center gap-2">

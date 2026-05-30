@@ -110,15 +110,22 @@ const Contact: React.FC = () => {
         <meta property="og:url" content="https://intellifrost.be/contact" />
       </Helmet>
 
-      {/* Header */}
-      <div className="mb-14">
+      <div className="max-w-xl mx-auto text-center mb-10 px-6">
         <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-          Neem contact op
+          Vraag een gratis demo aan
         </h1>
-        <p className="text-lg text-gray-600 max-w-2xl leading-relaxed">
-          Heeft u vragen, wilt u een demo aanvragen of een offerte ontvangen? Vul het formulier in
-          en ons team contacteert u binnen 1 werkdag.
+        <p className="text-gray-600 text-lg leading-relaxed">
+          Wij installeren een testunit bij u gratis gedurende 30 dagen. Geen verplichtingen, geen technische kennis nodig.
         </p>
+        <div className="flex flex-wrap justify-center gap-6 mt-6">
+          {[
+            '✅ Installatie binnen 1 werkdag',
+            '✅ 30 dagen gratis testen',
+            '✅ Geen IT-kennis nodig',
+          ].map((item) => (
+            <span key={item} className="text-sm font-medium text-gray-700">{item}</span>
+          ))}
+        </div>
       </div>
 
       {/* Hero-foto boven de content */}
@@ -377,10 +384,8 @@ const Contact: React.FC = () => {
                 rows={5}
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-[#00c8ff] transition-colors text-sm resize-none"
                 placeholder={
-                  selectedType === 'demo'
-                    ? 'Vertel ons kort over uw situatie: sector, aantal koelcellen, huidige monitoring...'
-                    : selectedType === 'offerte'
-                    ? 'Beschrijf wat u zoekt. Hoe meer informatie, hoe gerichter onze offerte.'
+                  selectedType === 'demo' || selectedType === 'offerte' || selectedType === 'vraag'
+                    ? 'Vertel ons iets over uw situatie: hoeveel koelcellen heeft u, voor welke sector, en wat is uw grootste uitdaging? (optioneel)'
                     : selectedType === 'technicus'
                     ? 'Vertel ons over uw bedrijf en hoe een partnerschap eruit zou kunnen zien.'
                     : 'Uw vraag of opmerking...'

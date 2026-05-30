@@ -160,10 +160,14 @@ const Product: React.FC = () => {
           <div className="grid lg:grid-cols-2 gap-8 mb-8">
             <div className="relative rounded-2xl overflow-hidden h-64 lg:h-auto shadow-lg">
               <img
-                src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80"
-                alt="IoT sensor hardware voor koelcelmonitoring"
+                src="/images/product-hardware.jpg"
+                alt="IntelliFrost IoT-sensor hardware voor koelcelmonitoring"
                 className="w-full h-full object-cover"
                 loading="lazy"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80';
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B2E]/70 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4">
@@ -204,6 +208,17 @@ const Product: React.FC = () => {
             Op uw computer, tablet of smartphone ziet u in één oogopslag hoe al uw koelcellen het doen.
             Of u nu thuis bent, op de baan of op vakantie — u hebt altijd controle.
           </p>
+          <div className="rounded-2xl overflow-hidden mb-8 shadow-lg border border-gray-200">
+            <img
+              src="/images/product-dashboard.jpg"
+              alt="IntelliFrost dashboard — realtime koelcelmonitoring"
+              className="w-full h-auto object-cover"
+              loading="lazy"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          </div>
           <div className="grid md:grid-cols-2 gap-5">
             {dashboardFeatures.map((f) => (
               <div key={f.title} className="flex gap-4 p-5 rounded-xl bg-gray-50 border border-gray-200">

@@ -150,8 +150,14 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
         <div className="flex items-center gap-4 shrink-0">
           <MadeInBelgiumLogo compact className="hidden lg:flex" />
           <Link
+            to="/contact"
+            className="hidden lg:inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white bg-[#00c8ff] hover:bg-[#00a8dd] transition-colors text-sm"
+          >
+            Demo aanvragen
+          </Link>
+          <Link
             to="/login"
-            className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white bg-[#00c8ff] hover:bg-[#00a8dd] transition-colors lg:pl-4 lg:border-l lg:border-gray-200"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-[#00c8ff] border border-[#00c8ff] hover:bg-[#00c8ff]/10 transition-colors text-sm lg:pl-4 lg:border-l lg:border-gray-200"
           >
             <ArrowRightOnRectangleIcon className="h-5 w-5" />
             Inloggen
