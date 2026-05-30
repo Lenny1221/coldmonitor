@@ -2,535 +2,324 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRightOnRectangleIcon,
-  ChartBarIcon,
+  BoltIcon,
   BellAlertIcon,
-  CubeIcon,
   ShieldCheckIcon,
-  ClockIcon,
-  DevicePhoneMobileIcon,
-  BuildingStorefrontIcon,
-  BeakerIcon,
-  TruckIcon,
   WrenchScrewdriverIcon,
-  CheckCircleIcon,
+  PhoneIcon,
   ArrowRightIcon,
-  SparklesIcon,
-  TagIcon,
+  SignalIcon,
+  CpuChipIcon,
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline';
-
-const stats = [
-  { value: '99.9%', label: 'Uptime garantie' },
-  { value: '< 30s', label: 'Alarmreactietijd' },
-  { value: '3 lagen', label: 'Escalatieniveaus' },
-  { value: '24/7', label: 'Monitoring' },
-];
-
-const steps = [
-  {
-    num: '01',
-    title: 'Hardware installeren',
-    desc: 'Bevestig de IoT-sensoren in uw koel- of vriescel. Geen bekabeling nodig – de loggers werken draadloos en versturen data via WiFi of 4G naar het platform.',
-  },
-  {
-    num: '02',
-    title: 'Overzicht configureren',
-    desc: 'Stel drempelwaarden, deur-alarmvertraging en escalatiecontacten in via het gebruiksvriendelijke webdashboard. Klaar in enkele minuten.',
-  },
-  {
-    num: '03',
-    title: 'Alarmen ontvangen',
-    desc: 'Bij overschrijding van een grenswaarde start automatisch de escalatieprocedure: e-mail, SMS en eventueel een AI-telefoonoproep.',
-  },
-  {
-    num: '04',
-    title: 'Rapporteren & compliant blijven',
-    desc: 'Bekijk historische grafieken, download HACCP-rapporten en demonstreer compliance bij audits met één klik.',
-  },
-];
-
-const sectors = [
-  {
-    icon: BuildingStorefrontIcon,
-    title: 'Slagers, ijsbereiders & horeca',
-    desc: 'Bewaking van koel- en vriescellen voor slagers, ijssalons en restaurants. HACCP-compliant met automatische rapportage voor inspecties.',
-    localImg: '/images/sector-horeca.jpg',
-    img: 'https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    icon: BuildingStorefrontIcon,
-    title: 'Retail & supermarkten',
-    desc: 'Monitor alle koel- en vriestoonkasten vanuit één dashboard. Ontvang direct een alarm bij deuren die te lang openstaan of temperatuurproblemen.',
-    localImg: '/images/sector-retail.jpg',
-    img: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    icon: BeakerIcon,
-    title: 'Farmaceutisch',
-    desc: 'Voldoe aan strenge regelgeving (GDP, GMP) met gecertificeerde temperatuurregistratie en automatische compliance-rapporten.',
-    localImg: '/images/sector-pharma.jpg',
-    img: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    icon: TruckIcon,
-    title: 'Logistiek & transport',
-    desc: 'Bewijs de integriteit van uw koelketen van depot tot levering. Tijdstempel-logboek voor elke schakel.',
-    localImg: '/images/sector-logistics.jpg',
-    img: 'https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    icon: WrenchScrewdriverIcon,
-    title: 'Technici & servicebedrijven',
-    desc: 'Beheer meerdere klanten vanuit één portal. Ontvang alarmen van uw klanten en intervenieer proactief.',
-    localImg: '/images/sector-technician.jpg',
-    img: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&w=600&q=80',
-  },
-];
-
-const features = [
-  { icon: CubeIcon, title: 'IoT-sensoren', desc: 'Meten temperatuur tot op 0,1°C nauwkeurig. Batterijduur tot 2 jaar. Draadloos en eenvoudig te installeren.' },
-  { icon: BellAlertIcon, title: 'Slimme escalatie', desc: '3 escalatielagen: e-mail → SMS → AI-telefoon. Configureerbaar per tijdslot en per dag van de week.' },
-  { icon: ChartBarIcon, title: 'Live overzicht', desc: 'Realtime temperatuurgrafieken per cel. Historische data tot 2 jaar terug beschikbaar.' },
-  { icon: ShieldCheckIcon, title: 'HACCP-compliant', desc: 'Automatische rapportage voor voedselveiligheidsaudits. Exporteerbaar als PDF of CSV.' },
-  { icon: ClockIcon, title: 'Openingstijden-bewust', desc: 'Stel nachtmodus en weekendgedrag in zodat u alleen alarmen ontvangt wanneer relevant.' },
-  { icon: DevicePhoneMobileIcon, title: 'Mobiel & responsive', desc: 'Werkt op smartphone, tablet en desktop. Altijd en overal toegang tot uw data.' },
-];
+import { Check } from '../components/marketing/ui';
+import Photo from '../components/marketing/Photo';
+import AppStoreBadge from '../components/marketing/AppStoreBadge';
+import { starterPrices, proPrices } from '../components/marketing/pricing';
 
 const Home: React.FC = () => {
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: 'IntelliFrost',
-    description: 'Koelcelmonitoring met realtime temperatuurbewaking en automatische escalatie via e-mail, SMS en AI-telefoon. HACCP-compliant.',
-    applicationCategory: 'BusinessApplication',
-    operatingSystem: 'Web',
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR', priceSpecification: 'Op maat' },
-    areaServed: ['BE', 'NL'],
-    inLanguage: 'nl',
-  };
-
   return (
     <>
       <Helmet>
-        <title>IntelliFrost – Koelcelmonitoring 24/7 voor België & Nederland</title>
-        <meta name="description" content="IntelliFrost bewaakt uw koel- en vriescellen 24/7. Realtime temperatuurmonitoring met automatische escalatie via e-mail, SMS en AI-telefoon. HACCP-compliant." />
-        <meta name="keywords" content="koelcelmonitoring, temperatuurmonitoring, HACCP, koelcel alarm, vriescell bewaking, IoT sensor koelcel, escalatie alarm" />
+        <title>IntelliFrost – Slimme koelcelbewaking die problemen herkent én oplost</title>
+        <meta name="description" content="IntelliFrost bewaakt uw koelcellen 24/7 op temperatuur, deur en stroom. Bij een probleem wordt ook servicepartner Serv-Ice verwittigd, zodat het ook effectief hersteld wordt. HACCP-klaar, zelflerend en met mobiele app." />
+        <meta name="keywords" content="koelcelmonitoring, temperatuurbewaking, HACCP, koelcel alarm, Serv-Ice servicepartner, zelflerend koelcel, koelcel app" />
         <link rel="canonical" href="https://intellifrost.be/" />
-        <meta property="og:title" content="IntelliFrost – Koelcelmonitoring 24/7" />
-        <meta property="og:description" content="Bewaking van koel- en vriescellen met slimme escalatie en HACCP-rapportage. Voor retail, farmaceutisch, logistiek en meer." />
+        <meta property="og:title" content="IntelliFrost – Koelcelbewaking die problemen herkent én oplost" />
+        <meta property="og:description" content="24/7 bewaking van temperatuur, deur en stroom. Detecteren én oplossen via servicepartner Serv-Ice. HACCP-klaar en zelflerend." />
         <meta property="og:url" content="https://intellifrost.be/" />
-        <meta name="twitter:title" content="IntelliFrost – Koelcelmonitoring 24/7" />
-        <meta name="twitter:description" content="Realtime bewaking van koel- en vriescellen met slimme escalatie via e-mail, SMS en AI-telefoon." />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
 
-      {/* Hero – split layout */}
-      <section className="max-w-6xl mx-auto px-6 mb-24">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left: text */}
-          <div>
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00c8ff]/10 border border-[#00c8ff]/30 text-[#00c8ff] text-sm font-medium mb-6">
-              ⚡ Nieuw — AI-telefoonalarm inbegrepen
-            </div>
-            <h1 className="font-['Exo_2'] font-bold text-4xl sm:text-5xl lg:text-5xl text-gray-900 mb-6 leading-tight">
-              Uw koelcel defect?
-              <br />
-              <span className="text-[#00c8ff]">U weet het als eerste.</span>
-            </h1>
-            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-              IntelliFrost bewaakt uw koel- en vriescellen 24/7 met automatische escalatie via e-mail, SMS én
-              AI-telefoonoproep. HACCP-rapporten worden automatisch gegenereerd — klaar voor elke inspectie.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 mb-10">
-              <Link
-                to="/contact"
-                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl font-semibold text-white bg-[#00c8ff] hover:bg-[#00a8dd] transition-colors text-lg shadow-lg shadow-[#00c8ff]/20"
-              >
-                Vraag een demo aan
-                <ArrowRightIcon className="h-5 w-5" />
-              </Link>
-              <Link
-                to="/login"
-                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl font-semibold text-[#00c8ff] border-2 border-[#00c8ff] hover:bg-[#00c8ff]/10 transition-colors text-lg"
-              >
-                Inloggen
-                <ArrowRightOnRectangleIcon className="h-5 w-5" />
-              </Link>
-            </div>
-            {/* Stats inline */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {stats.map((s) => (
-                <div key={s.label} className="p-4 rounded-2xl bg-gray-50 border border-gray-200 text-center">
-                  <div className="font-['Exo_2'] text-2xl font-bold text-[#00c8ff] mb-0.5">{s.value}</div>
-                  <div className="text-xs text-gray-500">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: hero image */}
-          <div className="relative lg:h-[520px] h-72">
-            <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-2xl">
-              <img
-                src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=900&q=85"
-                alt="Koelcel magazijn met opgeslagen producten"
-                className="w-full h-full object-cover"
-                loading="eager"
-              />
-              {/* Overlay met cijfers */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B2E]/80 via-transparent to-transparent" />
-              <div className="absolute bottom-6 left-6 right-6">
-                <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4">
-                  <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
-                  <div>
-                    <div className="text-white text-sm font-semibold">Vriescel – Visvak A</div>
-                    <div className="text-white/70 text-xs">−22,3°C · Deur gesloten · Alles OK</div>
-                  </div>
-                  <div className="ml-auto font-['Exo_2'] text-lg font-bold text-green-400">−22,3°C</div>
-                </div>
-              </div>
-            </div>
-            {/* Decoratief accent */}
-            <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-[#00c8ff]/20 blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-4 -left-4 w-32 h-32 rounded-full bg-[#0080ff]/10 blur-3xl pointer-events-none" />
-          </div>
-        </div>
-      </section>
-
-      {/* Hoe het werkt – met foto naast stappen */}
-      <section className="max-w-6xl mx-auto px-6 mb-24">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Foto links */}
-          <div className="relative rounded-3xl overflow-hidden h-80 lg:h-auto lg:min-h-[400px] shadow-xl order-2 lg:order-1">
-            <img
-              src="/images/product-device.jpg"
-              alt="IntelliFrost IoT-sensor voor temperatuurmonitoring"
-              className="w-full h-full object-cover"
-              loading="lazy"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src =
-                  'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80';
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#00c8ff]/30 to-transparent mix-blend-multiply" />
-          </div>
-          {/* Stappen rechts */}
-          <div className="order-1 lg:order-2">
-            <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-              Hoe werkt IntelliFrost?
-            </h2>
-            <p className="text-gray-600 mb-8">
-              Van hardware installatie tot automatische alarmopvolging – in 4 stappen operationeel.
-            </p>
-            <div className="space-y-5">
-              {steps.map((step) => (
-                <div key={step.num} className="flex gap-4 p-5 rounded-2xl bg-gray-50 border border-gray-200">
-                  <div className="font-['Exo_2'] text-2xl font-bold text-[#00c8ff]/40 flex-shrink-0 leading-none pt-1">
-                    {step.num}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">{step.title}</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">{step.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Escalatievisualisatie */}
-      <section className="max-w-5xl mx-auto px-6 mb-24">
-        <div className="text-center mb-14">
-          <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-            Automatische escalatie – totdat iemand reageert
-          </h2>
-          <p className="text-gray-600 max-w-xl mx-auto">
-            Geen gemiste alarmen meer. Het systeem gaat door totdat er een reactie is.
+      {/* Hero */}
+      <section className="bg-navy text-white px-5 pt-28 pb-20">
+        <div className="max-w-3xl mx-auto text-center">
+          <p className="text-brand text-sm font-semibold uppercase tracking-wider mb-4">
+            HACCP koelcelmonitoring · België &amp; Nederland
           </p>
-        </div>
-        <div className="relative flex flex-col md:flex-row items-stretch gap-4">
-          {[
-            { level: 'Laag 1', time: 'Direct', channels: ['E-mail', 'Push-notificatie'], color: 'border-green-400', badge: 'bg-green-100 text-green-700' },
-            { level: 'Laag 2', time: 'Na X min. geen reactie', channels: ['SMS', 'Backup contact', 'Technicus verwittigd'], color: 'border-orange-400', badge: 'bg-orange-100 text-orange-700' },
-            { level: 'Laag 3', time: 'Na verdere non-respons', channels: ['AI-telefoonoproep', 'Backup gebeld', 'Technicus ingeschakeld'], color: 'border-red-400', badge: 'bg-red-100 text-red-700' },
-          ].map((layer) => (
-            <div key={layer.level} className="flex-1 flex flex-col">
-              <div className={`flex-1 p-6 rounded-2xl bg-gray-50 border-2 ${layer.color}`}>
-                <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-3 ${layer.badge}`}>
-                  {layer.level}
-                </div>
-                <div className="text-xs text-gray-500 mb-3">{layer.time}</div>
-                <ul className="space-y-2">
-                  {layer.channels.map((c) => (
-                    <li key={c} className="flex items-center gap-2 text-sm text-gray-700">
-                      <CheckCircleIcon className="h-4 w-4 text-[#00c8ff] flex-shrink-0" />
-                      {c}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="max-w-5xl mx-auto px-6 mb-24">
-        <div className="text-center mb-14">
-          <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-            Alles wat u nodig heeft
-          </h2>
-          <p className="text-gray-600 max-w-xl mx-auto">
-            IntelliFrost combineert betrouwbare hardware met een slimme cloudoplossing.
+          <h1 className="font-display text-4xl sm:text-5xl font-extrabold leading-tight mb-5">
+            Koelcel in de fout?
+            <br />
+            <span className="text-brand">Wij weten het — en lossen het op.</span>
+          </h1>
+          <p className="text-lg text-white/70 max-w-xl mx-auto mb-8">
+            IntelliFrost bewaakt temperatuur, deur en stroom 24/7. Bij een probleem krijgt niet alleen ú een alarm —
+            ook onze vaste servicepartner <strong className="text-white">Serv-Ice</strong> wordt verwittigd en komt herstellen.
           </p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {features.map((f) => (
-            <div key={f.title} className="p-6 rounded-2xl bg-gray-50 border border-gray-200 hover:border-[#00c8ff]/40 transition-colors">
-              <div className="w-12 h-12 rounded-xl bg-[#00c8ff]/15 flex items-center justify-center mb-4">
-                <f.icon className="h-6 w-6 text-[#00c8ff]" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">{f.title}</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Social proof */}
-      <section className="max-w-6xl mx-auto px-6 mb-24">
-        <div className="text-center mb-10">
-          <p className="text-sm font-semibold text-[#00c8ff] uppercase tracking-widest mb-2">Wat onze klanten zeggen</p>
-          <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold text-gray-900">
-            Vertrouwd door Belgische ondernemers
-          </h2>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {[
-            {
-              quote: "Dankzij IntelliFrost wisten we binnen de minuut dat onze koelcel 's nachts uitviel. We hebben onze volledige stock gered.",
-              author: 'Slagerij klant',
-              sector: 'Slagerij · Antwerpen',
-            },
-            {
-              quote: 'De HACCP-rapporten saven ons elke maand uren aan papierwerk. Eén klik en alles staat klaar voor de inspecteur.',
-              author: 'Restauranthouder',
-              sector: 'Horeca · Gent',
-            },
-            {
-              quote: 'Als koeltechnicus kan ik nu al mijn klanten vanuit één dashboard opvolgen. Ik reageer proactief voor ze bellen.',
-              author: 'Koeltechnicus',
-              sector: 'Servicebedrijf · Brussel',
-            },
-          ].map((t, i) => (
-            <div key={i} className="p-6 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col gap-4">
-              <div className="flex gap-1">
-                {[...Array(5)].map((_, s) => (
-                  <span key={s} className="text-[#00c8ff] text-lg">★</span>
-                ))}
-              </div>
-              <p className="text-gray-700 italic leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
-              <div className="mt-auto">
-                <div className="font-semibold text-gray-900 text-sm">{t.author}</div>
-                <div className="text-gray-500 text-xs">{t.sector}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-8 py-6 border-t border-b border-gray-100">
-          {[
-            { icon: '🇧🇪', label: 'Made in Belgium' },
-            { icon: '🔒', label: 'HACCP-compliant' },
-            { icon: '📡', label: '99.9% uptime' },
-            { icon: '⚡', label: 'Alarm < 30 seconden' },
-            { icon: '📋', label: 'GDPR-conform' },
-          ].map((badge) => (
-            <div key={badge.label} className="flex items-center gap-2 text-gray-600 text-sm font-medium">
-              <span className="text-xl">{badge.icon}</span>
-              {badge.label}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Sectoren – met foto's */}
-      <section className="max-w-6xl mx-auto px-6 mb-24">
-        <div className="text-center mb-14">
-          <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-            Voor elke sector
-          </h2>
-          <p className="text-gray-600 max-w-xl mx-auto">
-            Van kleine slagerij tot grote farmaceutische distributeur – IntelliFrost past zich aan uw noden aan.
-          </p>
-        </div>
-        <div className="grid md:grid-cols-2 gap-6">
-          {sectors.map((s) => (
-            <div key={s.title} className="group rounded-2xl overflow-hidden border border-gray-200 hover:border-[#00c8ff]/40 transition-all hover:shadow-lg">
-              {/* Foto */}
-              <div className="relative h-44 overflow-hidden">
-                <img
-                  src={s.localImg}
-                  alt={`IntelliFrost koelcelmonitoring – ${s.title}`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = s.img;
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent" />
-                <div className="absolute bottom-3 left-4 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <s.icon className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="text-white font-semibold text-sm">{s.title}</span>
-                </div>
-              </div>
-              {/* Text */}
-              <div className="p-5 bg-white">
-                <p className="text-sm text-gray-600 leading-relaxed">{s.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="text-center mt-8">
-          <Link to="/oplossingen" className="inline-flex items-center gap-2 text-[#00c8ff] font-medium hover:underline">
-            Bekijk alle sectoren
-            <ArrowRightIcon className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
-
-      {/* Serv-Ice servicepartner sectie */}
-      <section className="max-w-5xl mx-auto px-6 mb-24">
-        <div className="relative rounded-3xl overflow-hidden">
-          {/* Dark bg + grid */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#050f1a] via-[#0a1e35] to-[#050f1a]" />
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage:
-                'linear-gradient(rgba(0,200,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,255,0.4) 1px, transparent 1px)',
-              backgroundSize: '40px 40px',
-            }}
-          />
-          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#00c8ff]/15 blur-3xl pointer-events-none" />
-
-          <div className="relative p-8 sm:p-10 grid md:grid-cols-2 gap-8 items-center">
-            {/* Left: tekst */}
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00c8ff]/20 border border-[#00c8ff]/40 text-[#00c8ff] text-xs font-semibold mb-4">
-                <WrenchScrewdriverIcon className="h-3.5 w-3.5" />
-                Officiële servicepartner
-              </div>
-              <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold mb-3 leading-tight" style={{ color: '#ffffff' }}>
-                <span style={{ color: '#ffffff' }}>Monitoring én onderhoud –{' '}</span>
-                <span style={{ color: '#ffffff' }}>
-                  Serv-Ice regelt de rest
-                </span>
-              </h2>
-              <p className="text-white/65 leading-relaxed mb-5 text-sm">
-                IntelliFrost bewaakt uw installatie 24/7. Gaat er iets mis? Dan staat onze officiële servicepartner <strong className="text-white">Serv-Ice</strong> klaar voor snelle interventie — met meer dan 8 jaar expertise in koeltechnieken.
-              </p>
-              <ul className="space-y-2 mb-6">
-                {[
-                  'Herstelling & preventief onderhoud ter plaatse',
-                  'Alle gangbare merken koelinstallaties',
-                  'Servicecontracten voor zorgeloze bewaking',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2.5 text-sm text-white/75">
-                    <CheckCircleIcon className="h-4 w-4 text-[#00c8ff] flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/servicepartner"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-[#0D1B2E] bg-[#00c8ff] hover:bg-[#00e5ff] transition-colors text-sm"
-              >
-                Meer over Serv-Ice
-                <ArrowRightIcon className="h-4 w-4" />
-              </Link>
-            </div>
-
-            {/* Right: combo deal highlight */}
-            <div className="flex flex-col gap-3">
-              <div className="p-5 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4">
-                <div className="w-11 h-11 rounded-xl bg-[#00c8ff]/20 flex items-center justify-center flex-shrink-0">
-                  <CubeIcon className="h-5 w-5 text-[#00c8ff]" />
-                </div>
-                <div>
-                  <div className="text-white font-semibold text-sm">IntelliFrost Monitoring</div>
-                  <div className="text-white/45 text-xs">24/7 bewaking · HACCP · escalatie</div>
-                </div>
-              </div>
-
-              <div className="flex justify-center">
-                <div className="w-7 h-7 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-white/40 font-bold text-sm">+</div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4">
-                <div className="w-11 h-11 rounded-xl bg-[#00c8ff]/20 flex items-center justify-center flex-shrink-0">
-                  <WrenchScrewdriverIcon className="h-5 w-5 text-[#00c8ff]" />
-                </div>
-                <div>
-                  <div className="text-white font-semibold text-sm">Serv-Ice Servicecontract</div>
-                  <div className="text-white/45 text-xs">Preventief onderhoud · prioriteitsinterventie</div>
-                </div>
-              </div>
-
-              <div className="flex justify-center">
-                <div className="w-7 h-7 rounded-full bg-amber-400/20 border border-amber-400/35 flex items-center justify-center text-amber-400 font-bold text-sm">=</div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-400/15 to-[#00c8ff]/10 border border-amber-400/30">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <TagIcon className="h-4 w-4 text-amber-400 flex-shrink-0" />
-                  <div className="font-bold text-white text-sm">Exclusieve combodeal</div>
-                </div>
-                <div className="text-white/55 text-xs leading-relaxed">
-                  1 maand IntelliFrost gratis + korting op servicecontract
-                </div>
-                <Link
-                  to="/servicepartner"
-                  className="inline-flex items-center gap-1.5 text-amber-400 text-xs font-semibold mt-2 hover:underline"
-                >
-                  <SparklesIcon className="h-3.5 w-3.5" />
-                  Combodeal bekijken
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      {/* CTA */}
-      <section className="max-w-3xl mx-auto px-6 mb-20">
-        <div className="p-10 rounded-3xl bg-gradient-to-br from-[#00c8ff]/20 to-[#0080aa]/10 border border-[#00c8ff]/30 text-center">
-          <h2 className="font-['Exo_2'] text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
-            Klaar om te starten?
-          </h2>
-          <p className="text-gray-600 mb-8 max-w-md mx-auto">
-            Vraag een vrijblijvende demo aan en ontdek hoe IntelliFrost uw koelketen beschermt.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               to="/contact"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-white bg-[#00c8ff] hover:bg-[#00a8dd] transition-colors"
+              className="bg-brand text-navy font-bold px-8 py-3.5 rounded-xl hover:bg-brand-dark transition-colors"
             >
-              Demo aanvragen
-              <ArrowRightIcon className="h-5 w-5" />
+              Gratis demo aanvragen
             </Link>
             <Link
               to="/prijzen"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-[#00c8ff] border-2 border-[#00c8ff] hover:bg-[#00c8ff]/10 transition-colors"
+              className="border border-white/30 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-white/10 transition-colors"
             >
-              Bekijk de prijzen
+              Bekijk prijzen
             </Link>
           </div>
+          <p className="mt-6 text-xs text-white/40">30 dagen gratis testen · installatie binnen 1 werkdag · geen IT-kennis nodig</p>
+        </div>
+      </section>
+
+      {/* Dashboard preview */}
+      <section className="px-5 -mt-12">
+        <div className="max-w-4xl mx-auto">
+          <Photo
+            src="dashboard-overview.png"
+            alt="IntelliFrost dashboard met alle koelcellen in één overzicht"
+            placeholder="Screenshot: dashboard met alle koelcellen (groen/oranje/rood)"
+            ratio="video"
+            className="shadow-2xl ring-1 ring-black/5"
+          />
+        </div>
+      </section>
+
+      {/* 3 voordelen */}
+      <section className="px-5 py-14 border-b border-gray-100">
+        <div className="max-w-4xl mx-auto grid sm:grid-cols-3 gap-8 text-center">
+          {[
+            { icon: SignalIcon, title: 'Altijd online', desc: 'WiFi + 4G backup. Blijft bewaken, ook bij stroomuitval.' },
+            { icon: BellAlertIcon, title: 'Direct alarm', desc: 'SMS, app en telefoon zodra temperatuur of deur afwijkt.' },
+            { icon: ShieldCheckIcon, title: 'HACCP-klaar', desc: 'Rapporten met één klik, exporteerbaar voor de controle.' },
+          ].map((item) => (
+            <div key={item.title}>
+              <div className="w-12 h-12 rounded-xl bg-brand/15 flex items-center justify-center mx-auto mb-4">
+                <item.icon className="h-6 w-6 text-brand" />
+              </div>
+              <h3 className="font-display font-bold text-navy text-lg mb-2">{item.title}</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* KERN: detecteren én oplossen */}
+      <section className="px-5 py-16 bg-gray-50">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <span className="inline-block bg-brand/15 text-brand text-xs font-semibold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wide">
+              Wat ons uniek maakt
+            </span>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-navy mb-4">
+              Monitoring alleen lost niets op.
+              <br />
+              <span className="text-brand">Wij sturen ook de hersteller.</span>
+            </h2>
+            <p className="text-gray-600">
+              Andere systemen sturen u een melding en laten u in de kou staan. Bij IntelliFrost krijgt onze vaste
+              servicepartner <strong>Serv-Ice</strong> exact dezelfde melding — zo staat er een koeltechnicus klaar
+              nog voor uw producten in gevaar komen.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { step: '1', icon: BoltIcon, title: 'Probleem herkend', desc: 'IntelliFrost merkt een afwijking in temperatuur, deur of stroom en start het alarm.' },
+              { step: '2', icon: PhoneIcon, title: 'Serv-Ice verwittigd', desc: 'Onze servicepartner krijgt automatisch dezelfde melding via het platform.' },
+              { step: '3', icon: WrenchScrewdriverIcon, title: 'Snelle interventie', desc: 'Een koeltechnicus komt ter plaatse — met prioriteit bij een servicecontract.' },
+              { step: '4', icon: ShieldCheckIcon, title: 'Opgelost & gelogd', desc: 'Installatie hersteld, het event netjes geregistreerd voor uw HACCP-dossier.' },
+            ].map((item) => (
+              <div key={item.step} className="bg-white rounded-2xl border border-gray-200 p-5 text-center">
+                <div className="w-9 h-9 rounded-full bg-brand text-navy font-display font-bold flex items-center justify-center mx-auto mb-3">
+                  {item.step}
+                </div>
+                <item.icon className="h-5 w-5 text-brand mx-auto mb-2" />
+                <h3 className="font-semibold text-navy text-sm mb-1">{item.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <Link
+              to="/servicepartner"
+              className="inline-flex items-center gap-2 text-brand font-semibold hover:underline"
+            >
+              Ontdek onze servicepartner Serv-Ice
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Zelflerend / baseline */}
+      <section className="px-5 py-16">
+        <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <span className="inline-block bg-brand/15 text-brand text-xs font-semibold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wide">
+              Zelflerend &amp; preventief
+            </span>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-navy mb-4">
+              Uw koelcel leert zichzelf kennen
+            </h2>
+            <p className="text-gray-600 mb-4 leading-relaxed">
+              Geen twee koelcellen zijn gelijk. Daarom meet IntelliFrost na de installatie <strong>7 dagen lang</strong>
+              de ruimtevoeler, de verdampervoeler én de delta daartussen, om een persoonlijke <strong>baseline</strong>
+              van uw cel op te bouwen.
+            </p>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              Gaat de cel zich daarna anders gedragen dan normaal? Dan krijgt u <strong>preventief</strong> een melding —
+              nog vóór de temperatuur ontspoort. Vaak wijst dat op een beginnend koeltechnisch of elektrisch probleem.
+            </p>
+            <ul className="space-y-2.5">
+              {[
+                { icon: AcademicCapIcon, t: '7 dagen leren: ruimte- + verdampervoeler en hun delta' },
+                { icon: CpuChipIcon, t: 'Eigen baseline per cel — geen ruwe vaste drempel' },
+                { icon: BoltIcon, t: 'Preventieve melding bij afwijkend gedrag' },
+              ].map((it) => (
+                <li key={it.t} className="flex gap-3 items-start text-sm text-gray-700">
+                  <span className="w-7 h-7 rounded-lg bg-brand/15 flex items-center justify-center shrink-0">
+                    <it.icon className="h-4 w-4 text-brand" />
+                  </span>
+                  {it.t}
+                </li>
+              ))}
+            </ul>
+            <Link
+              to="/servicepartner"
+              className="inline-flex items-center gap-2 text-brand font-semibold hover:underline mt-6"
+            >
+              Ideaal als service-tool voor technici
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+          </div>
+          <Photo
+            src="baseline-learning.png"
+            alt="Grafiek met aangeleerde baseline en gedetecteerde afwijking"
+            placeholder="Screenshot: temperatuurgrafiek met baseline + afwijking/findings-paneel"
+            ratio="square"
+            className="shadow-xl ring-1 ring-black/5"
+          />
+        </div>
+      </section>
+
+      {/* Mobiele app */}
+      <section className="px-5 py-16 bg-navy text-white overflow-hidden">
+        <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
+          <div className="flex justify-center lg:justify-start">
+            <Photo
+              src="app-smartphone.png"
+              alt="IntelliFrost-app geopend op een smartphone"
+              placeholder="Foto: smartphone met de IntelliFrost-app open"
+              ratio="tall"
+              className="max-w-[280px] shadow-2xl shadow-black/40 ring-1 ring-white/10"
+            />
+          </div>
+          <div>
+            <span className="inline-block bg-brand/20 text-brand text-xs font-semibold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wide">
+              Beschikbaar in de App Store
+            </span>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold mb-4">
+              Uw koelcellen in uw broekzak
+            </h2>
+            <p className="text-white/70 mb-6 leading-relaxed">
+              Speciaal voor de eindklant: een verzorgde mobiele app waarmee u overal uw koelcellen volgt, alarmen meteen
+              binnenkrijgt en met één tik bevestigt. Of u nu thuis bent, op de baan of op vakantie — u hebt altijd controle.
+            </p>
+            <ul className="space-y-2.5 mb-8">
+              {[
+                'Push-melding zodra er een alarm is',
+                'Live temperatuur van elke cel',
+                'Alarm bevestigen met één tik',
+              ].map((t) => (
+                <li key={t} className="flex gap-3 items-start text-sm text-white/85">
+                  <span className="w-5 h-5 rounded-full bg-brand/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="w-2 h-2 rounded-full bg-brand" />
+                  </span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap items-center gap-4">
+              <AppStoreBadge href="#" />
+              <Link to="/app" className="inline-flex items-center gap-2 text-brand font-semibold hover:underline">
+                Meer over de app
+                <ArrowRightIcon className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Prijs-teaser */}
+      <section className="px-5 py-16 border-t border-gray-100">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-navy text-center mb-2">
+            Eén systeem, eerlijke prijs
+          </h2>
+          <p className="text-gray-500 text-center mb-10 text-sm">
+            Hardware eenmalig, abonnement per maand. 30 dagen gratis test.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-5 max-w-2xl mx-auto">
+            <div className="rounded-2xl border-2 border-gray-200 p-6">
+              <h3 className="font-display font-bold text-navy">Starter</h3>
+              <p className="text-xs text-gray-500 mb-3">1 koelcel · WiFi</p>
+              <p className="text-3xl font-bold text-brand">
+                €{starterPrices.monthly}<span className="text-base font-normal text-gray-400">/mnd</span>
+              </p>
+              <p className="text-xs text-gray-400">+ hardware €399 eenmalig</p>
+            </div>
+            <div className="rounded-2xl border-2 border-brand bg-navy text-white p-6">
+              <h3 className="font-display font-bold">Pro</h3>
+              <p className="text-xs text-white/50 mb-3">4G · deursensor · batterij</p>
+              <p className="text-3xl font-bold text-brand">
+                €{proPrices.monthly}<span className="text-base font-normal text-white/40">/mnd</span>
+              </p>
+              <p className="text-xs text-white/40">+ hardware €499 eenmalig</p>
+            </div>
+          </div>
+          <div className="text-center mt-8">
+            <Link to="/prijzen" className="inline-flex items-center gap-2 text-brand font-semibold hover:underline">
+              Bekijk alle prijzen &amp; bundels
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Voor wie + social proof */}
+      <section className="px-5 py-14 bg-gray-50 border-y border-gray-100">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="font-display text-xl font-bold text-navy mb-6">Vertrouwd in elke koude sector</h2>
+          <div className="flex flex-wrap justify-center gap-2 mb-8">
+            {['Slagers', 'Horeca', 'IJssalons', 'Supermarkten', 'Apotheken', 'Ziekenhuizen', 'Logistiek'].map((s) => (
+              <span key={s} className="bg-white border border-gray-200 text-gray-600 text-sm px-3 py-1.5 rounded-full">
+                {s}
+              </span>
+            ))}
+          </div>
+          <div className="grid sm:grid-cols-3 gap-4 text-left max-w-2xl mx-auto">
+            {[
+              'Geen handmatige HACCP-registratie meer',
+              'Nooit meer een nachtelijk alarm missen',
+              'Eén aanspreekpunt voor bewaking én herstel',
+            ].map((t) => (
+              <div key={t} className="flex gap-2 items-start text-sm text-gray-700">
+                <Check />
+                {t}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="px-5 py-16 bg-brand/10">
+        <div className="max-w-lg mx-auto text-center">
+          <h2 className="font-display text-2xl font-bold text-navy mb-3">
+            Klaar om uw koelcel te bewaken?
+          </h2>
+          <p className="text-gray-600 text-sm mb-6">
+            We plaatsen een pilootunit en u test 30 dagen gratis. Geen verplichtingen.
+          </p>
+          <Link
+            to="/contact"
+            className="inline-block bg-brand text-navy font-bold px-10 py-3.5 rounded-xl hover:bg-brand-dark transition-colors"
+          >
+            Gratis demo aanvragen
+          </Link>
         </div>
       </section>
     </>

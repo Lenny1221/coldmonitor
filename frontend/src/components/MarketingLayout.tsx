@@ -199,7 +199,7 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
         </div>
       )}
 
-      <main className="pt-24 pb-16">{children}</main>
+      <main>{children}</main>
 
       <footer className="border-t border-gray-200 py-8">
         <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-6">
@@ -213,6 +213,9 @@ const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
                 {label}
               </Link>
             ))}
+            <Link to="/app" className="text-sm text-gray-500 hover:text-[#00c8ff] shrink-0">
+              Mobiele app
+            </Link>
             <MadeInBelgiumLogo compact className="ml-4 pl-4 border-l border-gray-200 shrink-0" />
           </div>
         </div>

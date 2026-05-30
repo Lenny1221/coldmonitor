@@ -21,10 +21,15 @@ export default {
           900: '#0a1520',
           950: '#080e1a',
         },
+        // Marketing-site tokens
+        brand: '#00c8ff',
+        'brand-dark': '#00a8dd',
+        navy: '#0D1B2E',
       },
       fontFamily: {
         exo: ['"Exo 2"', 'sans-serif'],
         rajdhani: ['Rajdhani', 'sans-serif'],
+        display: ['"Exo 2"', 'system-ui', 'sans-serif'],
       },
     },
   },

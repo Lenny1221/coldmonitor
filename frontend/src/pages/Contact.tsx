@@ -6,25 +6,24 @@ import {
   PhoneIcon,
   MapPinIcon,
   ClockIcon,
-  ChatBubbleLeftRightIcon,
-  CalendarDaysIcon,
-  DocumentTextIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
+import { PageHeader } from '../components/marketing/ui';
+import Photo from '../components/marketing/Photo';
 
 type ContactType = 'vraag' | 'offerte' | 'demo' | 'technicus' | 'support';
 
-const contactTypes: { id: ContactType; label: string; desc: string; icon: React.ElementType }[] = [
-  { id: 'demo', label: 'Demo aanvragen', desc: 'Ontdek het platform in een persoonlijke demo', icon: CalendarDaysIcon },
-  { id: 'offerte', label: 'Offerte aanvragen', desc: 'Prijsvoorstel op maat voor uw situatie', icon: DocumentTextIcon },
-  { id: 'vraag', label: 'Algemene vraag', desc: 'Meer info over functies of het platform', icon: ChatBubbleLeftRightIcon },
-  { id: 'technicus', label: 'Technicus-partnerschap', desc: 'Samenwerken als koeltechnicus of installateur', icon: CheckCircleIcon },
-  { id: 'support', label: 'Technische support', desc: 'Hulp bij een bestaand account of installatie', icon: PhoneIcon },
+const contactTypes: { id: ContactType; label: string }[] = [
+  { id: 'demo', label: 'Demo aanvragen' },
+  { id: 'offerte', label: 'Offerte' },
+  { id: 'vraag', label: 'Algemene vraag' },
+  { id: 'technicus', label: 'Technicus-partnerschap' },
+  { id: 'support', label: 'Support' },
 ];
 
 const sectors = [
   'Slagerij / beenhouwerij',
-  'Ijsbereider / ijssalon',
+  'IJsbereider / ijssalon',
   'Restaurant / horeca / catering',
   'Retail / supermarkt',
   'Groothandel / distributie',
@@ -78,19 +77,17 @@ const Contact: React.FC = () => {
 
   if (submitted) {
     return (
-      <div className="max-w-xl mx-auto px-6 text-center py-20">
+      <div className="max-w-xl mx-auto px-5 text-center py-28">
         <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
           <CheckCircleIcon className="h-8 w-8 text-green-500" />
         </div>
-        <h2 className="font-['Exo_2'] text-2xl font-bold text-gray-900 mb-3">
-          Bedankt voor uw bericht!
-        </h2>
+        <h2 className="font-display text-2xl font-bold text-navy mb-3">Bedankt voor uw bericht!</h2>
         <p className="text-gray-600 mb-8">
-          Uw aanvraag is doorgestuurd. We nemen zo snel mogelijk contact met u op – normaal gezien binnen 1 werkdag.
+          Uw aanvraag is doorgestuurd. We nemen zo snel mogelijk contact met u op — normaal binnen 1 werkdag.
         </p>
         <button
           onClick={() => setSubmitted(false)}
-          className="px-6 py-3 rounded-lg font-medium text-[#00c8ff] border-2 border-[#00c8ff] hover:bg-[#00c8ff]/10 transition-colors"
+          className="px-6 py-3 rounded-xl border-2 border-brand text-brand font-semibold hover:bg-brand/10 transition-colors"
         >
           Nieuw bericht sturen
         </button>
@@ -99,7 +96,7 @@ const Contact: React.FC = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6">
+    <>
       <Helmet>
         <title>Contact – IntelliFrost | Demo aanvragen of offerte opvragen</title>
         <meta name="description" content="Neem contact op met IntelliFrost voor een demo, offerte of technische vragen over koelcelmonitoring. Antwoord binnen 1 werkdag." />
@@ -110,318 +107,234 @@ const Contact: React.FC = () => {
         <meta property="og:url" content="https://intellifrost.be/contact" />
       </Helmet>
 
-      <div className="max-w-xl mx-auto text-center mb-10 px-6">
-        <h1 className="font-['Exo_2'] text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-          Vraag een gratis demo aan
-        </h1>
-        <p className="text-gray-600 text-lg leading-relaxed">
-          Wij installeren een testunit bij u gratis gedurende 30 dagen. Geen verplichtingen, geen technische kennis nodig.
-        </p>
-        <div className="flex flex-wrap justify-center gap-6 mt-6">
-          {[
-            '✅ Installatie binnen 1 werkdag',
-            '✅ 30 dagen gratis testen',
-            '✅ Geen IT-kennis nodig',
-          ].map((item) => (
-            <span key={item} className="text-sm font-medium text-gray-700">{item}</span>
+      <PageHeader
+        kicker="Contact"
+        title="Vraag een gratis demo aan"
+        subtitle="We installeren een testunit, 30 dagen gratis. Geen verplichtingen, geen technische kennis nodig."
+      />
+
+      <div className="max-w-5xl mx-auto px-5 pb-16">
+        <div className="flex flex-wrap justify-center gap-6 mb-12">
+          {['Installatie binnen 1 werkdag', '30 dagen gratis testen', 'Geen IT-kennis nodig'].map((t) => (
+            <span key={t} className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <CheckCircleIcon className="h-4 w-4 text-brand" /> {t}
+            </span>
           ))}
         </div>
-      </div>
 
-      {/* Hero-foto boven de content */}
-      <div className="relative rounded-3xl overflow-hidden mb-10 h-52 shadow-lg">
-        <img
-          src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1400&q=85"
-          alt="IntelliFrost kantoor – wij helpen u verder"
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#00c8ff]/60 to-[#0D1B2E]/70" />
-        <div className="absolute inset-0 flex items-center px-10">
-          <div>
-            <div className="text-white/80 text-sm mb-1">Antwoord binnen 1 werkdag</div>
-            <div className="font-['Exo_2'] text-2xl font-bold text-white">Wij helpen u graag verder</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-10">
-        {/* Left: contact info */}
-        <div className="space-y-8">
-          {/* Contactgegevens */}
-          <div>
-            <h2 className="font-semibold text-gray-900 mb-5">Contactgegevens</h2>
-            <div className="space-y-4">
-              <a
-                href="mailto:info@intellifrost.be"
-                className="flex items-center gap-3 text-gray-600 hover:text-[#00c8ff] transition-colors"
-              >
-                <div className="w-9 h-9 rounded-lg bg-[#00c8ff]/15 flex items-center justify-center flex-shrink-0">
-                  <EnvelopeIcon className="h-4 w-4 text-[#00c8ff]" />
+        <div className="grid lg:grid-cols-3 gap-10">
+          {/* Info */}
+          <div className="space-y-8">
+            <Photo
+              src="installation.jpg"
+              alt="IntelliFrost installatie bij een klant"
+              placeholder="Foto: installatie/onboarding bij een klant"
+              ratio="video"
+              className="shadow-lg ring-1 ring-black/5"
+            />
+            <div>
+              <h2 className="font-semibold text-navy mb-4">Contactgegevens</h2>
+              <div className="space-y-4">
+                <a href="mailto:info@intellifrost.be" className="flex items-center gap-3 text-gray-600 hover:text-brand">
+                  <span className="w-9 h-9 rounded-lg bg-brand/15 flex items-center justify-center shrink-0">
+                    <EnvelopeIcon className="h-4 w-4 text-brand" />
+                  </span>
+                  <span>
+                    <span className="block text-xs text-gray-400">E-mail</span>
+                    <span className="text-sm font-medium">info@intellifrost.be</span>
+                  </span>
+                </a>
+                <a href="tel:+32468429719" className="flex items-center gap-3 text-gray-600 hover:text-brand">
+                  <span className="w-9 h-9 rounded-lg bg-brand/15 flex items-center justify-center shrink-0">
+                    <PhoneIcon className="h-4 w-4 text-brand" />
+                  </span>
+                  <span>
+                    <span className="block text-xs text-gray-400">Telefoon</span>
+                    <span className="text-sm font-medium">+32 468 42 97 19</span>
+                  </span>
+                </a>
+                <div className="flex items-center gap-3 text-gray-600">
+                  <span className="w-9 h-9 rounded-lg bg-brand/15 flex items-center justify-center shrink-0">
+                    <MapPinIcon className="h-4 w-4 text-brand" />
+                  </span>
+                  <span>
+                    <span className="block text-xs text-gray-400">Regio</span>
+                    <span className="text-sm font-medium">België &amp; Nederland</span>
+                  </span>
                 </div>
-                <div>
-                  <div className="text-xs text-gray-400">E-mail</div>
-                  <div className="text-sm font-medium">info@intellifrost.be</div>
-                </div>
-              </a>
-              <a
-                href="tel:+32468429719"
-                className="flex items-center gap-3 text-gray-600 hover:text-[#00c8ff] transition-colors"
-              >
-                <div className="w-9 h-9 rounded-lg bg-[#00c8ff]/15 flex items-center justify-center flex-shrink-0">
-                  <PhoneIcon className="h-4 w-4 text-[#00c8ff]" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">Telefoon</div>
-                  <div className="text-sm font-medium">+32 468 42 97 19</div>
-                </div>
-              </a>
-              <div className="flex items-start gap-3 text-gray-600">
-                <div className="w-9 h-9 rounded-lg bg-[#00c8ff]/15 flex items-center justify-center flex-shrink-0">
-                  <MapPinIcon className="h-4 w-4 text-[#00c8ff]" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">Adres</div>
-                  <div className="text-sm font-medium">België</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Beschikbaarheid */}
-          <div>
-            <h2 className="font-semibold text-gray-900 mb-5">Bereikbaarheid</h2>
-            <div className="space-y-3">
-              {[
-                { day: 'Maandag – vrijdag', hours: '9:00 – 18:00' },
-                { day: 'Zaterdag', hours: '10:00 – 13:00' },
-                { day: 'Zondag', hours: 'Gesloten' },
-              ].map((item) => (
-                <div key={item.day} className="flex items-center gap-3">
-                  <ClockIcon className="h-4 w-4 text-[#00c8ff] flex-shrink-0" />
-                  <div className="flex justify-between flex-1 text-sm">
-                    <span className="text-gray-600">{item.day}</span>
-                    <span className="font-medium text-gray-900">{item.hours}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 p-4 rounded-xl bg-[#00c8ff]/8 border border-[#00c8ff]/20">
-              <p className="text-xs text-gray-600">
-                <strong>Technische support</strong> voor actieve abonnees is beschikbaar via het platform, ook buiten kantooruren.
-              </p>
-            </div>
-          </div>
-
-          {/* Wat te verwachten */}
-          <div>
-            <h2 className="font-semibold text-gray-900 mb-4">Wat kunt u verwachten?</h2>
-            <div className="space-y-3">
-              {[
-                { step: '1', text: 'We nemen contact op binnen 1 werkdag' },
-                { step: '2', text: 'Korte intake om uw situatie te begrijpen' },
-                { step: '3', text: 'Demo of offerte op maat' },
-                { step: '4', text: 'Installatie en onboarding indien gewenst' },
-              ].map((item) => (
-                <div key={item.step} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#00c8ff] text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {item.step}
-                  </div>
-                  <span className="text-sm text-gray-600">{item.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: form */}
-        <div className="lg:col-span-2">
-          {/* Type selector */}
-          <div className="mb-8">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Waarvoor wenst u contact op te nemen?
-            </label>
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {contactTypes.map((ct) => (
-                <button
-                  key={ct.id}
-                  type="button"
-                  onClick={() => setSelectedType(ct.id)}
-                  className={`flex flex-col items-start p-4 rounded-xl border-2 text-left transition-all ${
-                    selectedType === ct.id
-                      ? 'border-[#00c8ff] bg-[#00c8ff]/8'
-                      : 'border-gray-200 bg-gray-50 hover:border-[#00c8ff]/40'
-                  }`}
-                >
-                  <ct.icon className={`h-5 w-5 mb-2 ${selectedType === ct.id ? 'text-[#00c8ff]' : 'text-gray-400'}`} />
-                  <div className={`text-sm font-semibold mb-0.5 ${selectedType === ct.id ? 'text-[#00c8ff]' : 'text-gray-900'}`}>
-                    {ct.label}
-                  </div>
-                  <div className="text-xs text-gray-500 leading-tight">{ct.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid sm:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Naam <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-[#00c8ff] transition-colors text-sm"
-                  placeholder="Uw voor- en achternaam"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  E-mailadres <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-[#00c8ff] transition-colors text-sm"
-                  placeholder="naam@bedrijf.be"
-                />
-              </div>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Telefoonnummer
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-[#00c8ff] transition-colors text-sm"
-                  placeholder="+32 470 12 34 56"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Bedrijfsnaam
-                </label>
-                <input
-                  type="text"
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-[#00c8ff] transition-colors text-sm"
-                  placeholder="Uw bedrijfsnaam"
-                />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Sector
-              </label>
-              <select
-                value={formData.sector}
-                onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-[#00c8ff] transition-colors text-sm"
-              >
-                <option value="">Selecteer uw sector...</option>
-                {sectors.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+              <h2 className="font-semibold text-navy mb-4">Bereikbaarheid</h2>
+              <div className="space-y-3">
+                {[
+                  { day: 'Ma – vr', hours: '9:00 – 18:00' },
+                  { day: 'Zaterdag', hours: '10:00 – 13:00' },
+                  { day: 'Zondag', hours: 'Gesloten' },
+                ].map((it) => (
+                  <div key={it.day} className="flex items-center gap-3 text-sm">
+                    <ClockIcon className="h-4 w-4 text-brand shrink-0" />
+                    <span className="flex justify-between flex-1">
+                      <span className="text-gray-600">{it.day}</span>
+                      <span className="font-medium text-navy">{it.hours}</span>
+                    </span>
+                  </div>
                 ))}
-              </select>
+              </div>
+              <div className="mt-4 p-4 rounded-xl bg-brand/10 border border-brand/20">
+                <p className="text-xs text-gray-600">
+                  <strong>Technische support</strong> voor actieve abonnees is beschikbaar via het platform, ook buiten kantooruren.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Form */}
+          <div className="lg:col-span-2">
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">Waarvoor neemt u contact op?</label>
+              <div className="flex flex-wrap gap-2">
+                {contactTypes.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setSelectedType(t.id)}
+                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                      selectedType === t.id ? 'border-brand bg-brand/10 text-brand' : 'border-gray-200 text-gray-600 hover:border-brand/40'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {(selectedType === 'offerte' || selectedType === 'demo') && (
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Aantal locaties
-                  </label>
-                  <select
-                    value={formData.locations}
-                    onChange={(e) => setFormData({ ...formData, locations: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-[#00c8ff] transition-colors text-sm"
-                  >
-                    <option value="">Selecteer...</option>
-                    <option>1 locatie</option>
-                    <option>2-5 locaties</option>
-                    <option>6-20 locaties</option>
-                    <option>Meer dan 20 locaties</option>
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Naam <span className="text-red-400">*</span></label>
+                  <input
+                    required
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Uw voor- en achternaam"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-brand text-sm"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Aantal koelcellen
-                  </label>
-                  <select
-                    value={formData.coldrooms}
-                    onChange={(e) => setFormData({ ...formData, coldrooms: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-[#00c8ff] transition-colors text-sm"
-                  >
-                    <option value="">Selecteer...</option>
-                    <option>1-5 koelcellen</option>
-                    <option>6-20 koelcellen</option>
-                    <option>21-50 koelcellen</option>
-                    <option>Meer dan 50 koelcellen</option>
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">E-mail <span className="text-red-400">*</span></label>
+                  <input
+                    required
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="naam@bedrijf.be"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-brand text-sm"
+                  />
                 </div>
               </div>
-            )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Uw bericht <span className="text-red-400">*</span>
-              </label>
-              <textarea
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                required
-                rows={5}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-[#00c8ff] transition-colors text-sm resize-none"
-                placeholder={
-                  selectedType === 'demo' || selectedType === 'offerte' || selectedType === 'vraag'
-                    ? 'Vertel ons iets over uw situatie: hoeveel koelcellen heeft u, voor welke sector, en wat is uw grootste uitdaging? (optioneel)'
-                    : selectedType === 'technicus'
-                    ? 'Vertel ons over uw bedrijf en hoe een partnerschap eruit zou kunnen zien.'
-                    : 'Uw vraag of opmerking...'
-                }
-              />
-            </div>
-
-            {error && (
-              <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-                {error}
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Telefoon</label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+32 470 12 34 56"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-brand text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Bedrijf</label>
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    placeholder="Uw bedrijfsnaam"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-brand text-sm"
+                  />
+                </div>
               </div>
-            )}
-            <div className="pt-2">
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Sector</label>
+                <select
+                  value={formData.sector}
+                  onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-brand text-sm bg-white text-gray-900"
+                >
+                  <option value="">Selecteer uw sector...</option>
+                  {sectors.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
+              {(selectedType === 'offerte' || selectedType === 'demo') && (
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Aantal locaties</label>
+                    <select
+                      value={formData.locations}
+                      onChange={(e) => setFormData({ ...formData, locations: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-brand text-sm bg-white text-gray-900"
+                    >
+                      <option value="">Selecteer...</option>
+                      <option>1 locatie</option>
+                      <option>2-5 locaties</option>
+                      <option>6-20 locaties</option>
+                      <option>Meer dan 20 locaties</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Aantal koelcellen</label>
+                    <select
+                      value={formData.coldrooms}
+                      onChange={(e) => setFormData({ ...formData, coldrooms: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-brand text-sm bg-white text-gray-900"
+                    >
+                      <option value="">Selecteer...</option>
+                      <option>1-5 koelcellen</option>
+                      <option>6-20 koelcellen</option>
+                      <option>21-50 koelcellen</option>
+                      <option>Meer dan 50 koelcellen</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Uw bericht <span className="text-red-400">*</span></label>
+                <textarea
+                  required
+                  rows={5}
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  placeholder="Vertel ons over uw situatie: hoeveel koelcellen, welke sector, en uw grootste uitdaging?"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-brand text-sm resize-none"
+                />
+              </div>
+
+              {error && (
+                <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-xl font-semibold text-white bg-[#00c8ff] hover:bg-[#00a8dd] disabled:opacity-70 disabled:cursor-not-allowed transition-colors text-sm"
+                className="w-full py-3.5 rounded-xl font-semibold text-navy bg-brand hover:bg-brand-dark disabled:opacity-70 disabled:cursor-not-allowed transition-colors text-sm"
               >
-                {loading ? 'Bezig met versturen...' : (
-                  <>
-                    {selectedType === 'demo' && 'Demo aanvragen'}
-                    {selectedType === 'offerte' && 'Offerte aanvragen'}
-                    {selectedType === 'vraag' && 'Vraag versturen'}
-                    {selectedType === 'technicus' && 'Aanvraag versturen'}
-                    {selectedType === 'support' && 'Supportverzoek versturen'}
-                  </>
-                )}
+                {loading ? 'Bezig met versturen...' : 'Versturen'}
               </button>
-              <p className="text-xs text-gray-400 text-center mt-3">
-                We antwoorden normaal gezien binnen 1 werkdag.
-              </p>
-            </div>
-          </form>
+              <p className="text-xs text-gray-400 text-center">We antwoorden normaal binnen 1 werkdag.</p>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
