@@ -36,7 +36,7 @@ const Home: React.FC = () => {
           <p className="text-brand text-sm font-semibold uppercase tracking-wider mb-4">
             HACCP koelcelmonitoring · België &amp; Nederland
           </p>
-          <h1 className="font-display text-4xl sm:text-5xl font-extrabold leading-tight mb-5">
+          <h1 className="font-display text-4xl sm:text-5xl font-extrabold leading-tight mb-5 text-white">
             Koelcel in de fout?
             <br />
             <span className="text-brand">Wij weten het — en lossen het op.</span>
@@ -211,7 +211,7 @@ const Home: React.FC = () => {
             <span className="inline-block bg-brand/20 text-brand text-xs font-semibold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wide">
               Beschikbaar in de App Store
             </span>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold mb-4">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold mb-4 text-white">
               Uw koelcellen in uw broekzak
             </h2>
             <p className="text-white/70 mb-6 leading-relaxed">
@@ -262,7 +262,7 @@ const Home: React.FC = () => {
               <p className="text-xs text-gray-400">+ hardware €399 eenmalig</p>
             </div>
             <div className="rounded-2xl border-2 border-brand bg-navy text-white p-6">
-              <h3 className="font-display font-bold">Pro</h3>
+              <h3 className="font-display font-bold text-white">Pro</h3>
               <p className="text-xs text-white/50 mb-3">4G · deursensor · batterij</p>
               <p className="text-3xl font-bold text-brand">
                 €{proPrices.monthly}<span className="text-base font-normal text-white/40">/mnd</span>

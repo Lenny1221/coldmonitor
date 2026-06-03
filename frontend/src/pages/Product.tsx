@@ -180,7 +180,7 @@ const Product: React.FC = () => {
 
         {/* Compliance */}
         <section className="mb-16 p-6 rounded-2xl bg-navy text-white">
-          <h2 className="font-display text-xl font-bold mb-4">Automatisch in regel</h2>
+          <h2 className="font-display text-xl font-bold mb-4 text-white">Automatisch in regel</h2>
           <div className="grid sm:grid-cols-2 gap-x-8 gap-y-3">
             {[
               'Automatische HACCP-registratie van elke meting',

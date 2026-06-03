@@ -136,7 +136,7 @@ const Prijzen: React.FC = () => {
             <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand text-navy text-[11px] font-bold px-4 py-1.5 rounded-full uppercase tracking-wide">
               Meest gekozen
             </span>
-            <h2 className="font-display text-xl font-bold mb-1 mt-1">Pro</h2>
+            <h2 className="font-display text-xl font-bold mb-1 mt-1 text-white">Pro</h2>
             <p className="text-sm text-white/55 mb-5">Volledig autonoom, met 4G backup.</p>
             <div className="text-xs font-semibold text-white/45 uppercase tracking-widest">Hardware eenmalig</div>
             <div className="text-xl font-bold mb-4">€499 <span className="text-xs font-normal text-white/45">excl. BTW</span></div>

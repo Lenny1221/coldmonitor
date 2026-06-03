@@ -41,7 +41,7 @@ const AppPage: React.FC = () => {
             <span className="inline-block bg-brand/20 text-brand text-xs font-semibold px-3 py-1.5 rounded-full mb-5 uppercase tracking-wide">
               Beschikbaar in de App Store
             </span>
-            <h1 className="font-display text-4xl sm:text-5xl font-extrabold leading-tight mb-5">
+            <h1 className="font-display text-4xl sm:text-5xl font-extrabold leading-tight mb-5 text-white">
               De IntelliFrost-app
               <br />
               <span className="text-brand">voor de eindklant</span>

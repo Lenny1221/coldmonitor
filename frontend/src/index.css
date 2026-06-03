@@ -12,6 +12,10 @@
 .marketing-light h4 {
   color: #212529;
 }
+/* Koppen op donkere (navy) secties moeten wit blijven – wint van regel hierboven */
+.marketing-light .text-white {
+  color: #fff;
+}
 .marketing-light .text-gray-600,
 .marketing-light .text-gray-700 {
   color: #495057;

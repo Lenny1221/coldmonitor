@@ -146,7 +146,7 @@ const Oplossingen: React.FC = () => {
               <s.icon className="h-6 w-6 text-brand" />
             </div>
             <div>
-              <h2 className="font-display text-xl font-bold">{s.title}</h2>
+              <h2 className="font-display text-xl font-bold text-white">{s.title}</h2>
               <p className="text-white/60 text-sm">{s.sub}</p>
             </div>
           </div>

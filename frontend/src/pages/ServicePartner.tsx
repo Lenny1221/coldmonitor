@@ -94,7 +94,7 @@ const ServicePartner: React.FC = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
             Onze vaste servicepartner
           </span>
-          <h1 className="font-display text-4xl sm:text-5xl font-extrabold mb-4">Serv-Ice</h1>
+          <h1 className="font-display text-4xl sm:text-5xl font-extrabold mb-4 text-white">Serv-Ice</h1>
           <p className="text-lg text-white/70 max-w-xl mx-auto mb-8">
             Meer dan 8 jaar ervaring in herstelling, plaatsing en onderhoud van koelinstallaties. Detecteert IntelliFrost
             een probleem? Dan staat Serv-Ice klaar om het ook effectief op te lossen.
@@ -233,7 +233,7 @@ const ServicePartner: React.FC = () => {
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-400 text-xs font-semibold mb-5">
               <SparklesIcon className="h-3.5 w-3.5" /> Exclusieve combodeal
             </span>
-            <h2 className="font-display text-2xl font-bold mb-4">
+            <h2 className="font-display text-2xl font-bold mb-4 text-white">
               Monitoring + servicecontract = dubbel voordeel
             </h2>
             <p className="text-white/65 mb-6 leading-relaxed max-w-2xl">
