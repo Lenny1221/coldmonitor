@@ -558,6 +558,9 @@ void loop() {
         wifiManager.connect(ssid, pass);
       } else if (ssid.length() > 0) {
         logger.info("WIFI: Fallback — WiFiManager autoConnect");
+        // Runtime-reconnect mag NOOIT de config-AP openen (zou monitoring 180s
+        // blokkeren). Portal-fallback uit: enkel een stille connect-poging.
+        wifiManager.setEnableConfigPortal(false);
         wifiManager.autoConnect(WIFI_SETUP_AP_SSID);
       }
     }
@@ -1679,6 +1682,10 @@ void setupWiFi() {
       bool connected = false;
       while (!connected) {
         // FASE 1: Zoeken (3 min) – probeer elke 30s
+        // BELANGRIJK: portal-fallback UIT tijdens het zoeken. Anders opent
+        // autoConnect() bij de eerste mislukte poging meteen de AP (180s blok)
+        // en blijft het toestel in een config-loop hangen i.p.v. te herproberen.
+        wifiManager.setEnableConfigPortal(false);
         logger.info("WIFI: Zoekfase – probeer te verbinden (max " + String(SEARCH_PHASE_MS / 1000) + "s)...");
         unsigned long searchStart = millis();
         while (!connected && (millis() - searchStart < SEARCH_PHASE_MS)) {
@@ -1707,6 +1714,9 @@ void setupWiFi() {
         if (connected) break;
 
         // FASE 2: Config portal (3 min) – gebruiker kan handmatig configureren
+        // Portal weer toestaan en bewust openen (gecontroleerd, niet als
+        // verrassings-fallback midden in de zoekfase).
+        wifiManager.setEnableConfigPortal(true);
         logger.warn("WIFI: Na " + String(SEARCH_PHASE_MS / 1000) + "s niet verbonden – config portal open (3 min)");
         logger.warn("WIFI: Modem mogelijk nog aan het opstarten – portal sluit automatisch en zoekt opnieuw");
         wifiManager.startConfigPortal(WIFI_SETUP_AP_SSID);

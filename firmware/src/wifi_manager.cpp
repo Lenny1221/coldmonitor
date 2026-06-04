@@ -133,6 +133,14 @@ void WiFiManagerWrapper::setConnectTimeout(unsigned long seconds) {
   wifiManager.setConnectTimeout(seconds);
 }
 
+void WiFiManagerWrapper::setEnableConfigPortal(bool enable) {
+  // Bij tzapu opent autoConnect() standaard de config-portal (blokkerend) zodra
+  // de connect mislukt. Met false gedraagt autoConnect() zich als een pure
+  // connect-poging die false teruggeeft bij falen — wij sturen de portal dan
+  // zelf aan in een gecontroleerde fase.
+  wifiManager.setEnableConfigPortal(enable);
+}
+
 void WiFiManagerWrapper::setupColdMonitorParams(const char* apiUrlDefault, const char* apiKeyDefault, const char* deviceSerialDefault) {
   (void)apiUrlDefault;  // API URL is vast, niet configureerbaar
   if (paramApiKey) { delete paramApiKey; }

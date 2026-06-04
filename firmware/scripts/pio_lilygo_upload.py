@@ -21,7 +21,7 @@ import os
 
 Import("env")  # noqa: F821
 
-ESPTOOL_BAUD = "921600"
+ESPTOOL_BAUD = os.environ.get("UPLOAD_BAUD", "921600")
 
 
 def _build_uploadcmd(env):

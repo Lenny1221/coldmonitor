@@ -29,6 +29,10 @@ public:
   int getRSSI();
   void setConfigPortalTimeout(unsigned long seconds);
   void setConnectTimeout(unsigned long seconds);
+  // Schakel de automatische config-portal-fallback van autoConnect() aan/uit.
+  // Tijdens de reconnect-zoekfase zetten we dit op false, zodat een mislukte
+  // connect-poging NIET meteen de AP opent (anders: vast in config-loop).
+  void setEnableConfigPortal(bool enable);
   
   // Setup API URL + API key + serienummer voor config portal
   void setupColdMonitorParams(const char* apiUrlDefault, const char* apiKeyDefault, const char* deviceSerialDefault);
