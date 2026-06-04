@@ -5,6 +5,8 @@ import { EscalationChannel, EscalationRecipient } from '@prisma/client';
 import type { AlertWithRelations } from '../escalationService';
 import { config } from '../../config/env';
 import { logger } from '../../utils/logger';
+import { prisma } from '../../config/database';
+import { sendPushNotification } from '../pushService';
 import { shouldSendAlertNotification } from './notificationCooldown';
 
 /**
@@ -28,6 +30,61 @@ export async function sendLayer3Notifications(alert: AlertWithRelations): Promis
 
   const apiUrl = config.apiUrl.replace(/\/$/, '');
   const voiceUrl = `${apiUrl}/api/twilio/voice/${alert.id}`;
+
+  const isConnectionAlert = alert.type === 'WIFI_LOSS' || alert.type === 'POWER_LOSS';
+  const alertTypeText =
+    alert.type === 'HIGH_TEMP'
+      ? 'te hoog'
+      : alert.type === 'LOW_TEMP'
+        ? 'te laag'
+        : alert.type === 'WIFI_LOSS'
+          ? 'WiFi-verbinding verloren'
+          : alert.type === 'POWER_LOSS'
+            ? 'Stroomuitval'
+            : String(alert.type);
+
+  // Klant: push naar app (laag 3 = dringend) – zelfde token-flow als laag 1/2
+  if (customer?.id) {
+    const custRow = await prisma.customer.findUnique({
+      where: { id: customer.id },
+      select: { user: { select: { pushToken: true } } },
+    });
+    if (custRow?.user?.pushToken) {
+      const pushBody = isConnectionAlert
+        ? `${coldCellName}: ${alertTypeText}. Open de app onmiddellijk.`
+        : `${coldCellName}: temperatuur ${alertTypeText} (${temp}°C). Open de app onmiddellijk.`;
+      const sent = await sendPushNotification(
+        custRow.user.pushToken,
+        'IntelliFrost – DRINGEND alarm',
+        pushBody,
+        { type: 'ALARM_LAYER3', alertId: alert.id }
+      );
+      if (sent) {
+        await logEscalation(alert.id, 'LAYER_3', 'Push naar klant (app)', 'CLIENT', 'PUSH');
+      }
+    } else {
+      logger.debug('Layer 3: klant heeft geen push token', { alertId: alert.id, customerId: customer.id });
+    }
+  }
+
+  // Technicus: push naar app
+  if (technician?.id) {
+    const techRow = await prisma.technician.findUnique({
+      where: { id: technician.id },
+      select: { user: { select: { pushToken: true } } },
+    });
+    if (techRow?.user?.pushToken) {
+      const sent = await sendPushNotification(
+        techRow.user.pushToken,
+        'IntelliFrost – DRINGEND alarm',
+        `${customer?.companyName ?? 'Klant'} – ${coldCellName}: ${alertTypeText}${isConnectionAlert ? '' : ` (${temp}°C)`}`,
+        { type: 'ALARM_LAYER3_TECH', alertId: alert.id }
+      );
+      if (sent) {
+        await logEscalation(alert.id, 'LAYER_3', 'Push naar technicus (app)', 'TECHNICIAN', 'PUSH');
+      }
+    }
+  }
 
   // AI-telefoonbot naar klant
   if (customer?.phone) {
