@@ -25,9 +25,9 @@ export function isLikelyApnsDeviceToken(token: string): boolean {
 function createApnsJwt(): string | null {
   const { apnsKeyId, apnsTeamId, apnsPrivateKey } = config;
   if (!apnsKeyId || !apnsTeamId || !apnsPrivateKey) return null;
-  const key = apnsPrivateKey.includes('BEGIN PRIVATE KEY')
-    ? apnsPrivateKey
-    : apnsPrivateKey.replace(/\\n/g, '\n');
+  // Normaliseer altijd letterlijke "\n" naar echte newlines. Werkt zowel voor
+  // single-line env-waarden (met \n) als multi-line .p8-sleutels (no-op).
+  const key = apnsPrivateKey.replace(/\\n/g, '\n');
   try {
     return jwt.sign(
       { iss: apnsTeamId, iat: Math.floor(Date.now() / 1000) },

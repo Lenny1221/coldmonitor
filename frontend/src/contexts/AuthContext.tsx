@@ -108,12 +108,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (currentToken === authToken) setUser(userData);
     } catch (error) {
       console.error('Failed to fetch user:', error);
-      const currentToken = await tokenStorage.getToken();
-      if (currentToken === authToken) {
-        await tokenStorage.removeToken();
-        await tokenStorage.removeRefreshToken();
-        setToken(null);
-        authApi.setToken(null);
+      // Alleen uitloggen bij een ECHTE auth-fout (401/403, ná mislukte refresh).
+      // Bij netwerk-/serverfouten (geen response, timeout, 5xx) – typisch wanneer
+      // de app net heropent en het netwerk nog niet klaar is – behouden we de
+      // token, zodat de gebruiker niet onterecht wordt uitgelogd.
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      const isAuthError = status === 401 || status === 403;
+      if (isAuthError) {
+        const currentToken = await tokenStorage.getToken();
+        if (currentToken === authToken) {
+          await tokenStorage.removeToken();
+          await tokenStorage.removeRefreshToken();
+          setToken(null);
+          authApi.setToken(null);
+        }
       }
     } finally {
       setLoading(false);

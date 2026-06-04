@@ -107,14 +107,21 @@ api.interceptors.response.use(
           return api(originalRequest);
         } catch (refreshError) {
           refreshTokenPromise = null;
-          await tokenStorage.removeToken();
-          await tokenStorage.removeRefreshToken();
-          authToken = null;
-          api.defaults.headers.common['Authorization'] = '';
-          if (typeof window !== 'undefined') {
-            const ax = refreshError as { response?: { data?: { code?: string } } };
-            const code = ax.response?.data?.code;
-            window.location.href = code === 'EMAIL_NOT_VERIFIED' ? '/verify-email-required' : '/login';
+          // Alleen uitloggen bij een ECHTE auth-afwijzing van de refresh (401/403).
+          // Bij netwerk-/serverfouten (geen response, timeout, 5xx) behouden we de
+          // tokens, zodat een tijdelijke verbindingshapering (bv. app net heropend)
+          // de gebruiker niet onterecht uitlogt – de call wordt later gewoon herprobeerd.
+          const ax = refreshError as { response?: { status?: number; data?: { code?: string } } };
+          const refreshStatus = ax.response?.status;
+          if (refreshStatus === 401 || refreshStatus === 403) {
+            await tokenStorage.removeToken();
+            await tokenStorage.removeRefreshToken();
+            authToken = null;
+            api.defaults.headers.common['Authorization'] = '';
+            if (typeof window !== 'undefined') {
+              const code = ax.response?.data?.code;
+              window.location.href = code === 'EMAIL_NOT_VERIFIED' ? '/verify-email-required' : '/login';
+            }
           }
           return Promise.reject(refreshError);
         }
