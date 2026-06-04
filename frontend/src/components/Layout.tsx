@@ -113,6 +113,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const userDisplay = user?.profile?.contactName || user?.profile?.name || user?.email || 'Gebruiker';
   const isDashboard = location.pathname === '/dashboard';
+  // Koelcel-detail: kaarten volledig tot tegen de schermranden (geen horizontale marge)
+  const isColdCellDetail = location.pathname.startsWith('/coldcell/');
 
   return (
     <LayoutContext.Provider value={{ setSidebarOpen }}>
@@ -291,7 +293,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         <main className={`flex-1 overflow-auto ${isNative ? 'pb-[max(1.5rem,env(safe-area-inset-bottom))]' : ''} ${
-          isDashboard ? 'p-0' : 'p-4 sm:p-6 lg:p-8'
+          isDashboard ? 'p-0' : isColdCellDetail ? 'py-4 sm:py-6 lg:py-8' : 'p-4 sm:p-6 lg:p-8'
         }`}>
           {children}
         </main>

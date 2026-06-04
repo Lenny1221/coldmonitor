@@ -271,8 +271,8 @@ const ColdCellDetail: React.FC = () => {
   const offlineCount = devices.filter((d: any) => d.status !== 'ONLINE').length;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col gap-1">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-1 px-4">
         {/* Naam-rij: terug | naam + status-dots | instellingen */}
         <div className="flex items-center gap-2">
           <button
