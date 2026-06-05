@@ -10,6 +10,8 @@ import { upsertContextBaseline, getContextBaseline } from './baselineStore';
 import { classifyContext, type CycleState } from './contextClassifier';
 import { DEFAULT_ANOMALY_CONFIG } from './constants';
 import { extractFeatures } from './featureExtractor';
+import { logger } from '../utils/logger';
+import { maybeNotifyAnomalyFindings } from '../services/notifications/anomalyNotifier';
 import type {
   AnomalyFindingsResponse,
   AnomalyFindingDto,
@@ -115,6 +117,27 @@ export class AnomalyService {
       );
     }
 
+    // Preventieve melding naar technieker (push + e-mail) bij bevindingen na de
+    // leerfase. Best-effort: faalt dit, dan blijft de meting/baseline wel staan.
+    let lastFindingNotifiedAt = state.lastFindingNotifiedAt;
+    let lastFindingSignature = state.lastFindingSignature;
+    try {
+      const decision = await maybeNotifyAnomalyFindings({
+        coldCellId: input.coldCellId,
+        learningDone,
+        findings: activeFindings,
+        prevSignature: state.lastFindingSignature,
+        prevNotifiedAt: state.lastFindingNotifiedAt,
+      });
+      lastFindingNotifiedAt = decision.notifiedAt;
+      lastFindingSignature = decision.signature;
+    } catch (notifyErr) {
+      logger.warn('Preventieve anomalie-melding mislukt', {
+        coldCellId: input.coldCellId,
+        error: notifyErr instanceof Error ? notifyErr.message : String(notifyErr),
+      });
+    }
+
     await prisma.coldCellAnomalyState.update({
       where: { coldCellId: input.coldCellId },
       data: {
@@ -125,6 +148,8 @@ export class AnomalyService {
         pullDownStartedAt,
         lastRoomTemp: input.roomTemp,
         activeFindings: activeFindings as object,
+        lastFindingNotifiedAt,
+        lastFindingSignature,
         ...ctxResult.nextState,
       },
     });
@@ -205,6 +230,8 @@ export class AnomalyService {
           lastEvaporatorAt: null,
           lastRoomTemp: null,
           activeFindings: [],
+          lastFindingNotifiedAt: null,
+          lastFindingSignature: null,
         },
       }),
     ]);

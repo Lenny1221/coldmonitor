@@ -399,6 +399,8 @@ model ColdCellAnomalyState {
   lastEvaporatorAt     DateTime?
   lastRoomTemp         Float?
   activeFindings       Json?               // AnomalyFindingDto[] — UI + latere escalatie
+  lastFindingNotifiedAt DateTime?          // Laatste push/e-mail naar technieker (cooldown)
+  lastFindingSignature  String?            // Dedup: welke bevindingen al gemeld zijn
   updatedAt            DateTime            @updatedAt
 }
 
