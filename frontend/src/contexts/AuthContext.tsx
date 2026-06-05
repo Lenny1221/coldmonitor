@@ -56,9 +56,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         tokenRef.current = storedToken;
         authApi.setToken(storedToken);
         await fetchUser(storedToken);
-      } else {
-        setLoading(false);
+        return;
       }
+
+      // Geen access-token meer, maar mogelijk wel een geldige refresh-token
+      // (bv. access verlopen/gewist). Probeer de sessie te herstellen i.p.v.
+      // de gebruiker uit te loggen.
+      const refreshToken = await tokenStorage.getRefreshToken();
+      if (refreshToken) {
+        try {
+          const { accessToken, refreshToken: newRefreshToken } = await authApi.refresh(refreshToken);
+          await tokenStorage.setToken(accessToken);
+          if (newRefreshToken) await tokenStorage.setRefreshToken(newRefreshToken);
+          setToken(accessToken);
+          tokenRef.current = accessToken;
+          authApi.setToken(accessToken);
+          await fetchUser(accessToken);
+          return;
+        } catch (refreshErr) {
+          // Refresh definitief geweigerd (verlopen/ongeldig) -> tokens wissen.
+          // Bij netwerkfout behouden we ze zodat een latere poging kan slagen.
+          const status = (refreshErr as { response?: { status?: number } })?.response?.status;
+          if (status === 401 || status === 403) {
+            await tokenStorage.removeToken();
+            await tokenStorage.removeRefreshToken();
+          }
+        }
+      }
+      setLoading(false);
     };
 
     initializeAuth();

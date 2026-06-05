@@ -22,9 +22,11 @@ export const config = {
 
   // JWT
   jwtSecret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '15m',
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1h',
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key-change-in-production',
-  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+  // Lange refresh-levensduur zodat de app ingelogd blijft (minder vaak uitgelogd
+  // op de telefoon). Elke refresh geeft een nieuw 90d-token (glijdend venster).
+  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '90d',
 
   // Database
   databaseUrl: process.env.DATABASE_URL || '',

@@ -151,6 +151,11 @@ export const authApi = {
     const response = await api.post('/auth/login', { email, password });
     return response.data;
   },
+  /** Wissel een refresh-token in voor een nieuw access/refresh-paar (zonder interceptor). */
+  refresh: async (refreshToken: string): Promise<{ accessToken: string; refreshToken?: string }> => {
+    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
+    return response.data;
+  },
   registerCustomer: async (data: {
     companyName: string;
     contactName: string;
