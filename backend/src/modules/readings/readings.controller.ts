@@ -55,12 +55,28 @@ router.post(
         });
       }
 
+      // Ruimte/verdamper omwisselen wanneer de voelers fysiek omgekeerd zijn
+      // aangesloten (technieker zet dit aan in de app). We draaien de kanalen al
+      // bij ingestie om, zodat alles downstream (alarmen, anomalie, grafiek) de
+      // juiste voeler gebruikt. Enkel zinvol als beide voelers data leveren.
+      let roomTemp = data.temperature;
+      let evaporatorTemp = data.evaporatorTemp ?? null;
+      const cellSwap = await prisma.device.findUnique({
+        where: { id: req.deviceId! },
+        select: { coldCell: { select: { sensorsSwapped: true } } },
+      });
+      if (cellSwap?.coldCell?.sensorsSwapped && evaporatorTemp != null) {
+        const tmp = roomTemp;
+        roomTemp = evaporatorTemp;
+        evaporatorTemp = tmp;
+      }
+
       // Create sensor reading (wordt opgeslagen in de DB van DATABASE_URL, bv. Supabase)
       const reading = await prisma.sensorReading.create({
         data: {
           deviceId: req.deviceId!,
-          temperature: data.temperature,
-          evaporatorTemp: data.evaporatorTemp ?? null,
+          temperature: roomTemp,
+          evaporatorTemp: evaporatorTemp,
           humidity: data.humidity ?? null,
           powerStatus: data.powerStatus ?? true,
           doorStatus: data.doorStatus ?? null,
@@ -87,7 +103,7 @@ router.post(
       // Immediately check for alerts
       await alertService.checkTemperatureAlerts(
         reading.device.coldCellId,
-        data.temperature,
+        roomTemp,
         req.deviceId!
       );
 
@@ -113,7 +129,7 @@ router.post(
       }
 
       // Zelflerende anomaliedetectie (FASE 1) — alleen met 2e voeler (verdamper)
-      if (data.evaporatorTemp != null) {
+      if (evaporatorTemp != null) {
         const cell = await prisma.coldCell.findUnique({
           where: { id: reading.device.coldCellId },
           select: {
@@ -128,8 +144,8 @@ router.post(
             await anomalyService.processReading({
               coldCellId: reading.device.coldCellId,
               deviceId: req.deviceId!,
-              roomTemp: data.temperature,
-              evaporatorTemp: data.evaporatorTemp,
+              roomTemp: roomTemp,
+              evaporatorTemp: evaporatorTemp,
               doorOpen: data.doorStatus === true,
               recordedAt: reading.recordedAt,
               setpointTemp: setpoint,

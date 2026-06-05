@@ -1,5 +1,5 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { requireAuth, AuthRequest, requireRole, requireOwnership } from '../middleware/auth';
 import { addSSESubscriber, processDoorEvent } from '../services/doorEventService';
@@ -454,6 +454,76 @@ router.post('/:id/push-door', requireAuth, requireOwnership, requireRole('TECHNI
   } catch (error) {
     console.error('Push door error:', error);
     res.status(500).json({ error: 'Push door mislukt' });
+  }
+});
+
+// POST swap sensors – ruimte- en verdampervoeler omwisselen (technieker/admin)
+// Zet de vlag om, draait alle bestaande metingen om (zodat historiek én grafiek
+// meteen kloppen) en reset de zelflerende baseline (sensormapping is gewijzigd).
+router.post('/:id/swap-sensors', requireAuth, requireOwnership, requireRole('TECHNICIAN', 'ADMIN'), async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    const coldCell = await prisma.coldCell.findUnique({
+      where: { id },
+      include: {
+        location: { include: { customer: { select: { linkedTechnicianId: true } } } },
+        devices: { select: { id: true } },
+      },
+    });
+
+    if (!coldCell) {
+      return res.status(404).json({ error: 'Cold cell not found' });
+    }
+
+    if (req.userRole === 'TECHNICIAN') {
+      if (!req.technicianId || coldCell.location.customer.linkedTechnicianId !== req.technicianId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    const newValue = !coldCell.sensorsSwapped;
+    const deviceIds = coldCell.devices.map((d) => d.id);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.coldCell.update({
+        where: { id },
+        data: { sensorsSwapped: newValue },
+      });
+
+      // Bestaande metingen met 2 voelers omdraaien. Postgres evalueert de
+      // rechterzijde met de oude waarden, dus dit wisselt atomisch om.
+      if (deviceIds.length > 0) {
+        await tx.$executeRaw`
+          UPDATE "SensorReading"
+          SET "temperature" = "evaporatorTemp", "evaporatorTemp" = "temperature"
+          WHERE "deviceId" IN (${Prisma.join(deviceIds)})
+            AND "evaporatorTemp" IS NOT NULL
+        `;
+      }
+    });
+
+    // Sensormapping is gewijzigd: zelflerende baseline opnieuw starten.
+    try {
+      const { anomalyService } = await import('../anomaly/anomalyService');
+      await anomalyService.resetBaseline(id);
+    } catch (anomalyErr) {
+      logger.warn('Baseline reset na voeler-wissel mislukt', {
+        coldCellId: id,
+        error: anomalyErr instanceof Error ? anomalyErr.message : String(anomalyErr),
+      });
+    }
+
+    logger.info('Voelers omgewisseld', {
+      coldCellId: id,
+      userId: req.userId,
+      sensorsSwapped: newValue,
+    });
+
+    res.json({ success: true, sensorsSwapped: newValue });
+  } catch (error) {
+    console.error('Swap sensors error:', error);
+    res.status(500).json({ error: 'Voelers omwisselen mislukt' });
   }
 });
 

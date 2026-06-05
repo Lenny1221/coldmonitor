@@ -28,6 +28,7 @@ import {
   UserGroupIcon,
   LinkIcon,
   Cog6ToothIcon,
+  ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
 import { ColdCellSettingsModal } from '../components/ColdCellSettingsModal';
 import { ResolveAlertModal } from '../components/ResolveAlertModal';
@@ -68,6 +69,7 @@ const ColdCellDetail: React.FC = () => {
     };
   } | null>(null);
   const [pushDoorLoading, setPushDoorLoading] = useState(false);
+  const [swapLoading, setSwapLoading] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -141,6 +143,28 @@ const ColdCellDetail: React.FC = () => {
       setColdCell(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSwapSensors = async () => {
+    if (!id || swapLoading) return;
+    const confirmed = window.confirm(
+      'Ruimte- en verdampervoeler omwisselen?\n\n' +
+        'Gebruik dit wanneer de voelers verkeerd (omgekeerd) zijn aangesloten. ' +
+        'Alle bestaande én nieuwe metingen worden omgedraaid en de zelflerende ' +
+        'baseline herstart.'
+    );
+    if (!confirmed) return;
+    setSwapLoading(true);
+    try {
+      await coldCellsApi.swapSensors(id);
+      await fetchColdCell();
+      await fetchReadings();
+    } catch (error) {
+      console.error('Failed to swap sensors:', error);
+      window.alert('Voelers omwisselen mislukt. Probeer opnieuw.');
+    } finally {
+      setSwapLoading(false);
     }
   };
 
@@ -465,6 +489,25 @@ const ColdCellDetail: React.FC = () => {
                         {Number(evapTemp).toFixed(1)} °C
                       </div>
                     </div>
+                  </div>
+                )}
+                {isTechnician && !onlyOne && (
+                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-[rgba(100,200,255,0.08)]">
+                    <button
+                      type="button"
+                      onClick={handleSwapSensors}
+                      disabled={swapLoading}
+                      title="Gebruik dit wanneer ruimte- en verdampervoeler verkeerd zijn aangesloten"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-frost-200 hover:text-blue-700 disabled:opacity-50"
+                    >
+                      <ArrowsRightLeftIcon className="h-4 w-4" />
+                      {swapLoading ? 'Omwisselen…' : 'Voelers omwisselen'}
+                    </button>
+                    {coldCell?.sensorsSwapped && (
+                      <span className="ml-2 text-[11px] text-amber-600 dark:text-amber-400">
+                        omgewisseld
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

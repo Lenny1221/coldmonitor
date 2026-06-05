@@ -209,6 +209,7 @@ model ColdCell {
   temperatureMaxThreshold  Float
   doorAlarmDelaySeconds    Int      @default(300) // Seconds door may be open before alarm (default 5 min)
   requireResolutionReason  Boolean  @default(true) // Bij Oplossen: reden verplicht kiezen
+  sensorsSwapped           Boolean  @default(false) // Ruimte- en verdampervoeler fysiek omgewisseld: kanalen omdraaien
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 

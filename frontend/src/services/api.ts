@@ -391,6 +391,10 @@ export const coldCellsApi = {
     const response = await api.put(`/coldcells/${id}/settings`, data);
     return response.data;
   },
+  swapSensors: async (id: string) => {
+    const response = await api.post(`/coldcells/${id}/swap-sensors`);
+    return response.data as { success: boolean; sensorsSwapped: boolean };
+  },
   delete: async (id: string) => {
     const response = await api.delete(`/coldcells/${id}`);
     return response.data;
