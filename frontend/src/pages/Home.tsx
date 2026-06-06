@@ -259,7 +259,7 @@ const Home: React.FC = () => {
               <p className="text-3xl font-bold text-brand">
                 €{starterPrices.monthly}<span className="text-base font-normal text-gray-400">/mnd</span>
               </p>
-              <p className="text-xs text-gray-400">+ hardware €399 eenmalig</p>
+              <p className="text-xs text-gray-400">+ hardware €299 eenmalig</p>
             </div>
             <div className="rounded-2xl border-2 border-brand bg-navy text-white p-6">
               <h3 className="font-display font-bold text-white">Pro</h3>
@@ -267,7 +267,7 @@ const Home: React.FC = () => {
               <p className="text-3xl font-bold text-brand">
                 €{proPrices.monthly}<span className="text-base font-normal text-white/40">/mnd</span>
               </p>
-              <p className="text-xs text-white/40">+ hardware €499 eenmalig</p>
+              <p className="text-xs text-white/40">+ hardware €399 eenmalig</p>
             </div>
           </div>
           <div className="text-center mt-8">

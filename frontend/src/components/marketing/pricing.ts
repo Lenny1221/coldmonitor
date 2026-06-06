@@ -1,17 +1,17 @@
 export type Billing = 'monthly' | 'yearly' | '3year' | '5year';
 
 export const starterPrices: Record<Billing, number> = {
-  monthly: 35,
-  yearly: 31.5,
-  '3year': 28,
-  '5year': 24.5,
+  monthly: 29,
+  yearly: 26.1,
+  '3year': 23.2,
+  '5year': 20.3,
 };
 
 export const proPrices: Record<Billing, number> = {
-  monthly: 49,
-  yearly: 44.1,
-  '3year': 39.2,
-  '5year': 34.3,
+  monthly: 39,
+  yearly: 35.1,
+  '3year': 31.2,
+  '5year': 27.3,
 };
 
 export const subLabels: Record<Billing, string> = {

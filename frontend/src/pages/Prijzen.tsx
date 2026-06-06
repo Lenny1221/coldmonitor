@@ -40,10 +40,10 @@ const multiFeatures = [
 ];
 
 const bundles = [
-  { qty: '1 toestel', price: '€49', saving: '—' },
-  { qty: '2 – 4 toestellen', price: '€42', saving: '-14% per toestel' },
-  { qty: '5 – 9 toestellen', price: '€35', saving: '-29% per toestel' },
-  { qty: '10+ toestellen', price: '€25+', saving: '-49% per toestel' },
+  { qty: '1 toestel', price: '€39', saving: '—' },
+  { qty: '2 – 4 toestellen', price: '€35', saving: '-10% per toestel' },
+  { qty: '5 – 9 toestellen', price: '€29', saving: '-26% per toestel' },
+  { qty: '10+ toestellen', price: '€25+', saving: '-36% per toestel' },
 ];
 
 const faqs = [
@@ -121,7 +121,7 @@ const Prijzen: React.FC = () => {
             <h2 className="font-display text-xl font-bold text-navy mb-1">Starter</h2>
             <p className="text-sm text-gray-500 mb-5">Voor kleine zaken met 1 koelcel.</p>
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Hardware eenmalig</div>
-            <div className="text-xl font-bold text-navy mb-4">€399 <span className="text-xs font-normal text-gray-400">excl. BTW</span></div>
+            <div className="text-xl font-bold text-navy mb-4">€299 <span className="text-xs font-normal text-gray-400">excl. BTW</span></div>
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Abonnement</div>
             <div className="text-4xl font-bold text-brand">€{starter}<span className="text-lg font-normal text-gray-400">/mnd</span></div>
             <div className="text-sm text-gray-400 mb-6">{subLabels[billing]}</div>
@@ -139,7 +139,7 @@ const Prijzen: React.FC = () => {
             <h2 className="font-display text-xl font-bold mb-1 mt-1 text-white">Pro</h2>
             <p className="text-sm text-white/55 mb-5">Volledig autonoom, met 4G backup.</p>
             <div className="text-xs font-semibold text-white/45 uppercase tracking-widest">Hardware eenmalig</div>
-            <div className="text-xl font-bold mb-4">€499 <span className="text-xs font-normal text-white/45">excl. BTW</span></div>
+            <div className="text-xl font-bold mb-4">€399 <span className="text-xs font-normal text-white/45">excl. BTW</span></div>
             <div className="text-xs font-semibold text-white/45 uppercase tracking-widest">Abonnement</div>
             <div className="text-4xl font-bold text-brand">€{pro}<span className="text-lg font-normal text-white/45">/mnd</span></div>
             <div className="text-sm text-white/45 mb-6">{subLabels[billing]}</div>
