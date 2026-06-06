@@ -249,6 +249,21 @@ export const contactApi = {
   },
 };
 
+// Waitlist API (pre-launch campagne)
+export const waitlistApi = {
+  submit: async (data: {
+    name: string;
+    email: string;
+    company?: string;
+    phone?: string;
+    sector?: string;
+    coldrooms?: string;
+  }): Promise<{ success: boolean; position: number; earlyBird: boolean }> => {
+    const response = await api.post('/waitlist', data);
+    return response.data;
+  },
+};
+
 // Invitations API
 export const invitationsApi = {
   send: async (data: { customerId: string; message?: string }) => {

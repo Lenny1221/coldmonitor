@@ -26,6 +26,7 @@ import ticketsRoutes from './modules/maintenance/tickets.controller';
 import refrigerantLogbookRoutes from './modules/refrigerantLogbook/refrigerantLogbook.controller';
 import firmwareRoutes from './modules/firmware/firmware.controller';
 import contactRoutes from './modules/contact/contact.controller';
+import waitlistRoutes from './modules/waitlist/waitlist.controller';
 
 // Legacy routes (to be migrated or kept for compatibility)
 import customerRoutes from './routes/customers';
@@ -103,6 +104,7 @@ app.use('/api/tickets', ticketsRoutes);
 app.use('/api/refrigerant-logbook', refrigerantLogbookRoutes);
 app.use('/api/firmware', firmwareRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/waitlist', waitlistRoutes);
 app.use('/api', escalationRoutes);
 
 // Legacy routes (still functional)

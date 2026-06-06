@@ -12,6 +12,7 @@ import FAQ from './pages/FAQ';
 import Contact from './pages/Contact';
 import ServicePartner from './pages/ServicePartner';
 import AppPage from './pages/AppPage';
+import Waitlist from './pages/Waitlist';
 import MarketingLayout from './components/MarketingLayout';
 import VerifyEmailSent from './pages/VerifyEmailSent';
 import VerifyEmailRequired from './pages/VerifyEmailRequired';
@@ -250,6 +251,8 @@ function AppRoutes() {
       <Route path="/servicepartner" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><ServicePartner /></MarketingLayout>} />
       <Route path="/contact" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Contact /></MarketingLayout>} />
       <Route path="/app" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><AppPage /></MarketingLayout>} />
+      <Route path="/wachtlijst" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Waitlist /></MarketingLayout>} />
+      <Route path="/waitlist" element={<Navigate to="/wachtlijst" replace />} />
       <Route path="/privacy" element={<Privacy />} />
     </Routes>
   );

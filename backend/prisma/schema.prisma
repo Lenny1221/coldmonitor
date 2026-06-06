@@ -756,3 +756,19 @@ model Invitation {
   @@index([expiresAt])
   @@index([technicianId, customerId, status])
 }
+
+// Wachtlijst-aanmeldingen (pre-launch campagne via intellifrost.be/wachtlijst)
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  phone     String?
+  sector    String?
+  coldrooms String?
+  position  Int      // Volgnummer in de wachtlijst (voor early-bird van de eerste 25)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([createdAt])
+}
