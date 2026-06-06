@@ -254,8 +254,8 @@ export const waitlistApi = {
   submit: async (data: {
     name: string;
     email: string;
-    company?: string;
-    phone?: string;
+    company: string;
+    phone: string;
     sector?: string;
     coldrooms?: string;
   }): Promise<{ success: boolean; position: number; earlyBird: boolean }> => {

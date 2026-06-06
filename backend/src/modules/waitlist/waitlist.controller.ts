@@ -14,8 +14,8 @@ const EARLY_BIRD_OFFER = '3 maanden gratis monitoring + gratis installatie';
 const waitlistSchema = z.object({
   name: z.string().min(1, 'Naam is verplicht').max(120),
   email: z.string().email('Ongeldig e-mailadres'),
-  company: z.string().max(160).optional().or(z.literal('')),
-  phone: z.string().max(40).optional().or(z.literal('')),
+  company: z.string().min(1, 'Bedrijf is verplicht').max(160),
+  phone: z.string().min(1, 'Telefoon is verplicht').max(40),
   sector: z.string().max(120).optional().or(z.literal('')),
   coldrooms: z.string().max(60).optional().or(z.literal('')),
 });

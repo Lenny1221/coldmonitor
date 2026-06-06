@@ -12,6 +12,19 @@ import { waitlistApi, getErrorMessage } from '../services/api';
 const EARLY_BIRD_LIMIT = 25;
 const EARLY_BIRD_OFFER = '3 maanden gratis + gratis installatie';
 
+const sectors = [
+  'Slagerij / beenhouwerij',
+  'IJsbereider / ijssalon',
+  'Restaurant / horeca / catering',
+  'Retail / supermarkt',
+  'Groothandel / distributie',
+  'Farmaceutisch',
+  'Logistiek / transport',
+  'Ziekenhuis / apotheek',
+  'Koeltechnicus / installateur',
+  'Andere',
+];
+
 const benefits = [
   { icon: BellAlertIcon, text: 'Direct alarm via app, SMS én telefoon' },
   { icon: BoltIcon, text: 'Realtime temperatuur- en deurbewaking' },
@@ -20,7 +33,7 @@ const benefits = [
 ];
 
 const Waitlist: React.FC = () => {
-  const [form, setForm] = useState({ name: '', email: '', company: '', phone: '' });
+  const [form, setForm] = useState({ name: '', email: '', company: '', phone: '', sector: '' });
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<{ position: number; earlyBird: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +47,9 @@ const Waitlist: React.FC = () => {
       const res = await waitlistApi.submit({
         name: form.name,
         email: form.email,
-        company: form.company || undefined,
-        phone: form.phone || undefined,
+        company: form.company,
+        phone: form.phone,
+        sector: form.sector || undefined,
       });
       setResult({ position: res.position, earlyBird: res.earlyBird });
       setSubmitted(true);
@@ -147,25 +161,45 @@ const Waitlist: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Bedrijf</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Bedrijf <span className="text-red-400">*</span>
+              </label>
               <input
+                required
                 type="text"
                 value={form.company}
                 onChange={(e) => setForm({ ...form, company: e.target.value })}
-                placeholder="Optioneel"
+                placeholder="Uw bedrijfsnaam"
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-brand text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Telefoon</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Telefoon <span className="text-red-400">*</span>
+              </label>
               <input
+                required
                 type="tel"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="Optioneel"
+                placeholder="+32 470 12 34 56"
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-brand text-sm"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Sector</label>
+            <select
+              value={form.sector}
+              onChange={(e) => setForm({ ...form, sector: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:border-brand text-sm"
+            >
+              <option value="">Selecteer uw sector... (optioneel)</option>
+              {sectors.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
 
           {error && (
