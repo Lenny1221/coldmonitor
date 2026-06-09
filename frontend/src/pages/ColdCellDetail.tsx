@@ -366,6 +366,7 @@ const ColdCellDetail: React.FC = () => {
           maxTemp={coldCell.temperatureMaxThreshold ?? -15}
           doorAlarmDelaySeconds={coldCell.doorAlarmDelaySeconds ?? 300}
           requireResolutionReason={coldCell.requireResolutionReason !== false}
+          sensorCount={coldCell.sensorCount ?? null}
           onClose={() => setShowSettings(false)}
           onSuccess={() => {
             fetchColdCell();
@@ -451,7 +452,12 @@ const ColdCellDetail: React.FC = () => {
             // Toon enkel de regel(s) waarvoor effectief data binnenkomt; als geen
             // van beide aangesloten is verbergen we de hele kaart.
             const roomTemp = latestReading?.temperature;
-            const evapTemp = (latestReading as { evaporatorTemp?: number | null } | null | undefined)?.evaporatorTemp;
+            // Bij 1-voeler-configuratie negeren we een eventuele verdamperwaarde,
+            // zodat die nooit als ruimtevoeler wordt getoond.
+            const singleSensor = coldCell?.sensorCount === 1;
+            const evapTemp = singleSensor
+              ? null
+              : (latestReading as { evaporatorTemp?: number | null } | null | undefined)?.evaporatorTemp;
             const hasRoom = roomTemp != null;
             const hasEvap = evapTemp != null;
             if (!hasRoom && !hasEvap) return null;

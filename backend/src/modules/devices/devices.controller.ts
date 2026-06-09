@@ -111,6 +111,13 @@ router.post(
         free_heap,
         battery_percent,
         on_mains,
+        room_temp,
+        sensor_1_temp,
+        sensor_2_temp,
+        room_fault,
+        sensor_1_fault,
+        sensor_2_fault,
+        evaporator_fault,
       } = req.body || {};
       const uptimeSeconds = typeof uptime === 'number' ? Math.round(uptime) : 0;
       const freeHeap = typeof free_heap === 'number' ? free_heap : 0;
@@ -183,6 +190,19 @@ router.post(
           uptimeSeconds,
           onMainsValue,
         );
+
+        // Voelerfout-bewaking (enkel actief wanneer de cel op 1/2 voelers staat).
+        // Firmware stuurt per voeler een fault-byte en de laatste temperatuur mee;
+        // ontbrekende/foutieve voeler → melding naar de technieker.
+        const num = (v: unknown): number | null =>
+          typeof v === 'number' && Number.isFinite(v) ? v : null;
+        await alertService.checkSensorFault(device.coldCellId, req.deviceId, {
+          roomFault: num(room_fault ?? sensor_1_fault),
+          evapFault: num(evaporator_fault ?? sensor_2_fault),
+          roomTemp: num(room_temp ?? sensor_1_temp),
+          evapTemp: num(sensor_2_temp),
+          uptimeSeconds,
+        });
       }
 
       // Fetch PENDING remote commands, mark as SENT, clear password from WIFI_CONNECT payload

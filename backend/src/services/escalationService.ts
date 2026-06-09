@@ -111,6 +111,9 @@ export async function runEscalationCron(): Promise<void> {
     where: {
       status: { in: ['ACTIVE', 'ESCALATING'] },
       acknowledgedAt: null,
+      // Voelerfouten zijn onderhoudsmeldingen voor de technieker en escaleren
+      // niet via klant-lagen (SMS/telefoon).
+      type: { not: 'SENSOR_ERROR' },
     },
     include: {
       coldCell: {

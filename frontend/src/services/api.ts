@@ -407,6 +407,7 @@ export const coldCellsApi = {
     max_temp: number;
     door_alarm_delay_seconds: number;
     require_resolution_reason?: boolean;
+    sensor_count?: number | null;
   }) => {
     const response = await api.put(`/coldcells/${id}/settings`, data);
     return response.data;

@@ -63,12 +63,19 @@ router.post(
       let evaporatorTemp = data.evaporatorTemp ?? null;
       const cellSwap = await prisma.device.findUnique({
         where: { id: req.deviceId! },
-        select: { coldCell: { select: { sensorsSwapped: true } } },
+        select: { coldCell: { select: { sensorsSwapped: true, sensorCount: true } } },
       });
       if (cellSwap?.coldCell?.sensorsSwapped && evaporatorTemp != null) {
         const tmp = roomTemp;
         roomTemp = evaporatorTemp;
         evaporatorTemp = tmp;
+      }
+
+      // Bij 1 voeler is de primaire meting altijd de ruimtevoeler. We negeren een
+      // eventueel meegestuurde verdamperwaarde, zodat die nooit als ruimte wordt
+      // getoond en de zelflerende baseline geen verdamper-as-ruimte oppikt.
+      if (cellSwap?.coldCell?.sensorCount === 1) {
+        evaporatorTemp = null;
       }
 
       // Create sensor reading (wordt opgeslagen in de DB van DATABASE_URL, bv. Supabase)

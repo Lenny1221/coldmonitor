@@ -14,6 +14,7 @@ interface ColdCellSettingsModalProps {
   maxTemp: number;
   doorAlarmDelaySeconds: number;
   requireResolutionReason?: boolean;
+  sensorCount?: number | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -25,6 +26,7 @@ export const ColdCellSettingsModal: React.FC<ColdCellSettingsModalProps> = ({
   maxTemp,
   doorAlarmDelaySeconds,
   requireResolutionReason = true,
+  sensorCount = null,
   onClose,
   onSuccess,
 }) => {
@@ -35,6 +37,10 @@ export const ColdCellSettingsModal: React.FC<ColdCellSettingsModalProps> = ({
     doorAlarmDelaySeconds >= 60 ? 'minutes' : 'seconds'
   );
   const [requireReason, setRequireReason] = useState(requireResolutionReason);
+  // 'auto' = geen voelerfout-bewaking, '1' = enkel ruimte, '2' = ruimte + verdamper
+  const [sensorCountVal, setSensorCountVal] = useState<'auto' | '1' | '2'>(
+    sensorCount === 1 ? '1' : sensorCount === 2 ? '2' : 'auto'
+  );
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -45,7 +51,8 @@ export const ColdCellSettingsModal: React.FC<ColdCellSettingsModalProps> = ({
     setDoorDelayVal(String(doorAlarmDelaySeconds));
     setDoorDelayUnit(doorAlarmDelaySeconds >= 60 ? 'minutes' : 'seconds');
     setRequireReason(requireResolutionReason);
-  }, [minTemp, maxTemp, doorAlarmDelaySeconds, requireResolutionReason]);
+    setSensorCountVal(sensorCount === 1 ? '1' : sensorCount === 2 ? '2' : 'auto');
+  }, [minTemp, maxTemp, doorAlarmDelaySeconds, requireResolutionReason, sensorCount]);
 
   const parseDoorDelaySeconds = (): number => {
     const num = parseFloat(doorDelayVal);
@@ -90,6 +97,7 @@ export const ColdCellSettingsModal: React.FC<ColdCellSettingsModalProps> = ({
         max_temp: max,
         door_alarm_delay_seconds: doorSeconds,
         require_resolution_reason: requireReason,
+        sensor_count: sensorCountVal === 'auto' ? null : Number(sensorCountVal),
       });
       setSuccessMessage('Instellingen opgeslagen');
       setTimeout(() => {
@@ -187,6 +195,25 @@ export const ColdCellSettingsModal: React.FC<ColdCellSettingsModalProps> = ({
             <p className="text-xs text-gray-500 -mt-2">
               Bij uit: alarm direct oplossen zonder reden te kiezen
             </p>
+
+            <div>
+              <label htmlFor="sensor-count" className="block text-sm font-medium text-gray-700 mb-1">
+                Aantal voelers
+              </label>
+              <select
+                id="sensor-count"
+                value={sensorCountVal}
+                onChange={(e) => setSensorCountVal(e.target.value as 'auto' | '1' | '2')}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="auto">Automatisch (geen voelerbewaking)</option>
+                <option value="1">1 voeler (alleen ruimte)</option>
+                <option value="2">2 voelers (ruimte + verdamper)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Bij 2 voelers krijgt de technieker een melding wanneer een voeler loskomt of defect is. Bij 1 voeler is dit altijd de ruimtevoeler.
+              </p>
+            </div>
 
             <div>
               <label htmlFor="door-delay" className="block text-sm font-medium text-gray-700 mb-1">

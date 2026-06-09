@@ -22,6 +22,9 @@ const settingsSchema = z.object({
   max_temp: z.number().min(-40).max(50),
   door_alarm_delay_seconds: z.number().int().min(1).max(3600),
   require_resolution_reason: z.boolean().optional(),
+  // Aantal verwachte voelers: 1 = enkel ruimte, 2 = ruimte + verdamper,
+  // null = automatisch (geen voelerfout-bewaking). Andere waarden weigeren.
+  sensor_count: z.number().int().min(1).max(2).nullable().optional(),
 }).refine((data) => data.min_temp < data.max_temp, {
   message: 'Min temperatuur moet lager zijn dan max temperatuur',
   path: ['max_temp'],
@@ -246,11 +249,23 @@ router.put('/:id/settings', requireAuth, requireOwnership, async (req: AuthReque
     if (data.require_resolution_reason !== undefined) {
       updateData.requireResolutionReason = data.require_resolution_reason;
     }
+    if (data.sensor_count !== undefined) {
+      updateData.sensorCount = data.sensor_count;
+    }
 
     const updated = await prisma.coldCell.update({
       where: { id },
       data: updateData,
     });
+
+    // Voelerconfiguratie gewijzigd: openstaande voelerfout-alarmen oplossen zodat
+    // ze niet blijven hangen met de oude verwachting (bv. van 2 naar 1 voeler).
+    if (data.sensor_count !== undefined) {
+      await prisma.alert.updateMany({
+        where: { coldCellId: id, type: 'SENSOR_ERROR', status: { in: ['ACTIVE', 'ESCALATING'] } },
+        data: { status: 'RESOLVED', resolvedAt: new Date(), resolutionNote: 'Voelerconfiguratie gewijzigd' },
+      });
+    }
 
     logger.info('Cold cell settings updated', {
       coldCellId: id,

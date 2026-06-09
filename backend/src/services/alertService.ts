@@ -402,6 +402,136 @@ export class AlertService {
   }
 
   /**
+   * Controleer voelerstatus en maak/los een SENSOR_ERROR-alarm op.
+   *
+   * Alleen actief wanneer de cel expliciet op 1 of 2 voelers is ingesteld
+   * (sensorCount). Bij 1 voeler bewaken we enkel de ruimtevoeler; bij 2 voelers
+   * melden we elke voeler die losgekomen of defect is. Een voelerfout is een
+   * onderhoudsprobleem en gaat rechtstreeks (push + e-mail) naar de technieker,
+   * niet via de volledige klant-escalatie.
+   */
+  async checkSensorFault(
+    coldCellId: string,
+    _deviceId: string,
+    params: {
+      roomFault?: number | null;
+      evapFault?: number | null;
+      roomTemp?: number | null;
+      evapTemp?: number | null;
+      uptimeSeconds?: number | null;
+    }
+  ): Promise<void> {
+    try {
+      const coldCell = await prisma.coldCell.findUnique({
+        where: { id: coldCellId },
+        include: {
+          location: { include: { customer: { include: { linkedTechnician: true } } } },
+        },
+      });
+
+      // Geen expliciete voelerconfiguratie → automatische modus, geen bewaking.
+      if (!coldCell || (coldCell.sensorCount !== 1 && coldCell.sensorCount !== 2)) {
+        return;
+      }
+
+      // Vermijd vals alarm tijdens de eerste seconden na (her)opstart, wanneer een
+      // chip nog niet uitgelezen is.
+      if (params.uptimeSeconds != null && params.uptimeSeconds < 60) {
+        return;
+      }
+
+      const isFaulted = (fault?: number | null, temp?: number | null): boolean => {
+        if (typeof fault === 'number' && fault !== 0) return true;
+        return temp == null; // ontbrekende meting = voeler los/defect
+      };
+
+      const roomFaulted = isFaulted(params.roomFault, params.roomTemp);
+      const evapFaulted =
+        coldCell.sensorCount === 2 ? isFaulted(params.evapFault, params.evapTemp) : false;
+
+      let faultLabel: string | null = null;
+      if (roomFaulted && evapFaulted) {
+        faultLabel = 'Ruimte- en verdampervoeler losgekomen of defect';
+      } else if (roomFaulted) {
+        faultLabel = 'Ruimtevoeler losgekomen of defect';
+      } else if (evapFaulted) {
+        faultLabel = 'Verdampervoeler losgekomen of defect';
+      }
+
+      if (!faultLabel) {
+        // Alles ok → eventueel openstaand voelerfout-alarm oplossen.
+        const resolved = await prisma.alert.updateMany({
+          where: {
+            coldCellId,
+            type: 'SENSOR_ERROR',
+            status: { in: ['ACTIVE', 'ESCALATING'] },
+          },
+          data: {
+            status: 'RESOLVED',
+            resolvedAt: new Date(),
+            resolutionNote: 'Voeler(s) hersteld',
+          },
+        });
+        if (resolved.count > 0) {
+          logger.info('Voelerfout-alarm automatisch opgelost', { coldCellId, count: resolved.count });
+        }
+        return;
+      }
+
+      const existingAlert = await prisma.alert.findFirst({
+        where: {
+          coldCellId,
+          type: 'SENSOR_ERROR',
+          status: { in: ['ACTIVE', 'ESCALATING'] },
+        },
+      });
+
+      if (existingAlert) {
+        await prisma.alert.update({
+          where: { id: existingAlert.id },
+          data: { lastTriggeredAt: new Date() },
+        });
+        return;
+      }
+
+      const customer = coldCell.location.customer;
+      const { timeSlot, layer } = getInitialEscalationState({
+        ...customer,
+        escalationConfig: customer.escalationConfig as EscalationConfig | null,
+      });
+
+      const alert = await prisma.alert.create({
+        data: {
+          coldCellId,
+          type: 'SENSOR_ERROR',
+          status: 'ACTIVE',
+          layer,
+          timeSlot,
+          triggeredAt: new Date(),
+          lastTriggeredAt: new Date(),
+        },
+      });
+
+      logger.warn('Voelerfout-alarm aangemaakt', { alertId: alert.id, coldCellId, faultLabel });
+
+      // Direct naar de technieker (geen klant-escalatie voor een voelerfout).
+      try {
+        const { sendSensorFaultTechnicianNotification } = await import(
+          './notifications/sensorFaultNotifier'
+        );
+        await sendSensorFaultTechnicianNotification(coldCellId, faultLabel);
+      } catch (notifyErr) {
+        logger.warn('Voelerfout-melding naar technieker mislukt', {
+          coldCellId,
+          error: notifyErr instanceof Error ? notifyErr.message : String(notifyErr),
+        });
+      }
+    } catch (error) {
+      logger.error('Error checking sensor fault', error as Error, { coldCellId });
+    }
+  }
+
+  /**
    * Resolve temperature alerts when values return to normal
    */
   private async resolveTemperatureAlerts(coldCellId: string): Promise<void> {
