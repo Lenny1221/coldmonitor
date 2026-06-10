@@ -200,11 +200,11 @@ const Home: React.FC = () => {
         <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
           <div className="flex justify-center lg:justify-start">
             <Photo
-              src="app-smartphone.png"
+              src="app-broekzak.png"
               alt="IntelliFrost-app geopend op een smartphone"
               placeholder="Foto: smartphone met de IntelliFrost-app open"
               ratio="tall"
-              className="max-w-[280px] shadow-2xl shadow-black/40 ring-1 ring-white/10"
+              className="max-w-[300px] drop-shadow-2xl"
             />
           </div>
           <div>
