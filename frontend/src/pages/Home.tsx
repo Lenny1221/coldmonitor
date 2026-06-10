@@ -70,8 +70,8 @@ const Home: React.FC = () => {
             src="home-hero-devices.png"
             alt="IntelliFrost op laptop en smartphone: koelcel-monitoring overal bij de hand"
             placeholder="Mockup: dashboard op laptop + app op smartphone"
-            ratio="square"
-            className="ring-1 ring-black/5"
+            ratio="video"
+            className=""
           />
         </div>
       </section>
