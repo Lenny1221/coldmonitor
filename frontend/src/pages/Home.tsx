@@ -67,11 +67,11 @@ const Home: React.FC = () => {
       <section className="px-5 -mt-12">
         <div className="max-w-4xl mx-auto">
           <Photo
-            src="dashboard-overview.png"
-            alt="IntelliFrost dashboard met alle koelcellen in één overzicht"
-            placeholder="Screenshot: dashboard met alle koelcellen (groen/oranje/rood)"
-            ratio="video"
-            className="shadow-2xl ring-1 ring-black/5"
+            src="home-hero-devices.png"
+            alt="IntelliFrost op laptop en smartphone: koelcel-monitoring overal bij de hand"
+            placeholder="Mockup: dashboard op laptop + app op smartphone"
+            ratio="square"
+            className="ring-1 ring-black/5"
           />
         </div>
       </section>
