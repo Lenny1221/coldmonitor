@@ -3,7 +3,6 @@ import { Capacitor } from '@capacitor/core';
 
 const CONSENT_KEY = 'intellifrost_cookie_consent';
 const GA4_ID = 'G-2M9908VXTP';
-const META_PIXEL_ID = '1024248883618851';
 
 export type ConsentStatus = 'accepted' | 'declined' | null;
 
@@ -42,34 +41,13 @@ function initGA4(): void {
 }
 
 /**
- * Meta (Facebook) Pixel laden – enkel op web en pas na cookietoestemming.
- * De PageView-events worden bij elke route-wissel verstuurd via usePageTracking,
- * dus de bootstrap doet hier bewust géén initiële 'PageView' (voorkomt dubbeltelling).
+ * Activeer Meta Pixel-tracking na cookietoestemming.
+ * De bootstrap staat in index.html; hier geven we enkel consent + events vrij.
  */
-function initMetaPixel(): void {
-  // Nooit in de native Capacitor-app (Meta Pixel hoort enkel op de website).
+function grantMetaPixelConsent(): void {
   if (Capacitor.isNativePlatform()) return;
-  if (typeof window.fbq === 'function') return;
-
-  // Officiële Meta Pixel-bootstrap (queue tot fbevents.js geladen is).
-  const n = function (...args: unknown[]) {
-    n.callMethod ? n.callMethod.apply(n, args) : n.queue!.push(args);
-  } as Window['fbq'];
-  n.push = n;
-  n.loaded = true;
-  n.version = '2.0';
-  n.queue = [];
-  window.fbq = n;
-  if (!window._fbq) window._fbq = n;
-
-  const t = document.createElement('script');
-  t.id = 'meta-pixel-script';
-  t.async = true;
-  t.src = 'https://connect.facebook.net/en_US/fbevents.js';
-  const s = document.getElementsByTagName('script')[0];
-  s.parentNode?.insertBefore(t, s);
-
-  window.fbq('init', META_PIXEL_ID);
+  if (typeof window.fbq !== 'function') return;
+  window.fbq('consent', 'grant');
 }
 
 function readStorage(): ConsentStatus {
@@ -95,11 +73,11 @@ function writeStorage(value: ConsentStatus): void {
 export function useCookieConsent() {
   const [consent, setConsent] = useState<ConsentStatus>(readStorage);
 
-  // GA4 + Meta Pixel initialiseren zodra toestemming 'accepted' is (ook bij herbezoek)
+  // GA4 + Meta consent zodra toestemming 'accepted' is (pixel-bootstrap staat in index.html)
   useEffect(() => {
     if (consent === 'accepted') {
       initGA4();
-      initMetaPixel();
+      grantMetaPixelConsent();
     }
   }, [consent]);
 

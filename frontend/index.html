@@ -35,8 +35,45 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="IntelliFrost – Koelcelmonitoring 24/7" />
     <meta name="twitter:description" content="Realtime bewaking van koel- en vriescellen met slimme escalatie via e-mail, SMS en AI-telefoon." />
+
+    <!-- Meta Pixel: bootstrap in <head> zodat Meta Pixel Helper de installatie ziet.
+         fbq('consent','revoke') blokkeert tracking tot de bezoeker cookies accepteert
+         (zie useCookieConsent.ts). Geen PageView hier — pas na toestemming. -->
+    <script>
+      (function (w, d) {
+        var host = w.location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1') return;
+        if (w.location.protocol === 'capacitor:' || w.location.protocol === 'ionic:') return;
+        !function (f, b, e, v, n, t, s) {
+          if (f.fbq) return;
+          n = f.fbq = function () {
+            n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+          };
+          if (!f._fbq) f._fbq = n;
+          n.push = n;
+          n.loaded = !0;
+          n.version = '2.0';
+          n.queue = [];
+          t = b.createElement(e);
+          t.async = !0;
+          t.src = v;
+          s = b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t, s);
+        }(w, d, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+        w.fbq('consent', 'revoke');
+        w.fbq('init', '1024248883618851');
+      })(window, document);
+    </script>
   </head>
   <body>
+    <noscript
+      ><img
+        height="1"
+        width="1"
+        style="display: none"
+        src="https://www.facebook.com/tr?id=1024248883618851&amp;ev=PageView&amp;noscript=1"
+        alt=""
+    /></noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
