@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 
 const CONSENT_KEY = 'intellifrost_cookie_consent';
 const GA4_ID = 'G-2M9908VXTP';
-const META_PIXEL_ID = '1484537073422370';
+const META_PIXEL_ID = '1024248883618851';
 
 export type ConsentStatus = 'accepted' | 'declined' | null;
 
