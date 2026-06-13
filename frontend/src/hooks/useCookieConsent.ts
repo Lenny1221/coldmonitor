@@ -123,5 +123,27 @@ export function useCookieConsent() {
     }
   };
 
-  return { consent, accept, decline, trackEvent };
+  /**
+   * Conversie: formulier ingediend (wachtlijst of contact).
+   * GA4 generate_lead + Meta Pixel Lead – enkel na cookietoestemming.
+   */
+  const trackLead = (params: { form: 'waitlist' | 'contact'; category?: string }) => {
+    if (consent !== 'accepted') return;
+
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'generate_lead', {
+        form: params.form,
+        lead_type: params.category,
+      });
+    }
+
+    if (typeof window.fbq === 'function') {
+      window.fbq('track', 'Lead', {
+        content_name: params.form === 'waitlist' ? 'Wachtlijst' : 'Contact',
+        content_category: params.category,
+      });
+    }
+  };
+
+  return { consent, accept, decline, trackEvent, trackLead };
 }

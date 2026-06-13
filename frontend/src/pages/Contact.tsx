@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { contactApi, getErrorMessage } from '../services/api';
+import { useCookieConsent } from '../hooks/useCookieConsent';
 import {
   EnvelopeIcon,
   PhoneIcon,
@@ -49,6 +50,7 @@ const Contact: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { trackLead } = useCookieConsent();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +70,7 @@ const Contact: React.FC = () => {
         message: formData.message,
       });
       setSubmitted(true);
+      trackLead({ form: 'contact', category: selectedType });
     } catch (err) {
       setError(getErrorMessage(err, 'Er ging iets mis. Probeer het later opnieuw of mail direct naar info@intellifrost.be.'));
     } finally {

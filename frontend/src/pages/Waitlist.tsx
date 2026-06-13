@@ -8,6 +8,7 @@ import {
   DevicePhoneMobileIcon,
 } from '@heroicons/react/24/outline';
 import { waitlistApi, getErrorMessage } from '../services/api';
+import { useCookieConsent } from '../hooks/useCookieConsent';
 
 const EARLY_BIRD_LIMIT = 25;
 const EARLY_BIRD_OFFER = '3 maanden gratis + gratis installatie';
@@ -38,6 +39,7 @@ const Waitlist: React.FC = () => {
   const [result, setResult] = useState<{ position: number; earlyBird: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { trackLead } = useCookieConsent();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +55,10 @@ const Waitlist: React.FC = () => {
       });
       setResult({ position: res.position, earlyBird: res.earlyBird });
       setSubmitted(true);
+      trackLead({
+        form: 'waitlist',
+        category: res.earlyBird ? 'early_bird' : 'wachtlijst',
+      });
     } catch (err) {
       setError(getErrorMessage(err, 'Er ging iets mis. Probeer het later opnieuw of mail naar info@intellifrost.be.'));
     } finally {
