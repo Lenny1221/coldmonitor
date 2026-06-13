@@ -3,8 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { useCookieConsent } from './useCookieConsent';
 
 /**
- * Stuurt automatisch een GA4 page_view event bij elke route-wijziging.
- * Werkt alleen als de gebruiker cookietoestemming heeft gegeven.
+ * Stuurt automatisch een GA4 page_view + Meta Pixel PageView bij elke
+ * route-wijziging. Werkt alleen als de gebruiker cookietoestemming heeft gegeven.
  * Moet gebruikt worden in een component die binnen <Router> leeft.
  */
 export function usePageTracking(): void {
@@ -13,11 +13,17 @@ export function usePageTracking(): void {
 
   useEffect(() => {
     if (consent !== 'accepted') return;
-    if (typeof window.gtag !== 'function') return;
 
-    window.gtag('event', 'page_view', {
-      page_path: location.pathname + location.search,
-      page_title: document.title,
-    });
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'page_view', {
+        page_path: location.pathname + location.search,
+        page_title: document.title,
+      });
+    }
+
+    // Meta (Facebook) Pixel: elke route telt als een PageView (SPA).
+    if (typeof window.fbq === 'function') {
+      window.fbq('track', 'PageView');
+    }
   }, [location, consent]);
 }

@@ -28,8 +28,9 @@ const CookieBanner: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           {/* Tekst */}
           <p className="text-white/90 text-sm leading-relaxed flex-1">
-            Wij gebruiken Google Analytics om anoniem bij te houden hoe bezoekers onze website
-            gebruiken. Hiervoor worden cookies geplaatst. Uw gegevens worden verwerkt door Google LLC.
+            Wij gebruiken Google Analytics en de Meta (Facebook) Pixel om bij te houden hoe bezoekers
+            onze website gebruiken en om onze advertenties te verbeteren. Hiervoor worden cookies
+            geplaatst. Uw gegevens worden verwerkt door Google LLC en Meta Platforms.
             Accepteert u dit?{' '}
             <a
               href="/privacy"

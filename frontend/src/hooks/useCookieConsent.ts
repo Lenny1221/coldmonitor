@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 const CONSENT_KEY = 'intellifrost_cookie_consent';
 const GA4_ID = 'G-2M9908VXTP';
+const META_PIXEL_ID = '1484537073422370';
 
 export type ConsentStatus = 'accepted' | 'declined' | null;
 
@@ -9,6 +11,14 @@ declare global {
   interface Window {
     dataLayer: unknown[];
     gtag: (...args: unknown[]) => void;
+    fbq: ((...args: unknown[]) => void) & {
+      callMethod?: (...args: unknown[]) => void;
+      queue?: unknown[];
+      loaded?: boolean;
+      version?: string;
+      push?: unknown;
+    };
+    _fbq?: unknown;
   }
 }
 
@@ -29,6 +39,37 @@ function initGA4(): void {
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`;
   document.head.appendChild(script);
+}
+
+/**
+ * Meta (Facebook) Pixel laden – enkel op web en pas na cookietoestemming.
+ * De PageView-events worden bij elke route-wissel verstuurd via usePageTracking,
+ * dus de bootstrap doet hier bewust géén initiële 'PageView' (voorkomt dubbeltelling).
+ */
+function initMetaPixel(): void {
+  // Nooit in de native Capacitor-app (Meta Pixel hoort enkel op de website).
+  if (Capacitor.isNativePlatform()) return;
+  if (typeof window.fbq === 'function') return;
+
+  // Officiële Meta Pixel-bootstrap (queue tot fbevents.js geladen is).
+  const n = function (...args: unknown[]) {
+    n.callMethod ? n.callMethod.apply(n, args) : n.queue!.push(args);
+  } as Window['fbq'];
+  n.push = n;
+  n.loaded = true;
+  n.version = '2.0';
+  n.queue = [];
+  window.fbq = n;
+  if (!window._fbq) window._fbq = n;
+
+  const t = document.createElement('script');
+  t.id = 'meta-pixel-script';
+  t.async = true;
+  t.src = 'https://connect.facebook.net/en_US/fbevents.js';
+  const s = document.getElementsByTagName('script')[0];
+  s.parentNode?.insertBefore(t, s);
+
+  window.fbq('init', META_PIXEL_ID);
 }
 
 function readStorage(): ConsentStatus {
@@ -54,10 +95,11 @@ function writeStorage(value: ConsentStatus): void {
 export function useCookieConsent() {
   const [consent, setConsent] = useState<ConsentStatus>(readStorage);
 
-  // GA4 initialiseren zodra toestemming 'accepted' is (ook bij herbezoek)
+  // GA4 + Meta Pixel initialiseren zodra toestemming 'accepted' is (ook bij herbezoek)
   useEffect(() => {
     if (consent === 'accepted') {
       initGA4();
+      initMetaPixel();
     }
   }, [consent]);
 
