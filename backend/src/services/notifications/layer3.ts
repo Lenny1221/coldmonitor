@@ -105,9 +105,23 @@ export async function sendLayer3Notifications(alert: AlertWithRelations): Promis
 
   // Technicus: alleen SMS (geen telefoon – enkel klant wordt opgebeld)
   if (technician?.phone) {
+    let smsDetail: string;
+    switch (alert.type) {
+      case 'WIFI_LOSS':
+        smsDetail = 'WiFi-verbinding verbroken';
+        break;
+      case 'POWER_LOSS':
+        smsDetail = 'Stroomonderbreking';
+        break;
+      case 'DOOR_OPEN':
+        smsDetail = 'Deur te lang open';
+        break;
+      default:
+        smsDetail = `Temperatuur ${temp}°C`;
+    }
     await sendSms(
       technician.phone,
-      `IntelliFrost URGENT: ${customer?.companyName} – ${coldCellName}. Temperatuur ${temp}°C. U wordt gedispatcht.`
+      `IntelliFrost URGENT: ${customer?.companyName} – ${coldCellName}. ${smsDetail}. U wordt gedispatcht.`
     );
     await logEscalation(alert.id, 'LAYER_3', 'SMS naar technicus', 'TECHNICIAN', 'SMS');
   }

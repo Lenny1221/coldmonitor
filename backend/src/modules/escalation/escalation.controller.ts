@@ -37,7 +37,7 @@ function formatDoorDelay(seconds: number): string {
   return min === 1 ? '1 minuut' : `${min} minuten`;
 }
 
-/** Bouw alarmtekst voor TTS/Say */
+/** Bouw alarmtekst voor TTS/Say – per alarmtype en ontvanger */
 function buildAlarmText(
   alert: {
     type?: string;
@@ -53,31 +53,54 @@ function buildAlarmText(
 ): string {
   const customer = alert.coldCell?.location?.customer;
   const coldCellName = alert.coldCell?.name ?? 'Onbekende cel';
+  const companyName = customer?.companyName ?? 'Onbekende klant';
   const temp = alert.value ?? 0;
   const doorDelaySec = alert.coldCell?.doorAlarmDelaySeconds ?? 300;
   const doorDelayText = formatDoorDelay(doorDelaySec);
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond';
+  const dtmf =
+    ' Druk 1 om te bevestigen dat u op de hoogte bent. Druk 2 om een technieker op te roepen.';
 
-  const isDoorOpen = alert.type === 'DOOR_OPEN';
+  const type = alert.type;
 
   if (technician === '1') {
-    if (isDoorOpen) {
-      return `${greeting}. IntelliFrost. URGENT: ${customer?.companyName} – koelcel ${coldCellName}. De deur staat te lang open. U wordt gevraagd om in te grijpen.`;
+    switch (type) {
+      case 'DOOR_OPEN':
+        return `${greeting}. IntelliFrost. URGENT: ${companyName} – koelcel ${coldCellName}. De deur staat te lang open. U wordt gevraagd om in te grijpen.`;
+      case 'WIFI_LOSS':
+        return `${greeting}. IntelliFrost. URGENT: ${companyName} – koelcel ${coldCellName}. De WiFi-verbinding is verbroken. U wordt gevraagd om in te grijpen.`;
+      case 'POWER_LOSS':
+        return `${greeting}. IntelliFrost. URGENT: ${companyName} – koelcel ${coldCellName}. Er is een stroomonderbreking. U wordt gevraagd om in te grijpen.`;
+      default:
+        return `${greeting}. IntelliFrost. URGENT: ${companyName} – koelcel ${coldCellName}, temperatuur ${temp} graden. U wordt gevraagd om in te grijpen.`;
     }
-    return `${greeting}. IntelliFrost. URGENT: ${customer?.companyName} – koelcel ${coldCellName}, temperatuur ${temp} graden. U wordt gevraagd om in te grijpen.`;
   }
+
   if (backup === '1') {
-    if (isDoorOpen) {
-      return `${greeting}. IntelliFrost. Er is een kritisch alarm bij ${customer?.companyName} – koelcel ${coldCellName}. De deur staat te lang open. Neem contact op.`;
+    switch (type) {
+      case 'DOOR_OPEN':
+        return `${greeting}. IntelliFrost. Er is een kritisch alarm bij ${companyName} – koelcel ${coldCellName}. De deur staat te lang open. Neem contact op.`;
+      case 'WIFI_LOSS':
+        return `${greeting}. IntelliFrost. Er is een kritisch alarm bij ${companyName} – koelcel ${coldCellName}. De WiFi-verbinding is verbroken. Neem contact op.`;
+      case 'POWER_LOSS':
+        return `${greeting}. IntelliFrost. Er is een stroomonderbreking bij ${companyName} – koelcel ${coldCellName}. Neem contact op.`;
+      default:
+        return `${greeting}. IntelliFrost. Er is een kritisch alarm bij ${companyName} – koelcel ${coldCellName}. Temperatuur ${temp} graden. Neem contact op.`;
     }
-    return `${greeting}. IntelliFrost. Er is een kritisch alarm bij ${customer?.companyName} – koelcel ${coldCellName}. Temperatuur ${temp} graden. Neem contact op.`;
   }
+
   // Klant (met Druk 1/2)
-  if (isDoorOpen) {
-    return `${greeting}. Dit is IntelliFrost. De deur van uw koelcel ${coldCellName} staat te lang open. U heeft ingesteld dat de deur maximaal ${doorDelayText} mag openstaan. Druk 1 om te bevestigen dat u op de hoogte bent. Druk 2 om een technieker op te roepen.`;
+  switch (type) {
+    case 'DOOR_OPEN':
+      return `${greeting}. Dit is IntelliFrost. De deur van uw koelcel ${coldCellName} staat te lang open. U heeft ingesteld dat de deur maximaal ${doorDelayText} mag openstaan.${dtmf}`;
+    case 'WIFI_LOSS':
+      return `${greeting}. Dit is IntelliFrost. De WiFi-verbinding van uw koelcel ${coldCellName} is verbroken. Het meetapparaat heeft geen verbinding meer.${dtmf}`;
+    case 'POWER_LOSS':
+      return `${greeting}. Dit is IntelliFrost. Er is een stroomonderbreking gedetecteerd bij uw koelcel ${coldCellName}.${dtmf}`;
+    default:
+      return `${greeting}. Dit is IntelliFrost. Uw koelcel ${coldCellName} heeft een kritisch temperatuuralarm. De huidige temperatuur is ${temp} graden Celsius.${dtmf}`;
   }
-  return `${greeting}. Dit is IntelliFrost. Uw koelcel ${coldCellName} heeft een kritisch temperatuuralarm. De huidige temperatuur is ${temp} graden Celsius. Druk 1 om te bevestigen dat u op de hoogte bent. Druk 2 om een technieker op te roepen.`;
 }
 
 /**
