@@ -22,11 +22,11 @@ const Home: React.FC = () => {
     <>
       <Helmet>
         <title>IntelliFrost – Slimme koelcelbewaking die problemen herkent én oplost</title>
-        <meta name="description" content="IntelliFrost bewaakt uw koelcellen 24/7 op temperatuur, deur en stroom. Bij een probleem wordt ook servicepartner Serv-Ice verwittigd, zodat het ook effectief hersteld wordt. HACCP-klaar, zelflerend en met mobiele app." />
-        <meta name="keywords" content="koelcelmonitoring, temperatuurbewaking, HACCP, koelcel alarm, Serv-Ice servicepartner, zelflerend koelcel, koelcel app" />
+        <meta name="description" content="IntelliFrost bewaakt uw koelcellen 24/7 op temperatuur, deur en stroom. Bij een probleem wordt ook uw gekoppelde servicepartner verwittigd, zodat het effectief hersteld wordt. HACCP-klaar, zelflerend en met mobiele app." />
+        <meta name="keywords" content="koelcelmonitoring, temperatuurbewaking, HACCP, koelcel alarm, servicepartner, zelflerend koelcel, koelcel app" />
         <link rel="canonical" href="https://intellifrost.be/" />
         <meta property="og:title" content="IntelliFrost – Koelcelbewaking die problemen herkent én oplost" />
-        <meta property="og:description" content="24/7 bewaking van temperatuur, deur en stroom. Detecteren én oplossen via servicepartner Serv-Ice. HACCP-klaar en zelflerend." />
+        <meta property="og:description" content="24/7 bewaking van temperatuur, deur en stroom. Detecteren én oplossen via ons netwerk van servicepartners. HACCP-klaar en zelflerend." />
         <meta property="og:url" content="https://intellifrost.be/" />
       </Helmet>
 
@@ -43,7 +43,7 @@ const Home: React.FC = () => {
           </h1>
           <p className="text-lg text-white/70 max-w-xl mx-auto mb-8">
             IntelliFrost bewaakt temperatuur, deur en stroom 24/7. Bij een probleem krijgt niet alleen ú een alarm —
-            ook onze vaste servicepartner <strong className="text-white">Serv-Ice</strong> wordt verwittigd en komt herstellen.
+            ook uw gekoppelde <strong className="text-white">servicepartner</strong> in de regio wordt verwittigd en kan herstellen.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
@@ -108,8 +108,8 @@ const Home: React.FC = () => {
               <span className="text-brand">Wij sturen ook de hersteller.</span>
             </h2>
             <p className="text-gray-600">
-              Andere systemen sturen u een melding en laten u in de kou staan. Bij IntelliFrost krijgt onze vaste
-              servicepartner <strong>Serv-Ice</strong> exact dezelfde melding — zo staat er een koeltechnicus klaar
+              Andere systemen sturen u een melding en laten u in de kou staan. Bij IntelliFrost krijgt uw gekoppelde
+              servicepartner exact dezelfde melding — zo staat er een koeltechnicus klaar
               nog voor uw producten in gevaar komen.
             </p>
           </div>
@@ -117,7 +117,7 @@ const Home: React.FC = () => {
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { step: '1', icon: BoltIcon, title: 'Probleem herkend', desc: 'IntelliFrost merkt een afwijking in temperatuur, deur of stroom en start het alarm.' },
-              { step: '2', icon: PhoneIcon, title: 'Serv-Ice verwittigd', desc: 'Onze servicepartner krijgt automatisch dezelfde melding via het platform.' },
+              { step: '2', icon: PhoneIcon, title: 'Partner verwittigd', desc: 'Uw servicepartner krijgt automatisch dezelfde melding via het platform.' },
               { step: '3', icon: WrenchScrewdriverIcon, title: 'Snelle interventie', desc: 'Een koeltechnicus komt ter plaatse — met prioriteit bij een servicecontract.' },
               { step: '4', icon: ShieldCheckIcon, title: 'Opgelost & gelogd', desc: 'Installatie hersteld, het event netjes geregistreerd voor uw HACCP-dossier.' },
             ].map((item) => (
@@ -137,7 +137,7 @@ const Home: React.FC = () => {
               to="/servicepartner"
               className="inline-flex items-center gap-2 text-brand font-semibold hover:underline"
             >
-              Ontdek onze servicepartner Serv-Ice
+              Ontdek ons servicepartnerprogramma
               <ArrowRightIcon className="h-4 w-4" />
             </Link>
           </div>

@@ -11,7 +11,6 @@ import Handleidingen from './pages/Handleidingen';
 import FAQ from './pages/FAQ';
 import Contact from './pages/Contact';
 import ServicePartner from './pages/ServicePartner';
-import Partners from './pages/Partners';
 import AppPage from './pages/AppPage';
 import Waitlist from './pages/Waitlist';
 import MarketingLayout from './components/MarketingLayout';
@@ -250,7 +249,7 @@ function AppRoutes() {
       <Route path="/handleidingen" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Handleidingen /></MarketingLayout>} />
       <Route path="/faq" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><FAQ /></MarketingLayout>} />
       <Route path="/servicepartner" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><ServicePartner /></MarketingLayout>} />
-      <Route path="/partners" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Partners /></MarketingLayout>} />
+      <Route path="/partners" element={<Navigate to="/servicepartner" replace />} />
       <Route path="/contact" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Contact /></MarketingLayout>} />
       <Route path="/app" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><AppPage /></MarketingLayout>} />
       <Route path="/wachtlijst" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <MarketingLayout><Waitlist /></MarketingLayout>} />

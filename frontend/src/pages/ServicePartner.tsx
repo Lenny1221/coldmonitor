@@ -2,325 +2,329 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
-  BoltIcon,
-  PhoneIcon,
-  WrenchScrewdriverIcon,
-  ShieldCheckIcon,
-  AcademicCapIcon,
-  EnvelopeIcon,
+  UserGroupIcon,
+  ArrowTrendingUpIcon,
   MapPinIcon,
+  BanknotesIcon,
   CheckCircleIcon,
-  XMarkIcon,
   SparklesIcon,
-  ArrowTopRightOnSquareIcon,
-  CpuChipIcon,
 } from '@heroicons/react/24/outline';
-import { CtaBand } from '../components/marketing/ui';
-import Photo from '../components/marketing/Photo';
+import { Check, CtaBand } from '../components/marketing/ui';
 
-type Tier = 'basis' | 'comfort' | 'allin';
+const flowSteps = [
+  { n: '1', title: 'Klant ontdekt IntelliFrost', desc: 'Via Meta Ads, LinkedIn of de website. Demo of contactformulier.' },
+  { n: '2', title: 'Lead bij IntelliFrost', desc: 'Wij ontvangen naam, bedrijf, regio en type koelruimte.' },
+  { n: '3', title: 'Koppeling aan partner', desc: 'Op regio en tier: Platinum eerst, dan Gold, dan Silver. U krijgt een notificatie.' },
+  { n: '4', title: 'U neemt contact op', desc: 'Demo, plaatsbezoek en deal sluiten — binnen 48 uur.' },
+  { n: '5', title: 'Verkoop & installatie', desc: 'Hardware inkoop aan partnerprijs, verkoop aan eigen marge.' },
+  { n: '6', title: 'Abonnement via IntelliFrost', desc: 'Klant betaalt maandelijks (vanaf €29/mnd) rechtstreeks aan ons.' },
+  { n: '7', title: 'Recurring commissie', desc: 'Maandelijks 10–15% op het abonnement, zolang de klant actief blijft.' },
+];
 
-const contracts: {
-  id: Tier;
-  name: string;
-  tagline: string;
-  badge?: string;
-  highlight: boolean;
-  features: { text: string; ok: boolean }[];
-}[] = [
-  {
-    id: 'basis',
-    name: 'Basis',
-    tagline: 'Jaarlijks preventief onderhoud',
-    highlight: false,
-    features: [
-      { text: '1× preventief onderhoud per jaar', ok: true },
-      { text: 'Controle & reiniging koelcircuit', ok: true },
-      { text: 'Rapport na elk bezoek', ok: true },
-      { text: 'Kortingstarief op interventies', ok: true },
-      { text: 'Prioriteit bij storingen', ok: false },
-      { text: 'Spoedinterventie < 24u', ok: false },
-    ],
-  },
-  {
-    id: 'comfort',
-    name: 'Comfort',
-    tagline: 'Halfjaarlijks onderhoud + prioriteit',
-    badge: 'Meest gekozen',
-    highlight: true,
-    features: [
-      { text: '2× preventief onderhoud per jaar', ok: true },
-      { text: 'Controle & reiniging koelcircuit', ok: true },
-      { text: 'Rapport na elk bezoek', ok: true },
-      { text: 'Kortingstarief op interventies', ok: true },
-      { text: 'Prioriteit bij storingen', ok: true },
-      { text: 'Spoedinterventie < 24u', ok: false },
-    ],
-  },
-  {
-    id: 'allin',
-    name: 'All-In',
-    tagline: 'Volledige zorgeloosheid',
-    badge: 'Meeste voordelen',
-    highlight: false,
-    features: [
-      { text: '4× preventief onderhoud per jaar', ok: true },
-      { text: 'Controle & reiniging koelcircuit', ok: true },
-      { text: 'Rapport na elk bezoek', ok: true },
-      { text: 'Kortingstarief op interventies', ok: true },
-      { text: 'Prioriteit bij storingen', ok: true },
-      { text: 'Spoedinterventie < 24u', ok: true },
-    ],
-  },
+const tierRows: { label: string; silver: string; gold: string; platinum: string }[] = [
+  { label: 'Instapdrempel', silver: '1 actieve klant', gold: '5 actieve klanten', platinum: '15 actieve klanten' },
+  { label: 'Commissie maandabonnement', silver: '10%', gold: '12%', platinum: '15%' },
+  { label: 'Marge op hardware', silver: 'Vrij te bepalen', gold: 'Vrij te bepalen', platinum: 'Vrij te bepalen' },
+  { label: 'Prioriteit bij leads', silver: 'Laag', gold: 'Gemiddeld', platinum: 'Hoog — eerste keus' },
+  { label: 'Korting hardwareaankoop', silver: '—', gold: '+5%', platinum: '+10%' },
+  { label: 'Support van IntelliFrost', silver: 'Standaard', gold: 'Prioriteit', platinum: 'Dedicated contact' },
+  { label: 'Vermelding op website', silver: 'Nee', gold: 'Ja', platinum: 'Ja — uitgelicht' },
+  { label: 'Co-marketing materiaal', silver: 'Basis', gold: 'Uitgebreid', platinum: 'Op maat' },
+];
+
+const earningsRows: { clients: number; silver: string; gold: string; platinum: string }[] = [
+  { clients: 5, silver: '€14,50/mnd', gold: '€17,40/mnd', platinum: '€21,75/mnd' },
+  { clients: 10, silver: '€29,00/mnd', gold: '€34,80/mnd', platinum: '€43,50/mnd' },
+  { clients: 20, silver: '€58,00/mnd', gold: '€69,60/mnd', platinum: '€87,00/mnd' },
+  { clients: 30, silver: '€87,00/mnd', gold: '€104,40/mnd', platinum: '€130,50/mnd' },
+  { clients: 50, silver: '€145,00/mnd', gold: '€174,00/mnd', platinum: '€217,50/mnd' },
+];
+
+const onboardingSteps = [
+  'Contact opnemen via intellifrost.be/servicepartner',
+  'Kennismakingsgesprek: regio, klantenbestand, ervaring',
+  'Ondertekening partnerovereenkomst',
+  'Onboarding: technicus-dashboard, producttraining, verkoopmateriaal',
+  'Eerste lead of eigen klant activeren',
+  'Automatische tier-stijging naarmate u groeit',
+];
+
+const expectations = [
+  'Actief IntelliFrost promoten bij eigen klanten en netwerk',
+  'Leads binnen 48 uur opvolgen',
+  'Kwalitatieve installatie en nazorg bij de eindklant',
+  'Terugkoppeling aan IntelliFrost over leadstatus',
+  'Gebruik van het officiële IntelliFrost partnerlogo',
 ];
 
 const ServicePartner: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Serv-Ice – Officiële servicepartner & servicecontracten | IntelliFrost</title>
-        <meta name="description" content="Serv-Ice is de vaste servicepartner van IntelliFrost. Detecteert IntelliFrost een probleem, dan komt Serv-Ice het ook effectief herstellen. Sluit een servicecontract af of vraag de combodeal aan." />
-        <meta name="keywords" content="Serv-Ice servicecontract, koelinstallatie onderhoud, servicepartner IntelliFrost, combo korting monitoring service, preventief onderhoud koelcel" />
+        <title>Servicepartners – IntelliFrost | Verkoop, installatie & recurring commissie</title>
+        <meta
+          name="description"
+          content="Word IntelliFrost servicepartner als koeltechnisch bedrijf. Verkoop hardware met eigen marge, verdien 10–15% recurring commissie op abonnementen en ontvang leads op basis van tier en regio."
+        />
         <link rel="canonical" href="https://intellifrost.be/servicepartner" />
-        <meta property="og:title" content="Serv-Ice servicepartner & servicecontracten | IntelliFrost" />
-        <meta property="og:description" content="Detecteren én oplossen: IntelliFrost monitoring + Serv-Ice servicecontracten. Combo-korting bij beide." />
+        <meta property="og:title" content="IntelliFrost Servicepartners" />
+        <meta
+          property="og:description"
+          content="Koeltechnische servicebedrijven als verkoopnetwerk: marge op hardware + maandelijkse commissie + leads van IntelliFrost."
+        />
         <meta property="og:url" content="https://intellifrost.be/servicepartner" />
       </Helmet>
 
-      {/* Hero */}
       <section className="bg-navy text-white px-5 pt-28 pb-16">
         <div className="max-w-3xl mx-auto text-center">
           <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/20 border border-brand/40 text-brand text-xs font-semibold mb-5">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
-            Onze vaste servicepartner
+            <UserGroupIcon className="h-4 w-4" />
+            Servicepartners programma
           </span>
-          <h1 className="font-display text-4xl sm:text-5xl font-extrabold mb-4 text-white">Serv-Ice</h1>
-          <p className="text-lg text-white/70 max-w-xl mx-auto mb-8">
-            Meer dan 8 jaar ervaring in herstelling, plaatsing en onderhoud van koelinstallaties. Detecteert IntelliFrost
-            een probleem? Dan staat Serv-Ice klaar om het ook effectief op te lossen.
+          <h1 className="font-display text-4xl sm:text-5xl font-extrabold mb-4 text-white">
+            Word IntelliFrost servicepartner
+          </h1>
+          <p className="text-lg text-white/70 max-w-2xl mx-auto mb-8">
+            Koeltechnische servicebedrijven en technici zijn ons verkoopnetwerk. U verkoopt en installeert,
+            maakt marge op hardware en verdient recurring commissie op elk actief abonnement — plus leads van ons.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <a href="#contracten" className="bg-brand text-navy font-bold px-7 py-3 rounded-xl hover:bg-brand-dark transition-colors">
-              Bekijk servicecontracten
-            </a>
-            <a
-              href="https://www.serv-ice.be"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 border border-white/30 text-white font-semibold px-7 py-3 rounded-xl hover:bg-white/10 transition-colors"
+            <Link
+              to="/contact?type=technicus"
+              className="bg-brand text-navy font-bold px-7 py-3 rounded-xl hover:bg-brand-dark transition-colors"
             >
-              serv-ice.be
-              <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+              Servicepartner worden
+            </Link>
+            <a href="#tiers" className="border border-white/30 text-white font-semibold px-7 py-3 rounded-xl hover:bg-white/10 transition-colors">
+              Bekijk tiers
             </a>
           </div>
         </div>
       </section>
 
-      {/* Contact strip */}
-      <div className="bg-[#0a1626] text-white/70 text-sm border-b border-white/10">
-        <div className="max-w-4xl mx-auto px-5 py-3 flex flex-wrap items-center gap-6">
-          <a href="tel:+3233024310" className="flex items-center gap-2 hover:text-brand">
-            <PhoneIcon className="h-4 w-4 text-brand" /> +32 3 302 43 10
-          </a>
-          <a href="mailto:service@serv-ice.be" className="flex items-center gap-2 hover:text-brand">
-            <EnvelopeIcon className="h-4 w-4 text-brand" /> service@serv-ice.be
-          </a>
-          <span className="flex items-center gap-2">
-            <MapPinIcon className="h-4 w-4 text-brand" /> Kerkevelden 25, 2560 Nijlen
-          </span>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-5">
-        {/* Waarom dit ons sterk maakt */}
-        <section className="py-16">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="inline-block bg-brand/15 text-brand text-xs font-semibold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wide">
-              Waarom dit ons systeem zo sterk maakt
-            </span>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-navy mb-4">
-              Detecteren én oplossen, hand in hand
+      <section className="px-5 py-14 border-b border-gray-100">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+          <div className="p-6 rounded-2xl bg-gray-50 border border-gray-200">
+            <h2 className="font-display text-xl font-bold text-navy mb-3 flex items-center gap-2">
+              <SparklesIcon className="h-6 w-6 text-brand" />
+              Voor IntelliFrost
             </h2>
-            <p className="text-gray-600">
-              IntelliFrost stuurt het alarm — Serv-Ice krijgt diezelfde melding en komt herstellen. Geen losse leveranciers,
-              geen tijdverlies: één geïntegreerd systeem dat een probleem niet alleen meldt, maar ook oplost.
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Geen groot verkoopteam nodig. Servicepartners bereiken klanten die we zelf moeilijk bereiken — via
+              bestaande relaties en lokale aanwezigheid in de regio.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { step: '1', icon: BoltIcon, title: 'Alarm gedetecteerd', desc: 'IntelliFrost merkt een afwijking en start de escalatie.' },
-              { step: '2', icon: PhoneIcon, title: 'Serv-Ice verwittigd', desc: 'De servicepartner krijgt automatisch dezelfde melding.' },
-              { step: '3', icon: WrenchScrewdriverIcon, title: 'Snelle interventie', desc: 'Een monteur komt ter plaatse, met prioriteit bij een contract.' },
-              { step: '4', icon: ShieldCheckIcon, title: 'Terug operationeel', desc: 'Hersteld en gelogd — IntelliFrost bewaakt verder.' },
-            ].map((item) => (
-              <div key={item.step} className="bg-gray-50 border border-gray-200 rounded-2xl p-5 text-center">
-                <div className="w-9 h-9 rounded-full bg-brand text-navy font-display font-bold flex items-center justify-center mx-auto mb-3">
-                  {item.step}
+          <div className="p-6 rounded-2xl bg-brand/5 border border-brand/20">
+            <h2 className="font-display text-xl font-bold text-navy mb-3 flex items-center gap-2">
+              <ArrowTrendingUpIcon className="h-6 w-6 text-brand" />
+              Voor u als servicepartner
+            </h2>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Extra inkomsten bovenop uw servicediensten: marge op hardware én recurring commissie zolang de klant
+              blijft. Meer klanten = betere tier = meer leads en betere voorwaarden.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-16 bg-gray-50">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-navy text-center mb-3">
+            Hoe werkt het?
+          </h2>
+          <p className="text-gray-500 text-center text-sm mb-10 max-w-xl mx-auto">
+            Leads komen binnen via advertenties of de website. IntelliFrost koppelt ze aan de juiste servicepartner.
+            Facturatie abonnement loopt altijd via ons.
+          </p>
+          <div className="space-y-4">
+            {flowSteps.map((s) => (
+              <div key={s.n} className="flex gap-4 p-5 rounded-xl bg-white border border-gray-200 shadow-sm">
+                <span className="w-10 h-10 rounded-full bg-brand text-navy font-bold flex items-center justify-center shrink-0">
+                  {s.n}
+                </span>
+                <div>
+                  <h3 className="font-semibold text-navy">{s.title}</h3>
+                  <p className="text-sm text-gray-600 mt-0.5">{s.desc}</p>
                 </div>
-                <item.icon className="h-5 w-5 text-brand mx-auto mb-2" />
-                <h3 className="font-semibold text-navy text-sm mb-1">{item.title}</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Sterktes */}
-        <section className="mb-16 grid sm:grid-cols-3 gap-4">
-          {[
-            { icon: WrenchScrewdriverIcon, title: 'Herstelling & plaatsing', desc: 'Expertise in ijsturbines en alle gangbare koelinstallaties.' },
-            { icon: AcademicCapIcon, title: 'Fabrikantopleidingen', desc: 'Monteurs volgen jaarlijks opleiding bij de fabrikant in Italië.' },
-            { icon: ShieldCheckIcon, title: 'Onafhankelijk', desc: 'Niet aan één merk gebonden — altijd aan uw kant.' },
-          ].map((s) => (
-            <div key={s.title} className="p-5 rounded-2xl bg-gray-50 border border-gray-200">
-              <div className="w-9 h-9 rounded-lg bg-brand/15 flex items-center justify-center mb-3">
-                <s.icon className="h-4 w-4 text-brand" />
-              </div>
-              <div className="font-semibold text-navy text-sm mb-1">{s.title}</div>
-              <div className="text-xs text-gray-500 leading-relaxed">{s.desc}</div>
-            </div>
-          ))}
-        </section>
-
-        {/* Service-tool voor technici */}
-        <section className="mb-16">
-          <div className="grid lg:grid-cols-2 gap-10 items-center">
-            <Photo
-              src="technician-working.jpg"
-              alt="Koeltechnicus voert onderhoud uit aan een koelinstallatie"
-              placeholder="Foto: technieker aan het werk op een koelinstallatie"
-              ratio="video"
-              className="shadow-xl ring-1 ring-black/5"
-            />
-            <div>
-              <span className="inline-block bg-brand/15 text-brand text-xs font-semibold px-3 py-1.5 rounded-full mb-4 uppercase tracking-wide">
-                Service-tool voor technici
-              </span>
-              <h2 className="font-display text-2xl font-bold text-navy mb-4">
-                Zelflerend systeem, proactief onderhoud
-              </h2>
-              <p className="text-gray-600 mb-4 leading-relaxed">
-                IntelliFrost leert elke koelcel kennen: na installatie meet het <strong>7 dagen lang</strong> de
-                ruimtevoeler, de verdampervoeler en de delta ertussen, en bouwt zo een <strong>baseline</strong> op.
-                Omdat geen enkele cel exact hetzelfde reageert, is dat veel betrouwbaarder dan één vaste drempel.
-              </p>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Gaat een cel zich anders gedragen dan normaal, dan volgt een <strong>preventieve melding</strong> — vaak
-                het eerste teken van een koeltechnisch of elektrisch probleem. Zo gebruikt een technieker IntelliFrost als
-                échte service-tool naar zijn eindklant: ingrijpen vóór er een storing is.
-              </p>
-              <ul className="space-y-2.5">
-                {[
-                  { icon: AcademicCapIcon, t: '7 dagen leerperiode per cel (ruimte + verdamper + delta)' },
-                  { icon: CpuChipIcon, t: 'Baseline op maat in plaats van een ruwe vaste grens' },
-                  { icon: BoltIcon, t: 'Preventieve melding bij beginnende koel- of elektrische problemen' },
-                ].map((it) => (
-                  <li key={it.t} className="flex gap-3 items-start text-sm text-gray-700">
-                    <span className="w-7 h-7 rounded-lg bg-brand/15 flex items-center justify-center shrink-0">
-                      <it.icon className="h-4 w-4 text-brand" />
-                    </span>
-                    {it.t}
-                  </li>
+      <section id="tiers" className="px-5 py-16">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-navy text-center mb-3">
+            Partner tiers: Silver, Gold & Platinum
+          </h2>
+          <p className="text-gray-500 text-center text-sm mb-10 max-w-2xl mx-auto">
+            Tiers worden automatisch toegekend op basis van actieve abonnementen. Maandelijks geëvalueerd —
+            u kan gedurende het lopende kwartaal niet in tier zakken.
+          </p>
+          <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead>
+                <tr className="bg-navy text-white">
+                  <th className="text-left p-4 font-semibold">Voordeel</th>
+                  <th className="p-4 font-semibold text-center">Silver</th>
+                  <th className="p-4 font-semibold text-center bg-brand/20">Gold</th>
+                  <th className="p-4 font-semibold text-center">Platinum</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tierRows.map((row, i) => (
+                  <tr key={row.label} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="p-4 font-medium text-navy border-t border-gray-100">{row.label}</td>
+                    <td className="p-4 text-center text-gray-600 border-t border-gray-100">{row.silver}</td>
+                    <td className="p-4 text-center text-gray-700 border-t border-gray-100 bg-brand/5 font-medium">{row.gold}</td>
+                    <td className="p-4 text-center text-gray-600 border-t border-gray-100">{row.platinum}</td>
+                  </tr>
                 ))}
-              </ul>
-            </div>
+              </tbody>
+            </table>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Combodeal */}
-        <section className="mb-16">
-          <div className="rounded-3xl bg-navy text-white p-8 sm:p-10">
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-400 text-xs font-semibold mb-5">
-              <SparklesIcon className="h-3.5 w-3.5" /> Exclusieve combodeal
-            </span>
-            <h2 className="font-display text-2xl font-bold mb-4 text-white">
-              Monitoring + servicecontract = dubbel voordeel
+      <section className="px-5 py-16 bg-navy text-white">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-center mb-3 text-white">
+            Wat verdient u concreet?
+          </h2>
+          <p className="text-white/60 text-center text-sm mb-10 max-w-2xl mx-auto">
+            Recurring commissie op het maandabonnement (excl. hardwaremarge). Gebaseerd op starttarief €29/mnd —
+            hogere formules geven proportioneel meer commissie.
+          </p>
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full text-sm min-w-[480px]">
+              <thead>
+                <tr className="bg-white/10">
+                  <th className="p-4 text-left font-semibold">Actieve klanten</th>
+                  <th className="p-4 text-center font-semibold">Silver (10%)</th>
+                  <th className="p-4 text-center font-semibold">Gold (12%)</th>
+                  <th className="p-4 text-center font-semibold">Platinum (15%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {earningsRows.map((row) => (
+                  <tr key={row.clients} className="border-t border-white/10">
+                    <td className="p-4 font-medium">{row.clients} klanten</td>
+                    <td className="p-4 text-center text-white/80">{row.silver}</td>
+                    <td className="p-4 text-center text-brand font-medium">{row.gold}</td>
+                    <td className="p-4 text-center text-white/80">{row.platinum}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-white/50 text-xs mt-6 text-center max-w-xl mx-auto">
+            Hardware: u koopt in aan partnerprijs en verkoopt door aan eigen prijs — geen minimum of maximum.
+            Platinum-partners profiteren van extra hardwarekorting.
+          </p>
+        </div>
+      </section>
+
+      <section className="px-5 py-16">
+        <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-10">
+          <div>
+            <h2 className="font-display text-xl font-bold text-navy mb-4 flex items-center gap-2">
+              <BanknotesIcon className="h-6 w-6 text-brand" />
+              Facturatie
             </h2>
-            <p className="text-white/65 mb-6 leading-relaxed max-w-2xl">
-              Neemt u tegelijk een IntelliFrost-abonnement én een Serv-Ice servicecontract? Dan geniet u van een
-              combinatiekorting op beide — want bewaken en onderhouden horen samen.
+            <ul className="space-y-3 text-sm text-gray-600">
+              <li className="flex gap-2">
+                <Check />
+                <span><strong className="text-navy">Klant</strong> betaalt maandelijks abonnement rechtstreeks aan IntelliFrost.</span>
+              </li>
+              <li className="flex gap-2">
+                <Check />
+                <span><strong className="text-navy">IntelliFrost</strong> berekent uw commissie en betaalt maandelijks uit met overzicht.</span>
+              </li>
+              <li className="flex gap-2">
+                <Check />
+                <span><strong className="text-navy">Hardware</strong>: wij factureren partnerprijs aan u; u factureert uw prijs aan de eindklant.</span>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h2 className="font-display text-xl font-bold text-navy mb-4 flex items-center gap-2">
+              <MapPinIcon className="h-6 w-6 text-brand" />
+              Lead-verdeling
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Wij verkopen niet rechtstreeks aan eindklanten — leads gaan naar servicepartners. Zo blijft u gemotiveerd
+              en bouwen we samen het netwerk uit.
             </p>
-            <ul className="grid sm:grid-cols-2 gap-x-8 gap-y-3 mb-8">
-              {[
-                '1 maand IntelliFrost gratis bij jaarcontract',
-                'Korting op uw Serv-Ice servicecontract',
-                'Automatische koppeling monitoring → technicus',
-                'Eén aanspreekpunt voor bewaking én interventie',
-              ].map((t) => (
-                <li key={t} className="flex gap-2.5 items-start text-sm text-white/80">
+            <ol className="space-y-2 text-sm text-gray-600 list-decimal list-inside">
+              <li>Filter op regio (postcode / provincie)</li>
+              <li>Platinum krijgt eerste keus, dan Gold, dan Silver</li>
+              <li>Automatische notificatie met leadgegevens</li>
+              <li>48 uur opvolgtermijn — anders door naar volgende partner</li>
+              <li>Terugkoppeling over conversie houdt kwaliteit hoog</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-12 bg-gray-50 border-y border-gray-100">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="font-display text-lg font-bold text-navy mb-6">Lead doorstroom</h2>
+          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2 text-xs sm:text-sm font-medium text-gray-700">
+            <span className="px-4 py-2 rounded-lg bg-white border border-gray-200">Klant vraagt demo aan</span>
+            <span className="text-brand hidden sm:inline">→</span>
+            <span className="px-4 py-2 rounded-lg bg-white border border-gray-200">Match op regio & tier</span>
+            <span className="text-brand hidden sm:inline">→</span>
+            <span className="px-4 py-2 rounded-lg bg-brand/10 border border-brand/30 text-navy">Platinum → Gold → Silver</span>
+          </div>
+          <p className="text-xs text-gray-500 mt-4">Geen partner in regio? Wij zoeken de dichtstbijzijnde servicepartner.</p>
+        </div>
+      </section>
+
+      <section className="px-5 py-16">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12">
+          <div>
+            <h2 className="font-display text-xl font-bold text-navy mb-6">Servicepartner worden in 6 stappen</h2>
+            <ol className="space-y-4">
+              {onboardingSteps.map((step, i) => (
+                <li key={step} className="flex gap-3">
+                  <span className="w-7 h-7 rounded-full bg-navy text-white text-xs font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </span>
+                  <span className="text-sm text-gray-700 pt-0.5">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div>
+            <h2 className="font-display text-xl font-bold text-navy mb-6">Wat wij van u verwachten</h2>
+            <ul className="space-y-3">
+              {expectations.map((item) => (
+                <li key={item} className="flex gap-2 text-sm text-gray-700">
                   <CheckCircleIcon className="h-5 w-5 text-brand shrink-0" />
-                  {t}
+                  {item}
                 </li>
               ))}
             </ul>
-            <Link to="/contact" className="inline-block bg-brand text-navy font-bold px-7 py-3 rounded-xl hover:bg-brand-dark transition-colors">
-              Combodeal aanvragen
-            </Link>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Contracten */}
-        <section id="contracten" className="mb-16 scroll-mt-20">
-          <div className="text-center mb-10">
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-navy mb-3">Servicecontracten</h2>
-            <p className="text-gray-600 max-w-xl mx-auto">
-              Kies wat past bij uw installatie. Prijs op aanvraag, afhankelijk van type, aantal en locatie.
-            </p>
-          </div>
-          <div className="grid sm:grid-cols-3 gap-5">
-            {contracts.map((c) => (
-              <div
-                key={c.id}
-                className={`relative rounded-3xl border-2 p-6 flex flex-col ${
-                  c.highlight ? 'border-brand shadow-lg shadow-brand/10' : 'border-gray-200'
-                }`}
-              >
-                {c.badge && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand text-navy text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide whitespace-nowrap">
-                    {c.badge}
-                  </span>
-                )}
-                <div className="mb-4 mt-1">
-                  <div className="font-display text-lg font-bold text-navy">{c.name}</div>
-                  <div className="text-xs text-gray-500">{c.tagline}</div>
-                </div>
-                <div className="mb-4 pb-4 border-b border-gray-100">
-                  <div className="font-display text-xl font-bold text-navy">Op aanvraag</div>
-                  <div className="text-xs text-gray-400">per installatie / jaar</div>
-                </div>
-                <ul className="space-y-2.5 flex-1 mb-6">
-                  {c.features.map((f) => (
-                    <li key={f.text} className="flex gap-2 items-start text-sm">
-                      {f.ok ? (
-                        <CheckCircleIcon className="h-4 w-4 text-brand shrink-0 mt-0.5" />
-                      ) : (
-                        <XMarkIcon className="h-4 w-4 text-gray-300 shrink-0 mt-0.5" />
-                      )}
-                      <span className={f.ok ? 'text-gray-700' : 'text-gray-400'}>{f.text}</span>
-                    </li>
-                  ))}
-                </ul>
-                <a
-                  href="https://www.serv-ice.be/contact/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-colors ${
-                    c.highlight ? 'bg-brand text-navy hover:bg-brand-dark' : 'border-2 border-brand text-brand hover:bg-brand/10'
-                  }`}
-                >
-                  Offerte aanvragen
-                  <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
-                </a>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
+      <section className="px-5 py-12 bg-brand/5 border-t border-brand/20">
+        <blockquote className="max-w-3xl mx-auto text-center">
+          <p className="text-lg text-navy font-medium leading-relaxed italic">
+            Koeltechnische servicebedrijven verkopen IntelliFrost bij hun klanten, maken marge op de hardware,
+            verdienen recurring commissie op het abonnement, en krijgen extra leads van IntelliFrost naarmate ze meer verkopen.
+          </p>
+        </blockquote>
+      </section>
 
       <CtaBand
-        title="Bewaking én herstel in één?"
-        text="Vraag de combodeal aan: IntelliFrost monitoring + Serv-Ice servicecontract met exclusieve korting."
-        primaryLabel="Combodeal aanvragen"
+        title="Klaar om servicepartner te worden?"
+        text="Neem contact op voor een kennismakingsgesprek. Wij bespreken uw regio, ervaring en de volgende stappen."
+        primaryTo="/contact?type=technicus"
+        primaryLabel="Servicepartner worden"
+        secondaryTo="/prijzen"
+        secondaryLabel="Bekijk prijzen"
       />
     </>
   );

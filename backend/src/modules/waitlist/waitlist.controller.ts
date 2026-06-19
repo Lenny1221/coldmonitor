@@ -69,7 +69,7 @@ function buildConfirmationHtml(name: string, position: number): string {
         <li><strong>Direct alarm</strong> via app, SMS en zelfs telefoon zodra er iets misgaat.</li>
         <li><strong>Zelflerende detectie</strong>: het systeem leert je cel kennen en waarschuwt preventief vóór een echt probleem.</li>
         <li><strong>Automatische HACCP-rapporten</strong> — altijd in orde bij controle.</li>
-        <li><strong>Vaste servicepartner (Serv-Ice)</strong>: wij detecteren én lossen het probleem op.</li>
+        <li><strong>Servicepartner in uw regio</strong>: wij detecteren het probleem én uw gekoppelde koeltechnicus kan herstellen.</li>
         <li><strong>Mobiele app</strong>: je koelcellen letterlijk in je broekzak.</li>
       </ul>
 

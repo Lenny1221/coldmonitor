@@ -26,7 +26,7 @@ const specs = [
 
 const escalation = [
   { stap: 'Stap 1', title: 'Onmiddellijk alarm', desc: 'E-mail + melding op telefoon/computer zodra de grens wordt overschreden.', color: 'border-green-300 bg-green-50', dot: 'bg-green-500' },
-  { stap: 'Stap 2', title: 'SMS + servicepartner', desc: 'Reageert niemand? SMS naar uw contacten én Serv-Ice wordt verwittigd.', color: 'border-amber-300 bg-amber-50', dot: 'bg-amber-500' },
+  { stap: 'Stap 2', title: 'SMS + servicepartner', desc: 'Reageert niemand? SMS naar uw contacten én uw servicepartner wordt verwittigd.', color: 'border-amber-300 bg-amber-50', dot: 'bg-amber-500' },
   { stap: 'Stap 3', title: 'Automatische telefoonoproep', desc: 'Nog geen reactie? Een stem belt u op met de details en de technicus grijpt in.', color: 'border-red-300 bg-red-50', dot: 'bg-red-500' },
 ];
 
@@ -53,7 +53,7 @@ const Product: React.FC = () => {
       <PageHeader
         kicker="Het product"
         title="Wat is IntelliFrost?"
-        subtitle="Een kleine sensor bewaakt uw koelcel dag en nacht. Loopt de temperatuur op of staat een deur te lang open? Dan grijpen u én onze servicepartner op tijd in."
+        subtitle="Een kleine sensor bewaakt uw koelcel dag en nacht. Loopt de temperatuur op of staat een deur te lang open? Dan grijpen u én uw servicepartner op tijd in."
       />
 
       <div className="max-w-4xl mx-auto px-5">
@@ -129,8 +129,8 @@ const Product: React.FC = () => {
         <section className="mb-16">
           <h2 className="font-display text-2xl font-bold text-navy mb-2">Het alarmsysteem</h2>
           <p className="text-gray-600 mb-6 leading-relaxed">
-            Gaat er iets mis, dan escaleert IntelliFrost stap voor stap tot iemand ingrijpt. En anders dan bij andere
-            systemen wordt ook onze servicepartner <strong>Serv-Ice</strong> mee verwittigd.
+            Gaat er iets mis, dan escaleert IntelliFrost stap voor stap tot iemand ingrijpt. Uw gekoppelde
+            servicepartner in de regio wordt mee verwittigd.
           </p>
           <div className="space-y-3">
             {escalation.map((l) => (

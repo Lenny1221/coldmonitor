@@ -26,8 +26,8 @@ const categories = [
   {
     title: 'Alarmen & service',
     faqs: [
-      { q: 'Hoe werkt de escalatie?', a: 'Stap 1: e-mail + push. Geen reactie? Stap 2: SMS naar uw contacten én servicepartner Serv-Ice. Nog niets? Stap 3: automatische telefoonoproep en de technicus grijpt in.' },
-      { q: 'Wat is uniek aan jullie aanpak?', a: 'Anders dan bij pure monitoring krijgt onze vaste servicepartner Serv-Ice dezelfde melding. Zo wordt het probleem niet alleen gedetecteerd, maar ook effectief opgelost.' },
+      { q: 'Hoe werkt de escalatie?', a: 'Stap 1: e-mail + push. Geen reactie? Stap 2: SMS naar uw contacten én uw gekoppelde servicepartner. Nog niets? Stap 3: automatische telefoonoproep en de technicus grijpt in.' },
+      { q: 'Wat is uniek aan jullie aanpak?', a: 'Anders dan bij pure monitoring krijgt uw gekoppelde servicepartner in de regio dezelfde melding. Zo wordt het probleem niet alleen gedetecteerd, maar ook effectief opgelost.' },
       { q: 'Hoe werkt het zelflerende systeem?', a: 'Na installatie meet IntelliFrost 7 dagen lang de ruimtevoeler, de verdampervoeler en de delta ertussen om een baseline van uw specifieke cel op te bouwen. Geen enkele cel reageert exact hetzelfde, dus een vaste drempel volstaat niet. Wijkt de cel daarna af van haar geleerde gedrag, dan krijgt u preventief een melding — vaak nog voor de temperatuur ontspoort.' },
       { q: 'Kan ik het gebruiken als service-tool?', a: 'Zeker. Dankzij het zelflerende baseline-proces ziet een technieker beginnende koeltechnische of elektrische problemen vroeg en kan hij proactief onderhoud plannen bij zijn eindklanten — ingrijpen vóór er een storing is.' },
       { q: 'Kan ik de reactietijden zelf instellen?', a: 'Ja, per stap bepaalt u hoelang het systeem wacht voor het escaleert. Per locatie en tijdslot configureerbaar.' },
