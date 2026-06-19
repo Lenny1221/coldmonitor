@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useSearchParams } from 'react-router-dom';
 import { contactApi, getErrorMessage } from '../services/api';
 import { useCookieConsent } from '../hooks/useCookieConsent';
 import {
@@ -36,7 +37,18 @@ const sectors = [
 ];
 
 const Contact: React.FC = () => {
-  const [selectedType, setSelectedType] = useState<ContactType>('demo');
+  const [searchParams] = useSearchParams();
+  const typeFromUrl = searchParams.get('type');
+  const initialType: ContactType =
+    typeFromUrl === 'technicus' ||
+    typeFromUrl === 'demo' ||
+    typeFromUrl === 'offerte' ||
+    typeFromUrl === 'vraag' ||
+    typeFromUrl === 'support'
+      ? typeFromUrl
+      : 'demo';
+
+  const [selectedType, setSelectedType] = useState<ContactType>(initialType);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -51,6 +63,10 @@ const Contact: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { trackLead } = useCookieConsent();
+
+  useEffect(() => {
+    setSelectedType(initialType);
+  }, [initialType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
