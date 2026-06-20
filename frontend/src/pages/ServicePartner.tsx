@@ -17,7 +17,7 @@ const flowSteps = [
   { n: '3', title: 'Koppeling aan partner', desc: 'Op regio en tier: Platinum eerst, dan Gold, dan Silver. U krijgt een notificatie.' },
   { n: '4', title: 'U neemt contact op', desc: 'Demo, plaatsbezoek en deal sluiten — binnen 48 uur.' },
   { n: '5', title: 'Verkoop & installatie', desc: 'Hardware inkoop aan partnerprijs, verkoop aan eigen marge.' },
-  { n: '6', title: 'Abonnement via IntelliFrost', desc: 'Klant betaalt maandelijks (vanaf €29/mnd) rechtstreeks aan ons.' },
+  { n: '6', title: 'Abonnement via IntelliFrost', desc: 'Klant betaalt maandelijks (vanaf €39/mnd) rechtstreeks aan ons.' },
   { n: '7', title: 'Recurring commissie', desc: 'Maandelijks 10–15% op het abonnement, zolang de klant actief blijft.' },
 ];
 
@@ -33,11 +33,11 @@ const tierRows: { label: string; silver: string; gold: string; platinum: string 
 ];
 
 const earningsRows: { clients: number; silver: string; gold: string; platinum: string }[] = [
-  { clients: 5, silver: '€14,50/mnd', gold: '€17,40/mnd', platinum: '€21,75/mnd' },
-  { clients: 10, silver: '€29,00/mnd', gold: '€34,80/mnd', platinum: '€43,50/mnd' },
-  { clients: 20, silver: '€58,00/mnd', gold: '€69,60/mnd', platinum: '€87,00/mnd' },
-  { clients: 30, silver: '€87,00/mnd', gold: '€104,40/mnd', platinum: '€130,50/mnd' },
-  { clients: 50, silver: '€145,00/mnd', gold: '€174,00/mnd', platinum: '€217,50/mnd' },
+  { clients: 5, silver: '€19,50/mnd', gold: '€23,40/mnd', platinum: '€29,25/mnd' },
+  { clients: 10, silver: '€39,00/mnd', gold: '€46,80/mnd', platinum: '€58,50/mnd' },
+  { clients: 20, silver: '€78,00/mnd', gold: '€93,60/mnd', platinum: '€117,00/mnd' },
+  { clients: 30, silver: '€117,00/mnd', gold: '€140,40/mnd', platinum: '€175,50/mnd' },
+  { clients: 50, silver: '€195,00/mnd', gold: '€234,00/mnd', platinum: '€292,50/mnd' },
 ];
 
 const onboardingSteps = [
@@ -192,7 +192,7 @@ const ServicePartner: React.FC = () => {
             Wat verdient u concreet?
           </h2>
           <p className="text-white/60 text-center text-sm mb-10 max-w-2xl mx-auto">
-            Recurring commissie op het maandabonnement (excl. hardwaremarge). Gebaseerd op starttarief €29/mnd —
+            Recurring commissie op het maandabonnement (excl. hardwaremarge). Gebaseerd op Pro-tarief €39/mnd —
             hogere formules geven proportioneel meer commissie.
           </p>
           <div className="overflow-x-auto rounded-2xl border border-white/10">

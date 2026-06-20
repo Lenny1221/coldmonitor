@@ -115,9 +115,9 @@ const Prijzen: React.FC = () => {
         </div>
 
         {/* Plans */}
-        <div className="grid md:grid-cols-3 gap-5 items-start mb-20">
+        <div className="grid md:grid-cols-3 gap-5 items-stretch mb-20">
           {/* Starter */}
-          <div className="rounded-3xl border-2 border-gray-200 p-7 flex flex-col">
+          <div className="rounded-3xl border-2 border-gray-200 p-7 flex flex-col h-full">
             <h2 className="font-display text-xl font-bold text-navy mb-1">Starter</h2>
             <p className="text-sm text-gray-500 mb-5">Voor kleine zaken met 1 koelcel.</p>
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Hardware eenmalig</div>
@@ -138,7 +138,7 @@ const Prijzen: React.FC = () => {
           </div>
 
           {/* Pro */}
-          <div className="relative rounded-3xl border-2 border-brand bg-navy text-white p-7 flex flex-col shadow-xl shadow-brand/20 md:-mt-3">
+          <div className="relative rounded-3xl border-2 border-brand bg-navy text-white p-7 flex flex-col h-full shadow-xl shadow-brand/20">
             <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand text-navy text-[11px] font-bold px-4 py-1.5 rounded-full uppercase tracking-wide">
               Meest gekozen
             </span>
@@ -162,11 +162,17 @@ const Prijzen: React.FC = () => {
           </div>
 
           {/* Multi */}
-          <div className="rounded-3xl border-2 border-gray-200 p-7 flex flex-col">
+          <div className="rounded-3xl border-2 border-gray-200 p-7 flex flex-col h-full">
             <h2 className="font-display text-xl font-bold text-navy mb-1">Multi</h2>
             <p className="text-sm text-gray-500 mb-5">Voor meerdere toestellen of locaties.</p>
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Hardware</div>
-            <div className="text-xl font-bold text-navy mb-4">Op offerte</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Hardware eenmalig</div>
+            <div className="text-xl font-bold text-navy mb-2">Op offerte</div>
+            <a
+              href="#contact"
+              className="block text-center py-2.5 rounded-xl border-2 border-brand text-brand font-semibold text-sm hover:bg-brand/10 mb-4"
+            >
+              Offerte aanvragen
+            </a>
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Abonnement</div>
             <div className="text-4xl font-bold text-brand">vanaf €25<span className="text-lg font-normal text-gray-400">/toestel</span></div>
             <div className="text-sm text-gray-400 mb-6">Volumekorting bij 2+ units</div>

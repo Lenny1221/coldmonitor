@@ -7,7 +7,7 @@ const categories = [
   {
     title: 'Algemeen',
     faqs: [
-      { q: 'Wat is IntelliFrost?', a: 'Een cloudplatform voor het bewaken van koel- en vriescellen. IoT-sensoren meten temperatuur en deurstatus in realtime, met automatische escalatie van alarmen — van e-mail tot telefoonoproep.' },
+      { q: 'Wat is IntelliFrost?', a: 'IntelliFrost bewaakt uw koel- en vriescellen dag en nacht. Slimme sensoren meten temperatuur en deurstatus continu. Gaat er iets mis? Dan krijgt u automatisch een alarm — via app, sms of telefoon — en wordt uw gekoppelde koeltechnicus verwittigd.' },
       { q: 'Voor wie is het bedoeld?', a: 'Voor elke sector met temperatuurgevoelige producten: supermarkten, slagerijen, horeca, farmacie, logistiek, ziekenhuizen, apotheken en koeltechnici.' },
       { q: 'In welke landen is het beschikbaar?', a: 'Momenteel in België en Nederland. Uitbreiding naar andere Europese landen is gepland.' },
       { q: 'Hoe betrouwbaar is het?', a: 'We mikken op 99,9% uptime met redundante cloudinfrastructuur. Alarmen vertrekken zodra een afwijking wordt gedetecteerd, ook bij wegvallende WiFi dankzij 4G-backup.' },
